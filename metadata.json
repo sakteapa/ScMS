@@ -1,0 +1,6 @@
+{
+  "name": "AI Student Manager",
+  "description": "Complete Web Dashboard for the Mizoram School System (zoxs-sms) featuring dark theme, offline mode with Firestore persistence, PWA installation, data export to Excel/CSV, attendance, fees, grades, report cards, timetable, library, and parent portal.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

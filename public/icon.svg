@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b" />
+      <stop offset="50%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#4338ca" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#4f46e5" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- Base Rounded Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+  <rect width="504" height="504" x="4" y="4" rx="108" fill="none" stroke="#4f46e5" stroke-width="3" stroke-opacity="0.3" />
+
+  <!-- School Shield Emblem -->
+  <g filter="url(#glow)">
+    <path d="M 256 90 L 370 140 C 370 270 256 360 256 360 C 256 360 142 270 142 140 Z" fill="url(#shieldGrad)" stroke="#818cf8" stroke-width="4" />
+  </g>
+
+  <!-- Mortarboard Academic Cap (Gold) -->
+  <g id="cap">
+    <!-- Rhombus Top -->
+    <polygon points="256,150 340,185 256,220 172,185" fill="url(#goldGrad)" />
+    <!-- Cap Skull Base -->
+    <path d="M 205 200 L 205 240 C 205 258 307 258 307 240 L 307 200 Z" fill="#b45309" />
+    <!-- Tassel String & Ball -->
+    <path d="M 256 185 Q 350 200 355 245" stroke="#fef08a" stroke-width="5" fill="none" stroke-linecap="round" />
+    <circle cx="355" cy="248" r="7" fill="#fde047" />
+  </g>
+
+  <!-- Open Book / Scroll Motif -->
+  <path d="M 195 285 Q 256 270 256 300 Q 256 270 317 285 L 317 325 Q 256 310 256 335 Q 256 310 195 325 Z" fill="#ffffff" />
+  <line x1="256" y1="300" x2="256" y2="335" stroke="#94a3b8" stroke-width="2" />
+
+  <!-- Mizoram Star Accent -->
+  <circle cx="256" cy="120" r="8" fill="#fde047" />
+  <circle cx="256" cy="120" r="14" fill="none" stroke="#fde047" stroke-width="1.5" stroke-dasharray="3 3" />
+</svg>

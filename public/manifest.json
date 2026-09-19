@@ -1,0 +1,69 @@
+{
+  "id": "/",
+  "name": "AI Student Manager - Mizoram School System",
+  "short_name": "ZoxsSMS",
+  "description": "Complete Web Dashboard & Offline-Capable Portal for Mizoram School System (zoxs-sms) with Attendance, Fees, Report Cards, and Notices.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#030712",
+  "theme_color": "#0f172a",
+  "categories": ["education", "productivity", "management"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mark Attendance",
+      "short_name": "Attendance",
+      "description": "Log daily student roll call and attendance",
+      "url": "/?tab=attendance",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Collect Fees",
+      "short_name": "Fees",
+      "description": "Record fee payments & print receipts",
+      "url": "/?tab=fees",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Data Export Center",
+      "short_name": "Exports",
+      "description": "Download Excel & CSV student and financial reports",
+      "url": "/?tab=exports",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Parent & Student Portal",
+      "short_name": "Portal",
+      "description": "Access student report cards and fee dues",
+      "url": "/?tab=portal",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}

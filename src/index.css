@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+  }
+  
+  #reportCardModalOverlay {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  
+  #reportCardContainer {
+    border: none !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* Hide navigation, headers, and non-printable elements */
+  aside, nav, header, #sidebar, .print\:hidden {
+    display: none !important;
+  }
+}
