@@ -11,6 +11,7 @@
     "cap:build": "vite build && cap sync"
   },
   "dependencies": {
+    "agora-rtc-sdk-ng": "^4.24.8",
     "canvas-confetti": "^1.9.4",
     "firebase": "10.8.0",
     "html5-qrcode": "^2.3.8",
