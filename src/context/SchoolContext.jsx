@@ -51,7 +51,12 @@ import {
   INITIAL_SEAL_CONFIG,
   INITIAL_WEBSITE_CONFIG,
   INITIAL_DISCIPLINARY_RECORDS,
-  MIZORAM_GAZETTED_HOLIDAYS_2026
+  MIZORAM_GAZETTED_HOLIDAYS_2026,
+  INITIAL_SUBJECTS,
+  INITIAL_GRADING_SCALES,
+  INITIAL_FEE_HEADS,
+  INITIAL_DOCUMENT_TEMPLATES,
+  INITIAL_NOMENCLATURE
 } from '../data/mockData';
 import { TRANSLATIONS } from '../data/translations';
 import { db, collection, getDocs, setDoc, addDoc, doc, query, orderBy, onSnapshot, isOfflinePersistenceActive } from '../services/firebase';
@@ -181,6 +186,14 @@ export function SchoolProvider({ children }) {
 
   // 10. Student Disciplinary Records & Suspension Suite
   const [disciplinaryRecords, setDisciplinaryRecords] = useState(() => loadInitial('disciplinary_records', INITIAL_DISCIPLINARY_RECORDS));
+
+  // 11. In-App Master Architecture States (Zero External Dependency)
+  const [subjects, setSubjects] = useState(() => loadInitial('subjects', INITIAL_SUBJECTS));
+  const [gradingScales, setGradingScales] = useState(() => loadInitial('grading_scales', INITIAL_GRADING_SCALES));
+  const [feeHeads, setFeeHeads] = useState(() => loadInitial('fee_heads', INITIAL_FEE_HEADS));
+  const [documentTemplates, setDocumentTemplates] = useState(() => loadInitial('document_templates', INITIAL_DOCUMENT_TEMPLATES));
+  const [systemNomenclature, setSystemNomenclature] = useState(() => loadInitial('system_nomenclature', INITIAL_NOMENCLATURE));
+  const [customStudentFields, setCustomStudentFields] = useState(() => loadInitial('custom_student_fields', []));
   const [language, setLanguage] = useState(() => {
     try {
       const saved = localStorage.getItem('zoxs_language');
@@ -396,7 +409,12 @@ export function SchoolProvider({ children }) {
       { key: 'canteen_transactions', data: canteenTransactions },
       { key: 'leave_applications', data: leaveApplications },
       { key: 'system_config',      data: systemConfig ? [{ id: 'main', ...systemConfig }] : [] },
-      { key: 'seal_config',        data: sealConfig ? [{ id: 'main', ...sealConfig }] : [] }
+      { key: 'seal_config',        data: sealConfig ? [{ id: 'main', ...sealConfig }] : [] },
+      { key: 'subjects',           data: subjects },
+      { key: 'grading_scales',     data: gradingScales },
+      { key: 'fee_heads',          data: feeHeads },
+      { key: 'document_templates', data: documentTemplates ? [{ id: 'main', ...documentTemplates }] : [] },
+      { key: 'system_nomenclature',data: systemNomenclature ? [{ id: 'main', ...systemNomenclature }] : [] }
     ];
 
     let pushed = 0;
@@ -457,7 +475,12 @@ export function SchoolProvider({ children }) {
       { key: 'canteen_transactions', setter: setCanteenTransactions },
       { key: 'leave_applications', setter: setLeaveApplications },
       { key: 'system_config', setter: (docs) => { if (docs[0]) setSystemConfig(docs[0]); } },
-      { key: 'seal_config', setter: (docs) => { if (docs[0]) setSealConfig(docs[0]); } }
+      { key: 'seal_config', setter: (docs) => { if (docs[0]) setSealConfig(docs[0]); } },
+      { key: 'subjects', setter: setSubjects },
+      { key: 'grading_scales', setter: setGradingScales },
+      { key: 'fee_heads', setter: setFeeHeads },
+      { key: 'document_templates', setter: (docs) => { if (docs[0]) setDocumentTemplates(docs[0]); } },
+      { key: 'system_nomenclature', setter: (docs) => { if (docs[0]) setSystemNomenclature(docs[0]); } }
     ];
     let pulled = 0;
     try {
@@ -534,8 +557,14 @@ export function SchoolProvider({ children }) {
     localStorage.setItem('zoxs_study_materials', JSON.stringify(studyMaterials));
     localStorage.setItem('zoxs_study_config', JSON.stringify(studyConfig));
     localStorage.setItem('zoxs_seal_config', JSON.stringify(sealConfig));
+    localStorage.setItem('zoxs_subjects', JSON.stringify(subjects));
+    localStorage.setItem('zoxs_grading_scales', JSON.stringify(gradingScales));
+    localStorage.setItem('zoxs_fee_heads', JSON.stringify(feeHeads));
+    localStorage.setItem('zoxs_document_templates', JSON.stringify(documentTemplates));
+    localStorage.setItem('zoxs_system_nomenclature', JSON.stringify(systemNomenclature));
+    localStorage.setItem('zoxs_custom_student_fields', JSON.stringify(customStudentFields));
     setLastSyncTime(new Date().toLocaleTimeString());
-  }, [classes, students, grades, fees, attendance, staff, payroll, libraryBooks, notices, admissions, admissionRequirements, issuedCertificates, reportCardWithholds, transportRoutes, hostelRooms, timetables, hostelGatePasses, hostelRollCalls, hostelMessMenu, hostelRules, academicEvents, customScripts, plugins, systemConfig, paymentConfig, leaveApplications, payScales, tasks, vacations, clinicRecords, clinicConfig, visitors, visitorConfig, inventoryAssets, maintenanceTickets, inventoryConfig, ptmEvents, ptmConfig, alumni, transcriptRequests, alumniConfig, canteenMenu, canteenWallets, canteenTransactions, canteenConfig, studyMaterials, studyConfig, sealConfig]);
+  }, [classes, students, grades, fees, attendance, staff, payroll, libraryBooks, notices, admissions, admissionRequirements, issuedCertificates, reportCardWithholds, transportRoutes, hostelRooms, timetables, hostelGatePasses, hostelRollCalls, hostelMessMenu, hostelRules, academicEvents, customScripts, plugins, systemConfig, paymentConfig, leaveApplications, payScales, tasks, vacations, clinicRecords, clinicConfig, visitors, visitorConfig, inventoryAssets, maintenanceTickets, inventoryConfig, ptmEvents, ptmConfig, alumni, transcriptRequests, alumniConfig, canteenMenu, canteenWallets, canteenTransactions, canteenConfig, studyMaterials, studyConfig, sealConfig, subjects, gradingScales, feeHeads, documentTemplates, systemNomenclature, customStudentFields]);
 
   // Real-time In-App Stylesheet & Scripts Live Injection
   useEffect(() => {
@@ -2764,6 +2793,12 @@ export function SchoolProvider({ children }) {
     setStudyMaterials(INITIAL_STUDY_MATERIALS);
     setStudyConfig(INITIAL_STUDY_CONFIG);
     setSealConfig(INITIAL_SEAL_CONFIG);
+    setSubjects(INITIAL_SUBJECTS);
+    setGradingScales(INITIAL_GRADING_SCALES);
+    setFeeHeads(INITIAL_FEE_HEADS);
+    setDocumentTemplates(INITIAL_DOCUMENT_TEMPLATES);
+    setSystemNomenclature(INITIAL_NOMENCLATURE);
+    setCustomStudentFields([]);
     localStorage.removeItem('zoxs_live_media_config');
     window.location.reload();
   };
@@ -3304,6 +3339,183 @@ export function SchoolProvider({ children }) {
     return suspendStudent({ ...warningData, actionType: 'warning' });
   };
 
+  // ==========================================
+  // IN-APP MASTER ARCHITECTURE CRUD METHODS (Zero External Software Needed)
+  // ==========================================
+
+  // 1. Classes & Sections Master
+  const addClass = (classData) => {
+    const newClass = {
+      id: classData.id || `cls-${Date.now()}`,
+      name: classData.name || 'New Class',
+      level: classData.level || 'custom',
+      stream: classData.stream || null,
+      section: classData.section || 'A',
+      roomNumber: classData.roomNumber || 'Room-TBD',
+      academicYear: classData.academicYear || '2026-2027',
+      teacherName: classData.teacherName || 'Unassigned',
+      classTeacherId: classData.classTeacherId || null,
+      classLeaderId: null,
+      classLeaderName: null,
+      asstClassLeaderId: null,
+      asstClassLeaderName: null,
+      ...classData
+    };
+    setClasses(prev => [newClass, ...prev]);
+    return { success: true, class: newClass };
+  };
+
+  const updateClass = (classId, updatedData) => {
+    setClasses(prev => prev.map(c => c.id === classId ? { ...c, ...updatedData } : c));
+    return { success: true };
+  };
+
+  const deleteClass = (classId) => {
+    setClasses(prev => prev.filter(c => c.id !== classId));
+    return { success: true };
+  };
+
+  // 2. Subjects & Curriculum Master
+  const addSubject = (subjectData) => {
+    const newSubject = {
+      id: subjectData.id || `sub-${Date.now()}`,
+      name: subjectData.name || 'New Subject',
+      code: subjectData.code || 'SUB-101',
+      stream: subjectData.stream || 'all',
+      category: subjectData.category || 'General Subject',
+      fullMarks: Number(subjectData.fullMarks) || 100,
+      passMarks: Number(subjectData.passMarks) || 40,
+      classes: subjectData.classes || [],
+      ...subjectData
+    };
+    setSubjects(prev => [...prev, newSubject]);
+    return { success: true, subject: newSubject };
+  };
+
+  const updateSubject = (subjectId, updatedData) => {
+    setSubjects(prev => prev.map(s => s.id === subjectId ? { ...s, ...updatedData } : s));
+    return { success: true };
+  };
+
+  const deleteSubject = (subjectId) => {
+    setSubjects(prev => prev.filter(s => s.id !== subjectId));
+    return { success: true };
+  };
+
+  const resetSubjects = () => {
+    setSubjects(INITIAL_SUBJECTS);
+    return { success: true };
+  };
+
+  // 3. Grading Scales Master
+  const addGradeScale = (scaleData) => {
+    const newScale = {
+      id: scaleData.id || `grd-${Date.now()}`,
+      grade: scaleData.grade || 'X',
+      minScore: Number(scaleData.minScore) || 0,
+      maxScore: Number(scaleData.maxScore) || 100,
+      gradePoint: Number(scaleData.gradePoint) || 0,
+      remark: scaleData.remark || 'Standard',
+      color: scaleData.color || '#6366f1',
+      ...scaleData
+    };
+    setGradingScales(prev => [...prev, newScale]);
+    return { success: true, scale: newScale };
+  };
+
+  const updateGradeScale = (scaleId, updatedData) => {
+    setGradingScales(prev => prev.map(g => g.id === scaleId ? { ...g, ...updatedData } : g));
+    return { success: true };
+  };
+
+  const deleteGradeScale = (scaleId) => {
+    setGradingScales(prev => prev.filter(g => g.id !== scaleId));
+    return { success: true };
+  };
+
+  const resetGradeScales = () => {
+    setGradingScales(INITIAL_GRADING_SCALES);
+    return { success: true };
+  };
+
+  // 4. Fee Heads & Financial Structure Master
+  const addFeeHead = (headData) => {
+    const newHead = {
+      id: headData.id || `fh-${Date.now()}`,
+      name: headData.name || 'New Fee Head',
+      code: headData.code || `FEE_${Date.now().toString().slice(-4)}`,
+      frequency: headData.frequency || 'monthly',
+      defaultAmount: Number(headData.defaultAmount) || 0,
+      mandatory: Boolean(headData.mandatory ?? true),
+      description: headData.description || '',
+      ...headData
+    };
+    setFeeHeads(prev => [...prev, newHead]);
+    return { success: true, head: newHead };
+  };
+
+  const updateFeeHead = (headId, updatedData) => {
+    setFeeHeads(prev => prev.map(f => f.id === headId ? { ...f, ...updatedData } : f));
+    return { success: true };
+  };
+
+  const deleteFeeHead = (headId) => {
+    setFeeHeads(prev => prev.filter(f => f.id !== headId));
+    return { success: true };
+  };
+
+  const resetFeeHeads = () => {
+    setFeeHeads(INITIAL_FEE_HEADS);
+    return { success: true };
+  };
+
+  // 5. Document & Certificate Templates Designer
+  const updateDocumentTemplates = (newTemplates) => {
+    setDocumentTemplates(prev => ({ ...prev, ...newTemplates }));
+    return { success: true };
+  };
+
+  const resetDocumentTemplates = () => {
+    setDocumentTemplates(INITIAL_DOCUMENT_TEMPLATES);
+    return { success: true };
+  };
+
+  // 6. Institutional Terminology / Nomenclature
+  const updateSystemNomenclature = (newNomenclature) => {
+    setSystemNomenclature(prev => ({ ...prev, ...newNomenclature }));
+    return { success: true };
+  };
+
+  const resetSystemNomenclature = () => {
+    setSystemNomenclature(INITIAL_NOMENCLATURE);
+    return { success: true };
+  };
+
+  // 7. Student Custom Profile Fields
+  const addCustomStudentField = (fieldData) => {
+    const newField = {
+      id: `csf-${Date.now()}`,
+      label: fieldData.label || 'Custom Field',
+      key: fieldData.key || `custom_${Date.now().toString().slice(-4)}`,
+      type: fieldData.type || 'text',
+      options: fieldData.options || [],
+      required: Boolean(fieldData.required),
+      ...fieldData
+    };
+    setCustomStudentFields(prev => [...prev, newField]);
+    return { success: true, field: newField };
+  };
+
+  const updateCustomStudentField = (fieldId, updatedData) => {
+    setCustomStudentFields(prev => prev.map(f => f.id === fieldId ? { ...f, ...updatedData } : f));
+    return { success: true };
+  };
+
+  const deleteCustomStudentField = (fieldId) => {
+    setCustomStudentFields(prev => prev.filter(f => f.id !== fieldId));
+    return { success: true };
+  };
+
   return (
     <SchoolContext.Provider value={{
       classes,
@@ -3500,6 +3712,35 @@ export function SchoolProvider({ children }) {
       suspendStudent,
       revokeSuspension,
       addDisciplinaryWarning,
+      // 11. In-App Master Architecture Suite (Zero External Software Needed)
+      addClass,
+      updateClass,
+      deleteClass,
+      subjects,
+      addSubject,
+      updateSubject,
+      deleteSubject,
+      resetSubjects,
+      gradingScales,
+      addGradeScale,
+      updateGradeScale,
+      deleteGradeScale,
+      resetGradeScales,
+      feeHeads,
+      addFeeHead,
+      updateFeeHead,
+      deleteFeeHead,
+      resetFeeHeads,
+      documentTemplates,
+      updateDocumentTemplates,
+      resetDocumentTemplates,
+      systemNomenclature,
+      updateSystemNomenclature,
+      resetSystemNomenclature,
+      customStudentFields,
+      addCustomStudentField,
+      updateCustomStudentField,
+      deleteCustomStudentField,
       isSyncing,
       lastSyncTime,
       isOfflinePersistenceActive,

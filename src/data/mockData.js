@@ -4417,3 +4417,71 @@ export const INITIAL_DISCIPLINARY_RECORDS = [
     revokedBy: null
   }
 ];
+
+// ==========================================
+// 11. IN-APP MASTER ARCHITECTURE SEED DATA
+// ==========================================
+export const INITIAL_SUBJECTS = [
+  { id: 'sub-01', name: 'English Literature & Language', code: 'ENG-101', stream: 'all', category: 'Core Language', fullMarks: 100, passMarks: 40, classes: ['cls-11-sci', 'cls-11-arts', 'cls-11-comm', 'cls-12-sci', 'cls-12-arts', 'cls-12-comm'] },
+  { id: 'sub-02', name: 'Mizo (MIL)', code: 'MIZ-102', stream: 'all', category: 'Modern Indian Language', fullMarks: 100, passMarks: 40, classes: ['cls-11-sci', 'cls-11-arts', 'cls-11-comm', 'cls-12-sci', 'cls-12-arts', 'cls-12-comm'] },
+  { id: 'sub-03', name: 'Physics (Theory & Practical)', code: 'PHY-201', stream: 'science', category: 'STEM Core', fullMarks: 100, passMarks: 40, classes: ['cls-11-sci', 'cls-12-sci'] },
+  { id: 'sub-04', name: 'Chemistry (Theory & Practical)', code: 'CHM-202', stream: 'science', category: 'STEM Core', fullMarks: 100, passMarks: 40, classes: ['cls-11-sci', 'cls-12-sci'] },
+  { id: 'sub-05', name: 'Mathematics', code: 'MTH-203', stream: 'science', category: 'STEM Core', fullMarks: 100, passMarks: 40, classes: ['cls-11-sci', 'cls-12-sci', 'cls-11-comm', 'cls-12-comm'] },
+  { id: 'sub-06', name: 'Biology (Botany & Zoology)', code: 'BIO-204', stream: 'science', category: 'Life Sciences', fullMarks: 100, passMarks: 40, classes: ['cls-11-sci', 'cls-12-sci'] },
+  { id: 'sub-07', name: 'Computer Science & Python', code: 'CSC-205', stream: 'science', category: 'Information Technology', fullMarks: 100, passMarks: 40, classes: ['cls-11-sci', 'cls-12-sci'] },
+  { id: 'sub-08', name: 'Political Science', code: 'POL-301', stream: 'arts', category: 'Social Sciences', fullMarks: 100, passMarks: 40, classes: ['cls-11-arts', 'cls-12-arts'] },
+  { id: 'sub-09', name: 'History of India & World', code: 'HIS-302', stream: 'arts', category: 'Humanities', fullMarks: 100, passMarks: 40, classes: ['cls-11-arts', 'cls-12-arts'] },
+  { id: 'sub-10', name: 'Education', code: 'EDU-303', stream: 'arts', category: 'Pedagogy', fullMarks: 100, passMarks: 40, classes: ['cls-11-arts', 'cls-12-arts'] },
+  { id: 'sub-11', name: 'Economics', code: 'ECO-304', stream: 'arts', category: 'Social Sciences', fullMarks: 100, passMarks: 40, classes: ['cls-11-arts', 'cls-12-arts', 'cls-11-comm', 'cls-12-comm'] },
+  { id: 'sub-12', name: 'Accountancy', code: 'ACC-401', stream: 'commerce', category: 'Financial Commerce', fullMarks: 100, passMarks: 40, classes: ['cls-11-comm', 'cls-12-comm'] },
+  { id: 'sub-13', name: 'Business Studies', code: 'BST-402', stream: 'commerce', category: 'Management', fullMarks: 100, passMarks: 40, classes: ['cls-11-comm', 'cls-12-comm'] }
+];
+
+export const INITIAL_GRADING_SCALES = [
+  { id: 'grd-01', grade: 'A1', minScore: 91, maxScore: 100, gradePoint: 10.0, remark: 'Outstanding Performance', color: '#10b981' },
+  { id: 'grd-02', grade: 'A2', minScore: 81, maxScore: 90, gradePoint: 9.0, remark: 'Excellent', color: '#06b6d4' },
+  { id: 'grd-03', grade: 'B1', minScore: 71, maxScore: 80, gradePoint: 8.0, remark: 'Very Good', color: '#6366f1' },
+  { id: 'grd-04', grade: 'B2', minScore: 61, maxScore: 70, gradePoint: 7.0, remark: 'Good', color: '#8b5cf6' },
+  { id: 'grd-05', grade: 'C1', minScore: 51, maxScore: 60, gradePoint: 6.0, remark: 'Satisfactory / Above Average', color: '#f59e0b' },
+  { id: 'grd-06', grade: 'C2', minScore: 41, maxScore: 50, gradePoint: 5.0, remark: 'Average Pass', color: '#f97316' },
+  { id: 'grd-07', grade: 'D', minScore: 33, maxScore: 40, gradePoint: 4.0, remark: 'Marginal Pass', color: '#eab308' },
+  { id: 'grd-08', grade: 'E', minScore: 0, maxScore: 32, gradePoint: 0.0, remark: 'Needs Improvement / Remedial Required', color: '#ef4444' }
+];
+
+export const INITIAL_FEE_HEADS = [
+  { id: 'fh-01', name: 'Monthly Tuition Fee', code: 'TUITION', frequency: 'monthly', defaultAmount: 1500, mandatory: true, description: 'Standard instructional teaching and classroom maintenance fee.' },
+  { id: 'fh-02', name: 'Annual Admission & Registration', code: 'ADM_REG', frequency: 'annual', defaultAmount: 3500, mandatory: true, description: 'Institutional session enrolment and board record maintenance.' },
+  { id: 'fh-03', name: 'MBSE Terminal Examination Fee', code: 'EXAM_TERM', frequency: 'term', defaultAmount: 800, mandatory: true, description: 'Question paper printing, answer script evaluation, and marksheet generation.' },
+  { id: 'fh-04', name: 'Science & Computer Lab Fee', code: 'LAB_PRACTICAL', frequency: 'term', defaultAmount: 600, mandatory: false, description: 'Reagents, microscopes, internet bandwidth, and optical equipment upkeep.' },
+  { id: 'fh-05', name: 'Campus Bus Transport (Optional)', code: 'TRANSPORT_BUS', frequency: 'monthly', defaultAmount: 1200, mandatory: false, description: 'Daily bus transit with live GPS tracking for day scholars.' },
+  { id: 'fh-06', name: 'Residential Hostel Boarding & Mess', code: 'HOSTEL_MESS', frequency: 'monthly', defaultAmount: 4500, mandatory: false, description: 'Hostel dorm bed, electricity, laundry and 3 hot meals per day.' }
+];
+
+export const INITIAL_DOCUMENT_TEMPLATES = {
+  transferCertificate: {
+    header: 'TRANSFER CERTIFICATE (TC) / SCHOOL LEAVING RECORD',
+    subHeader: 'Issued under the authority of Oxford Higher Academy, Lunglawn, Lunglei (MBSE Affiliated)',
+    bodyTemplate: 'This is to certify that {{studentName}}, Son/Daughter of {{guardianName}}, bearing Admission No: {{admissionNo}} and Roll No: {{rollNo}}, was admitted to this institution in Class {{class}} on {{admissionDate}}. He/She has paid all institutional school dues and has passed the qualifying board assessments with exemplary conduct. He/She is granted this Transfer Certificate to pursue further education.',
+    conductRemark: 'Exemplary and Diligent',
+    signatoryLeft: 'Class Teacher',
+    signatoryRight: 'Principal & Head of Institution'
+  },
+  characterCertificate: {
+    header: 'BONAFIDE RESIDENTIAL & CHARACTER CERTIFICATE',
+    subHeader: 'Department of School Education, Govt. of Mizoram',
+    bodyTemplate: 'TO WHOMSOEVER IT MAY CONCERN: This is to officially certify that {{studentName}}, Son/Daughter of {{guardianName}}, resident of {{address}}, is a bonafide student of {{schoolName}} studying in {{class}}. He/She bears an upright moral character and has shown active participation in curricular and co-curricular sports and cultural programs.',
+    signatoryLeft: 'Vice Principal',
+    signatoryRight: 'Principal'
+  }
+};
+
+export const INITIAL_NOMENCLATURE = {
+  institutionHead: 'Principal & Head of Institution',
+  academicDean: 'Vice Principal / Academic Dean',
+  classMentor: 'Class Teacher / Class Master',
+  boardingWarden: 'Hostel Superintendent / Warden',
+  termDivision: 'Term Examination',
+  dormitoryLabel: 'Boarding Hostel',
+  transitLabel: 'School Bus Fleet'
+};
+

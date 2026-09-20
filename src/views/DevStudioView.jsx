@@ -66,6 +66,7 @@ import PluginConfigModal from '../components/PluginConfigModal';
 import WebsiteEditorModal from '../components/WebsiteEditorModal';
 import AcademicCenterSetupWizardModal from '../components/AcademicCenterSetupWizardModal';
 import ExternalSoftwareApiHub from '../components/ExternalSoftwareApiHub';
+import InAppMasterConfigStudio from '../components/InAppMasterConfigStudio';
 
 export default function DevStudioView() {
   const { user } = useAuth();
@@ -403,6 +404,21 @@ export default function DevStudioView() {
           </button>
 
           <button
+            onClick={() => setActiveTab('in_app_master')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition shrink-0 ${
+              activeTab === 'in_app_master'
+                ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg shadow-indigo-600/25'
+                : 'text-indigo-300 hover:text-white hover:bg-slate-800/50 border border-indigo-500/30'
+            }`}
+          >
+            <Layers className="w-4 h-4 text-indigo-400" />
+            <span>Institutional Master Studio</span>
+            <span className="px-1.5 py-0.2 rounded-full text-xs bg-indigo-500/30 text-indigo-200">
+              In-App
+            </span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('code')}
             className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition shrink-0 ${
               activeTab === 'code' 
@@ -513,8 +529,13 @@ export default function DevStudioView() {
       {activeTab === 'wizard' && (
         <AcademicCenterSetupWizardModal
           inlineMode={true}
-          onClose={() => setActiveTab('branding')}
+          onClose={() => setActiveTab('in_app_master')}
         />
+      )}
+
+      {/* TAB: IN-APP INSTITUTIONAL MASTER ARCHITECTURE STUDIO */}
+      {activeTab === 'in_app_master' && (
+        <InAppMasterConfigStudio />
       )}
 
       {/* TAB: EXTERNAL SOFTWARE & OPEN API HUB */}
