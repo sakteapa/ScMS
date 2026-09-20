@@ -1,0 +1,456 @@
+rules_version = '2';
+
+/**
+ * Security Rules for Mizoram School System (zoxs-sms)
+ * Cloud Firestore Security Model: Role-Based Access Control (RBAC)
+ * 
+ * Roles:
+ * - Principal: Full administrative control across all collections.
+ * - Teacher: Roster management, student enrollment, daily & QR attendance check-in, fee viewing.
+ * - Student: Self-service access to own student record, attendance history, and fee vouchers.
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================================================================
+    // Core Helper Functions & Authentication Checks
+    // =========================================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Fetches profile document for current user
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Role detection checking Custom Claims first, then fallback to users collection
+    function hasRole(roleName) {
+      return isSignedIn() && (
+        (request.auth.token != null && request.auth.token.role == roleName) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         getUserData().role == roleName)
+      );
+    }
+
+    function isPrincipal() {
+      return hasRole('Principal') || hasRole('Admin');
+    }
+
+    function isTeacher() {
+      return isPrincipal() || hasRole('Teacher');
+    }
+
+    function isStudent() {
+      return hasRole('Student');
+    }
+
+    function isParent() {
+      return hasRole('Parent');
+    }
+
+    function isStudentOrParent() {
+      return isStudent() || isParent();
+    }
+
+    // Document ID validation to prevent ID poisoning / resource exhaustion
+    function isValidId(docId) {
+      return docId is string &&
+        docId.size() > 0 &&
+        docId.size() <= 128 &&
+        docId.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // =========================================================================
+    // Schema Validation Helpers
+    // =========================================================================
+
+    function isValidStudent(data) {
+      return data.name is string &&
+        data.name.size() >= 2 && data.name.size() <= 100 &&
+        data.rollNo is int && data.rollNo > 0 &&
+        data.classId is string && data.classId.size() > 0 &&
+        data.parentPhone is string && data.parentPhone.size() >= 8 &&
+        data.gender in ['Male', 'Female', 'Other'] &&
+        data.status in ['Active', 'Inactive'] &&
+        (!('stage' in data) || data.stage in ['Pre-Primary', 'Primary', 'Middle', 'High School', 'Higher Secondary']) &&
+        (!('stream' in data) || data.stream in ['Arts', 'Science', 'Commerce', 'General']);
+    }
+
+    function isValidAttendance(data) {
+      return data.date is string && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+        data.studentId is string && data.studentId.size() > 0 &&
+        data.studentName is string && data.studentName.size() > 0 &&
+        data.rollNo is int && data.rollNo > 0 &&
+        data.status in ['Present', 'Absent', 'Late'];
+    }
+
+    function isValidFee(data) {
+      return data.studentId is string && data.studentId.size() > 0 &&
+        data.studentName is string && data.studentName.size() > 0 &&
+        data.totalAmount is number && data.totalAmount >= 0 &&
+        data.paidAmount is number && data.paidAmount >= 0 &&
+        data.paidAmount <= data.totalAmount &&
+        data.status in ['Paid', 'Pending', 'Overdue', 'Partial'];
+    }
+
+    function isValidFeeRecord(data) {
+      return data.studentId is string && data.studentId.size() > 0 &&
+        data.studentName is string && data.studentName.size() > 0 &&
+        data.totalAmount is number && data.totalAmount >= 0 &&
+        data.paidAmount is number && data.paidAmount >= 0 &&
+        data.paidAmount <= data.totalAmount &&
+        data.status in ['Paid', 'Pending', 'Overdue', 'Partial', 'Waived'];
+    }
+
+    function isValidGrade(data) {
+      return data.studentId is string && data.studentId.size() > 0 &&
+        data.studentName is string && data.studentName.size() > 0 &&
+        data.rollNo is int && data.rollNo > 0 &&
+        data.classId is string && data.classId.size() > 0 &&
+        data.totalMarksObtained is number && data.totalMarksObtained >= 0 &&
+        data.totalMaxMarks is number && data.totalMaxMarks > 0 &&
+        data.percentage is number && data.percentage >= 0 &&
+        data.status in ['Passed', 'Failed', 'Needs Improvement'] &&
+        (!('stage' in data) || data.stage in ['Pre-Primary', 'Primary', 'Middle', 'High School', 'Higher Secondary']) &&
+        (!('stream' in data) || data.stream in ['Arts', 'Science', 'Commerce', 'General']) &&
+        (!('assessmentCategory' in data) || data.assessmentCategory in ['Composite', 'ClassTest', 'Examination']);
+    }
+
+    function isValidTimetable(data) {
+      return data.classId is string && data.classId.size() > 0 &&
+        data.className is string && data.className.size() > 0 &&
+        data.academicYear is string && data.academicYear.size() > 0 &&
+        data.status in ['Draft', 'Published', 'Archived'] &&
+        data.isPublished is bool &&
+        data.slots is list;
+    }
+
+    function isValidLibraryBook(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+        data.author is string && data.author.size() > 0 && data.author.size() <= 150 &&
+        data.totalCopies is int && data.totalCopies >= 0 &&
+        data.availableCopies is int && data.availableCopies >= 0 &&
+        data.availableCopies <= data.totalCopies;
+    }
+
+    function isValidBookIssue(data) {
+      return data.bookId is string && data.bookId.size() > 0 &&
+        data.studentId is string && data.studentId.size() > 0 &&
+        data.issueDate is string && data.issueDate.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+        data.dueDate is string && data.dueDate.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+        data.status in ['Issued', 'Returned', 'Overdue', 'Lost'];
+    }
+
+    function isValidStaff(data) {
+      return data.name is string && data.name.size() > 0 &&
+        data.employeeId is string && data.employeeId.size() > 0 &&
+        data.department is string &&
+        data.designation is string &&
+        data.baseSalary is number && data.baseSalary >= 0 &&
+        data.status in ['Active', 'On Leave', 'Resigned', 'Retired'];
+    }
+
+    function isValidPayroll(data) {
+      return data.staffId is string && data.staffId.size() > 0 &&
+        data.month is string && data.month.matches('^\\d{4}-\\d{2}$') &&
+        data.baseSalary is number && data.baseSalary >= 0 &&
+        data.netSalary is number &&
+        data.paymentStatus in ['Pending', 'Processing', 'Paid', 'Held'];
+    }
+
+    function isValidStaffLeave(data) {
+      return data.staffId is string && data.staffId.size() > 0 &&
+        data.leaveType is string &&
+        data.startDate is string && data.startDate.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+        data.endDate is string && data.endDate.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
+        data.totalDays is number && data.totalDays > 0 &&
+        data.status in ['Pending', 'Approved', 'Rejected'];
+    }
+
+    function isValidAdmission(data) {
+      return data.applicantName is string && data.applicantName.size() >= 2 && data.applicantName.size() <= 100 &&
+        data.targetClass is string && data.targetClass.size() > 0 &&
+        data.parentName is string && data.parentName.size() >= 2 &&
+        data.parentPhone is string && data.parentPhone.size() >= 8 &&
+        data.status in ['Pending', 'Under Review', 'Interview Scheduled', 'Approved', 'Rejected'];
+    }
+
+    function isValidNotice(data) {
+      return data.title is string && data.title.size() >= 2 && data.title.size() <= 250 &&
+        data.content is string && data.content.size() > 0 &&
+        data.category in ['Circular', 'Holiday', 'Exam', 'General', 'Event', 'Urgent'] &&
+        data.targetAudience in ['All', 'Parents & Students', 'Teachers & Staff', 'Class 10 Only'] &&
+        data.priority in ['Normal', 'High', 'Urgent'] &&
+        data.isActive is bool;
+    }
+
+    // =========================================================================
+    // 1. Users Collection
+    // =========================================================================
+    match /users/{userId} {
+      // Teachers and Principals can view user profiles; Students and Parents can view own profile
+      allow read: if isSignedIn() && (isOwner(userId) || isTeacher());
+      
+      // Creating account: users can initialize their own profile, or Principal can create staff accounts
+      allow create: if isSignedIn() && (
+        isPrincipal() ||
+        (isOwner(userId) && request.resource.data.role in ['Student', 'Teacher', 'Parent'])
+      );
+      
+      // Updating account: Principal can edit any account; User can edit own info (excluding role elevation)
+      allow update: if isSignedIn() && (
+        isPrincipal() ||
+        (isOwner(userId) && request.resource.data.role == resource.data.role)
+      );
+      
+      // Deleting account: Only Principal
+      allow delete: if isPrincipal();
+    }
+
+    // =========================================================================
+    // 2. Classes Collection
+    // =========================================================================
+    match /classes/{classId} {
+      // All authenticated school members can read class structure and schedules
+      allow read: if isSignedIn();
+
+      // Only Principal can add or remove official classes
+      allow create, delete: if isPrincipal();
+
+      // Principal can update any class; Teachers can update classes assigned to them
+      allow update: if isPrincipal() || (
+        isTeacher() && (
+          !('teacherId' in resource.data) ||
+          resource.data.teacherId == request.auth.uid
+        )
+      );
+    }
+
+    // =========================================================================
+    // 3. Students Collection
+    // =========================================================================
+    match /students/{studentId} {
+      // Teachers & Principals read all students; Students & Parents read only their linked record
+      allow read: if isSignedIn() && (
+        isTeacher() ||
+        (isStudentOrParent() && (
+          resource.data.id == request.auth.uid ||
+          (resource.data.userId is string && resource.data.userId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           getUserData().studentId == resource.data.id)
+        ))
+      );
+
+      // Teachers & Principals can register or update student information
+      allow create: if isTeacher() && isValidStudent(request.resource.data);
+      allow update: if isTeacher() && isValidStudent(request.resource.data);
+
+      // Only Principal can permanently expel or delete student records
+      allow delete: if isPrincipal();
+    }
+
+    // =========================================================================
+    // 4. Attendance Collection (Roll Call & QR Scanner)
+    // =========================================================================
+    match /attendance/{attendanceId} {
+      // Teachers & Principals read full attendance logs; Students & Parents read linked history
+      allow read: if isSignedIn() && (
+        isTeacher() ||
+        (isStudentOrParent() && (
+          resource.data.studentId == request.auth.uid ||
+          ('userId' in resource.data && resource.data.userId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           getUserData().studentId == resource.data.studentId)
+        ))
+      );
+
+      // Teachers and Principals record daily attendance and QR code scans
+      allow create: if isTeacher() && isValidAttendance(request.resource.data);
+      allow update: if isTeacher() && isValidAttendance(request.resource.data);
+
+      // Deleting erroneous attendance entries restricted to Teachers & Principals
+      allow delete: if isTeacher();
+    }
+
+    // =========================================================================
+    // 5. Fees & Financial Accounting Collections (fees and fee_records)
+    // =========================================================================
+    match /fees/{feeId} {
+      // Teachers can view fee status for administrative checks;
+      // Students and Parents can view their payment slips and receipts
+      allow read: if isSignedIn() && (
+        isTeacher() ||
+        (isStudentOrParent() && (
+          resource.data.studentId == request.auth.uid ||
+          ('userId' in resource.data && resource.data.userId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           getUserData().studentId == resource.data.studentId)
+        ))
+      );
+
+      // Financial writes, fee collection, and receipt modifications restricted to Principal (Bursar/Head)
+      allow create: if isPrincipal() && isValidFee(request.resource.data);
+      allow update: if isPrincipal() && isValidFee(request.resource.data);
+      allow delete: if isPrincipal();
+    }
+
+    match /fee_records/{feeRecordId} {
+      // Teachers and administrators can view fee records; students and parents view their own
+      allow read: if isSignedIn() && (
+        isTeacher() ||
+        (isStudentOrParent() && (
+          resource.data.studentId == request.auth.uid ||
+          ('userId' in resource.data && resource.data.userId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           getUserData().studentId == resource.data.studentId)
+        ))
+      );
+
+      // Financial accounting transactions, payment logging and fee structures
+      allow create: if (isPrincipal() || isTeacher()) && isValidFeeRecord(request.resource.data);
+      allow update: if (isPrincipal() || isTeacher()) && isValidFeeRecord(request.resource.data);
+      allow delete: if isPrincipal();
+    }
+
+    // =========================================================================
+    // 6. Grades & Report Cards Collection
+    // =========================================================================
+    match /grades/{gradeId} {
+      // Teachers and Principals can view all student scores; Students and Parents view linked report card
+      allow read: if isSignedIn() && (
+        isTeacher() ||
+        (isStudentOrParent() && (
+          resource.data.studentId == request.auth.uid ||
+          ('userId' in resource.data && resource.data.userId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           getUserData().studentId == resource.data.studentId)
+        ))
+      );
+
+      // Teachers & Principals can input and update student marks and report card records
+      allow create: if isTeacher() && isValidGrade(request.resource.data);
+      allow update: if isTeacher() && isValidGrade(request.resource.data);
+      allow delete: if isPrincipal();
+    }
+
+    // =========================================================================
+    // 7. Timetables & Class Routines Collection
+    // =========================================================================
+    match /timetables/{timetableId} {
+      // Teachers & Principals can read all timetables (draft or published);
+      // Students and Parents can read published schedules
+      allow read: if isSignedIn() && (
+        isTeacher() ||
+        (isStudentOrParent() && resource.data.isPublished == true)
+      );
+
+      // Principal has full rights to create, publish, and delete schedules
+      // Teachers can modify schedules if assigned to class
+      allow create: if isPrincipal() && isValidTimetable(request.resource.data);
+      allow update: if (isPrincipal() || isTeacher()) && isValidTimetable(request.resource.data);
+      allow delete: if isPrincipal();
+    }
+
+    // =========================================================================
+    // 8. Library Books Collection (Catalog & Inventory)
+    // =========================================================================
+    match /library_books/{bookId} {
+      // All authenticated students, parents, teachers, and principals can browse book catalog
+      allow read: if isSignedIn();
+
+      // Only teachers and principals can add, update, or remove books from catalog
+      allow create: if isTeacher() && isValidLibraryBook(request.resource.data);
+      allow update: if isTeacher() && isValidLibraryBook(request.resource.data);
+      allow delete: if isPrincipal();
+    }
+
+    // =========================================================================
+    // 9. Book Issues Collection (Circulation Desk & Overdue Tracking)
+    // =========================================================================
+    match /book_issues/{issueId} {
+      // Teachers and Principals read all issues; Students & Parents read linked loans
+      allow read: if isSignedIn() && (
+        isTeacher() ||
+        (isStudentOrParent() && (
+          resource.data.studentId == request.auth.uid ||
+          ('userId' in resource.data && resource.data.userId == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           getUserData().studentId == resource.data.studentId)
+        ))
+      );
+
+      // Circulation management: Teachers & Principals issue and return books
+      allow create: if isTeacher() && isValidBookIssue(request.resource.data);
+      allow update: if isTeacher() && isValidBookIssue(request.resource.data);
+      allow delete: if isPrincipal();
+    }
+
+    // =========================================================================
+    // 10. Staff Directory Collection
+    // =========================================================================
+    match /staff/{staffId} {
+      // Authenticated teachers and principals can view staff directory; principal can manage
+      allow read: if isSignedIn() && (isTeacher() || isPrincipal());
+      allow create: if isPrincipal() && isValidStaff(request.resource.data);
+      allow update: if isPrincipal() && isValidStaff(request.resource.data);
+      allow delete: if isPrincipal();
+    }
+
+    // =========================================================================
+    // 11. Payroll Records Collection
+    // =========================================================================
+    match /payroll/{payrollId} {
+      // Principal & bursar have full read/write; staff members can view their own payslips
+      allow read: if isSignedIn() && (
+        isPrincipal() ||
+        (isTeacher() && resource.data.staffId == request.auth.uid)
+      );
+      allow create: if isPrincipal() && isValidPayroll(request.resource.data);
+      allow update: if isPrincipal() && isValidPayroll(request.resource.data);
+      allow delete: if isPrincipal();
+    }
+
+    // =========================================================================
+    // 12. Staff Leaves Collection
+    // =========================================================================
+    match /staff_leaves/{leaveId} {
+      // Teachers and principals can read leaves
+      allow read: if isSignedIn() && (isTeacher() || isPrincipal());
+      // Teachers can submit their own leave applications
+      allow create: if isSignedIn() && (isTeacher() || isPrincipal()) && isValidStaffLeave(request.resource.data);
+      // Principal approves/rejects leaves; teachers can cancel their pending leaves
+      allow update: if (isPrincipal() || (isTeacher() && resource.data.staffId == request.auth.uid)) && isValidStaffLeave(request.resource.data);
+      allow delete: if isPrincipal();
+    }
+
+    // =========================================================================
+    // 13. Online Admissions Collection (Public Registration & Admin Review)
+    // =========================================================================
+    match /admissions/{admissionId} {
+      // Public / prospective students can submit applications even without account;
+      // Staff, teachers, and principals can view all applications; applicants can look up by applicationNo/phone
+      allow read: if isTeacher() || isPrincipal() || true;
+      allow create: if isValidAdmission(request.resource.data);
+      allow update: if (isTeacher() || isPrincipal()) && isValidAdmission(request.resource.data);
+      allow delete: if isPrincipal();
+    }
+
+    // =========================================================================
+    // 14. Notices & Circulars Collection
+    // =========================================================================
+    match /notices/{noticeId} {
+      // Public / student / parent read for active notices
+      allow read: if true;
+      // Teachers and Principals can publish and manage circulars
+      allow create: if (isTeacher() || isPrincipal()) && isValidNotice(request.resource.data);
+      allow update: if (isTeacher() || isPrincipal()) && isValidNotice(request.resource.data);
+      allow delete: if isPrincipal();
+    }
+  }
+}

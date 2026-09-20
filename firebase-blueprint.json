@@ -1,0 +1,402 @@
+{
+  "entities": {
+    "User": {
+      "collectionName": "users",
+      "description": "Authenticated accounts with role definitions (Principal, Teacher, Student, Parent)",
+      "fields": {
+        "uid": { "type": "string", "required": true, "description": "Auth UID" },
+        "email": { "type": "string", "required": true, "description": "Email address" },
+        "name": { "type": "string", "required": true, "description": "Full display name" },
+        "role": { "type": "string", "required": true, "description": "Role: Principal, Teacher, Student, or Parent" },
+        "phone": { "type": "string", "required": false, "description": "Contact phone number" },
+        "assignedClassId": { "type": "string", "required": false, "description": "Assigned class if Teacher" },
+        "studentId": { "type": "string", "required": false, "description": "Linked student ID if Student or Parent" },
+        "createdAt": { "type": "string", "required": true, "description": "ISO timestamp" }
+      }
+    },
+    "SchoolClass": {
+      "collectionName": "classes",
+      "description": "Class sections, educational stages (Pre-Primary to Higher Secondary), streams (Arts, Science, Commerce), and assigned teachers in Mizoram School System",
+      "fields": {
+        "id": { "type": "string", "required": true, "description": "Class identifier e.g. class_12_science_a, class_10_a, class_nursery" },
+        "name": { "type": "string", "required": true, "description": "Display name e.g. Class 12 - Science Section A, Class 10 - Section A" },
+        "classGrade": { "type": "string", "required": true, "description": "Grade level: Nursery, LKG, UKG, Class 1..Class 12" },
+        "stage": { "type": "string", "required": true, "description": "Educational tier: Pre-Primary, Primary, Middle, High School, Higher Secondary" },
+        "stream": { "type": "string", "required": false, "description": "Stream for HSSLC (11-12): Arts, Science, Commerce, or General" },
+        "section": { "type": "string", "required": true, "description": "Section identifier: A or B" },
+        "teacherName": { "type": "string", "required": true, "description": "Class teacher name" },
+        "teacherId": { "type": "string", "required": false, "description": "UID of assigned teacher" },
+        "roomNumber": { "type": "string", "required": true, "description": "Physical room number" },
+        "studentCount": { "type": "number", "required": false, "description": "Enrolled student count" },
+        "academicYear": { "type": "string", "required": false, "description": "Academic year session" }
+      }
+    },
+    "Student": {
+      "collectionName": "students",
+      "description": "Enrolled student records including grade level (Nursery to 12), stream (Arts/Science/Commerce), academic details and parent contacts",
+      "fields": {
+        "id": { "type": "string", "required": true, "description": "Student unique identifier" },
+        "name": { "type": "string", "required": true, "description": "Full student name" },
+        "rollNo": { "type": "number", "required": true, "description": "Class roll number" },
+        "classId": { "type": "string", "required": true, "description": "Reference to class document" },
+        "className": { "type": "string", "required": true, "description": "Display name of class" },
+        "stage": { "type": "string", "required": false, "description": "Educational stage: Pre-Primary, Primary, Middle, High School, Higher Secondary" },
+        "stream": { "type": "string", "required": false, "description": "Academic stream for higher secondary: Arts, Science, Commerce, or General" },
+        "parentPhone": { "type": "string", "required": true, "description": "Parent phone number" },
+        "gender": { "type": "string", "required": true, "description": "Gender: Male, Female, Other" },
+        "address": { "type": "string", "required": true, "description": "Veng or residential locality" },
+        "marks": { "type": "number", "required": true, "description": "Academic aggregate score" },
+        "status": { "type": "string", "required": true, "description": "Active or Inactive" },
+        "feeStatus": { "type": "string", "required": false, "description": "Fee clearance status: Cleared, Pending, Overdue, or Partial" },
+        "totalFeesDue": { "type": "number", "required": false, "description": "Total outstanding fees due in INR" },
+        "totalFeesPaid": { "type": "number", "required": false, "description": "Total fees paid to date in INR" },
+        "userId": { "type": "string", "required": false, "description": "Optional linked Student Auth UID" },
+        "createdAt": { "type": "string", "required": true, "description": "ISO timestamp" },
+        "remarks": { "type": "string", "required": false, "description": "Notes or conduct remarks" }
+      }
+    },
+    "Attendance": {
+      "collectionName": "attendance",
+      "description": "Daily attendance logs recorded by teachers or via QR badge scanner",
+      "fields": {
+        "id": { "type": "string", "required": true, "description": "Attendance log document ID" },
+        "date": { "type": "string", "required": true, "description": "Date format YYYY-MM-DD" },
+        "studentId": { "type": "string", "required": true, "description": "Reference to student ID" },
+        "studentName": { "type": "string", "required": true, "description": "Student full name" },
+        "rollNo": { "type": "number", "required": true, "description": "Student roll number" },
+        "classId": { "type": "string", "required": true, "description": "Class ID" },
+        "className": { "type": "string", "required": true, "description": "Class name" },
+        "status": { "type": "string", "required": true, "description": "Present, Absent, or Late" },
+        "markedAt": { "type": "string", "required": true, "description": "Time marked" },
+        "markedBy": { "type": "string", "required": false, "description": "Teacher UID or QR Scanner" },
+        "remarks": { "type": "string", "required": false, "description": "Optional verification notes" }
+      }
+    },
+    "Fee": {
+      "collectionName": "fees",
+      "description": "Tuition and school fee payment transactions and receipts",
+      "fields": {
+        "id": { "type": "string", "required": true, "description": "Fee record identifier" },
+        "studentId": { "type": "string", "required": true, "description": "Student ID" },
+        "studentName": { "type": "string", "required": true, "description": "Student name" },
+        "rollNo": { "type": "number", "required": true, "description": "Roll number" },
+        "classId": { "type": "string", "required": true, "description": "Class ID" },
+        "className": { "type": "string", "required": true, "description": "Class name" },
+        "feeMonth": { "type": "string", "required": true, "description": "Billing month e.g. September 2026" },
+        "totalAmount": { "type": "number", "required": true, "description": "Total fee amount in INR" },
+        "paidAmount": { "type": "number", "required": true, "description": "Amount paid in INR" },
+        "status": { "type": "string", "required": true, "description": "Paid, Pending, Overdue, Partial" },
+        "dueDate": { "type": "string", "required": true, "description": "Due date" },
+        "paymentMethod": { "type": "string", "required": true, "description": "UPI, Cash, Bank Transfer" },
+        "receiptNo": { "type": "string", "required": true, "description": "Unique receipt voucher number" },
+        "updatedAt": { "type": "string", "required": true, "description": "ISO timestamp" }
+      }
+    },
+    "FeeRecord": {
+      "collectionName": "fee_records",
+      "description": "Comprehensive student fee structures, transactions ledger, itemized breakdown, and audit payment history",
+      "fields": {
+        "id": { "type": "string", "required": true, "description": "Unique fee record ID" },
+        "studentId": { "type": "string", "required": true, "description": "Reference to student ID" },
+        "studentName": { "type": "string", "required": true, "description": "Student full name" },
+        "rollNo": { "type": "number", "required": true, "description": "Student roll number" },
+        "classId": { "type": "string", "required": true, "description": "Class identifier" },
+        "className": { "type": "string", "required": true, "description": "Class name e.g. Class 10 - Section A" },
+        "academicYear": { "type": "string", "required": true, "description": "Academic year e.g. 2026-2027" },
+        "feeMonth": { "type": "string", "required": true, "description": "Billing month e.g. September 2026" },
+        "feeType": { "type": "string", "required": true, "description": "Fee type: Tuition, Admission, Examination, Hostel, or Comprehensive" },
+        "feeStructure": { "type": "object", "required": true, "description": "Detailed fee component breakdown (tuition, exam, computer, lab, development, lateFine, concession)" },
+        "totalAmount": { "type": "number", "required": true, "description": "Net payable amount in INR" },
+        "paidAmount": { "type": "number", "required": true, "description": "Total amount paid to date in INR" },
+        "balanceAmount": { "type": "number", "required": true, "description": "Remaining unpaid balance in INR" },
+        "dueDate": { "type": "string", "required": true, "description": "Due date YYYY-MM-DD" },
+        "status": { "type": "string", "required": true, "description": "Paid, Pending, Overdue, Partial, or Waived" },
+        "paymentMethod": { "type": "string", "required": true, "description": "Most recent payment mode" },
+        "receiptNo": { "type": "string", "required": true, "description": "Official voucher number" },
+        "paymentHistory": { "type": "array", "required": true, "description": "List of individual payment transactions with receiptNo, amount, date, method, and cashier" },
+        "isFeeCleared": { "type": "boolean", "required": true, "description": "Whether full balance has been settled" },
+        "clearedAt": { "type": "string", "required": false, "description": "ISO timestamp of full clearance" },
+        "createdAt": { "type": "string", "required": true, "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "required": true, "description": "Last updated timestamp" }
+      }
+    },
+    "Grade": {
+      "collectionName": "grades",
+      "description": "Examination and continuous assessment scores, strictly separating Class Tests (Unit Tests) from Examinations (Term/Final Theory) with composite score calculation and MBSE report cards across Nursery to Class 12",
+      "fields": {
+        "id": { "type": "string", "required": true, "description": "Grade report identifier" },
+        "studentId": { "type": "string", "required": true, "description": "Student ID" },
+        "studentName": { "type": "string", "required": true, "description": "Student name" },
+        "rollNo": { "type": "number", "required": true, "description": "Roll number" },
+        "classId": { "type": "string", "required": true, "description": "Class ID" },
+        "className": { "type": "string", "required": true, "description": "Class name" },
+        "stage": { "type": "string", "required": false, "description": "Pre-Primary, Primary, Middle, High School, Higher Secondary" },
+        "stream": { "type": "string", "required": false, "description": "Arts, Science, Commerce, or General" },
+        "examTerm": { "type": "string", "required": true, "description": "Term 1 (Half Yearly 2026), Unit Tests, Annual Examination 2027" },
+        "assessmentCategory": { "type": "string", "required": false, "description": "Composite, ClassTest, or Examination" },
+        "academicYear": { "type": "string", "required": true, "description": "Academic session e.g. 2026-2027" },
+        "subjects": { "type": "array", "required": true, "description": "Subject scores breakdown with separate classTestObtained, classTestMax, examObtained, examMax, composite total, and grade" },
+        "totalClassTestObtained": { "type": "number", "required": false, "description": "Aggregate marks scored in Class Tests / Internal Assessment" },
+        "totalClassTestMax": { "type": "number", "required": false, "description": "Maximum marks possible for Class Tests" },
+        "totalExamObtained": { "type": "number", "required": false, "description": "Aggregate marks scored in main Examinations" },
+        "totalExamMax": { "type": "number", "required": false, "description": "Maximum marks possible for main Examinations" },
+        "totalMarksObtained": { "type": "number", "required": true, "description": "Sum of composite marks obtained (Class Tests + Exams)" },
+        "totalMaxMarks": { "type": "number", "required": true, "description": "Maximum composite marks possible" },
+        "percentage": { "type": "number", "required": true, "description": "Calculated composite percentage" },
+        "overallGrade": { "type": "string", "required": true, "description": "MBSE letter grade A1, A2, etc." },
+        "status": { "type": "string", "required": true, "description": "Passed, Failed, Needs Improvement" },
+        "rank": { "type": "number", "required": false, "description": "Class standing rank" },
+        "teacherRemarks": { "type": "string", "required": true, "description": "Teacher assessment remarks" },
+        "updatedAt": { "type": "string", "required": true, "description": "ISO timestamp" }
+      }
+    },
+    "Timetable": {
+      "collectionName": "timetables",
+      "description": "Weekly class schedules, period breakdown, subject assignments, and teacher routine mapping",
+      "fields": {
+        "id": { "type": "string", "required": true, "description": "Timetable identifier" },
+        "classId": { "type": "string", "required": true, "description": "Class identifier e.g. class_10_a" },
+        "className": { "type": "string", "required": true, "description": "Display class name" },
+        "academicYear": { "type": "string", "required": true, "description": "Academic year e.g. 2026-2027" },
+        "status": { "type": "string", "required": true, "description": "Draft, Published, or Archived" },
+        "isPublished": { "type": "boolean", "required": true, "description": "Whether routine is published for students" },
+        "slots": { "type": "array", "required": true, "description": "List of scheduled periods with day, subject, teacher, room, and timings" },
+        "updatedBy": { "type": "string", "required": true, "description": "User or role that last modified schedule" },
+        "updatedAt": { "type": "string", "required": true, "description": "ISO timestamp" }
+      }
+    },
+    "LibraryBook": {
+      "collectionName": "library_books",
+      "description": "School library book inventory tracking titles, authors, category, shelf rack, total copies, and real-time available copies",
+      "fields": {
+        "id": { "type": "string", "required": true, "description": "Unique book identifier or accession code" },
+        "title": { "type": "string", "required": true, "description": "Book title e.g. Hawilopari" },
+        "author": { "type": "string", "required": true, "description": "Author name e.g. B. Lalthangliana" },
+        "isbn": { "type": "string", "required": true, "description": "ISBN or Accession number" },
+        "category": { "type": "string", "required": true, "description": "Subject or literary genre e.g. Mizo Literature, Science, Mathematics" },
+        "totalCopies": { "type": "number", "required": true, "description": "Total count of copies acquired" },
+        "availableCopies": { "type": "number", "required": true, "description": "Count of copies currently on shelf and available for issue" },
+        "shelfLocation": { "type": "string", "required": true, "description": "Library rack and shelf location e.g. Shelf A-2" },
+        "publishedYear": { "type": "number", "required": false, "description": "Publication year" },
+        "publisher": { "type": "string", "required": false, "description": "Publisher or press name" },
+        "language": { "type": "string", "required": false, "description": "Language: Mizo, English, Hindi" },
+        "description": { "type": "string", "required": false, "description": "Brief book synopsis or course reference notes" },
+        "createdAt": { "type": "string", "required": true, "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "required": true, "description": "ISO timestamp" }
+      }
+    },
+    "BookIssue": {
+      "collectionName": "book_issues",
+      "description": "Circulation desk loan records tracking issued books, borrowing student, issue date, due date, return date, and fines",
+      "fields": {
+        "id": { "type": "string", "required": true, "description": "Issue transaction identifier" },
+        "bookId": { "type": "string", "required": true, "description": "Reference to library_books document ID" },
+        "bookTitle": { "type": "string", "required": true, "description": "Title of borrowed book" },
+        "bookIsbn": { "type": "string", "required": false, "description": "Book ISBN or accession number" },
+        "studentId": { "type": "string", "required": true, "description": "Reference to borrowing student ID" },
+        "studentName": { "type": "string", "required": true, "description": "Full student name" },
+        "rollNo": { "type": "number", "required": true, "description": "Class roll number" },
+        "classId": { "type": "string", "required": true, "description": "Student class ID" },
+        "className": { "type": "string", "required": true, "description": "Class name e.g. Class 10 - Section A" },
+        "issueDate": { "type": "string", "required": true, "description": "Loan date format YYYY-MM-DD" },
+        "dueDate": { "type": "string", "required": true, "description": "Return deadline format YYYY-MM-DD" },
+        "returnDate": { "type": "string", "required": false, "description": "Actual return date YYYY-MM-DD or null if still issued" },
+        "status": { "type": "string", "required": true, "description": "Circulation status: Issued, Returned, Overdue, or Lost" },
+        "fineAmount": { "type": "number", "required": true, "description": "Late fine in INR (₹5/day after due date)" },
+        "finePaid": { "type": "boolean", "required": false, "description": "Whether late fine has been collected" },
+        "remarks": { "type": "string", "required": false, "description": "Librarian loan notes or condition remark" },
+        "issuedBy": { "type": "string", "required": true, "description": "Librarian or staff name" },
+        "returnedBy": { "type": "string", "required": false, "description": "Staff member who received the return" },
+        "createdAt": { "type": "string", "required": true, "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "required": true, "description": "ISO timestamp" }
+      }
+    },
+    "Staff": {
+      "collectionName": "staff",
+      "description": "Faculty, administrative personnel, and support staff records",
+      "fields": {
+        "id": { "type": "string", "required": true, "description": "Staff ID" },
+        "employeeId": { "type": "string", "required": true, "description": "School Employee ID e.g. ZOXS-STF-01" },
+        "name": { "type": "string", "required": true, "description": "Full staff name" },
+        "gender": { "type": "string", "required": true, "description": "Gender: Male, Female, Other" },
+        "phone": { "type": "string", "required": true, "description": "Contact phone number" },
+        "email": { "type": "string", "required": true, "description": "Email address" },
+        "address": { "type": "string", "required": true, "description": "Residential locality in Mizoram" },
+        "qualification": { "type": "string", "required": true, "description": "Educational degrees and certifications" },
+        "department": { "type": "string", "required": true, "description": "Department: Teaching, Administration, Science & Labs, etc." },
+        "designation": { "type": "string", "required": true, "description": "Job designation" },
+        "joiningDate": { "type": "string", "required": true, "description": "Date of appointment YYYY-MM-DD" },
+        "employmentType": { "type": "string", "required": true, "description": "Full-time, Contract, Part-time, Guest" },
+        "baseSalary": { "type": "number", "required": true, "description": "Monthly basic salary in INR" },
+        "allowances": { "type": "map", "required": true, "description": "HRA, DA, Medical, Special allowances" },
+        "status": { "type": "string", "required": true, "description": "Active, On Leave, Resigned, Retired" },
+        "bankDetails": { "type": "map", "required": true, "description": "Account number, bank name, IFSC, UPI ID" },
+        "epfNumber": { "type": "string", "required": false, "description": "EPF registration number" }
+      }
+    },
+    "Payroll": {
+      "collectionName": "payroll",
+      "description": "Monthly salary generation and staff disbursement records",
+      "fields": {
+        "id": { "type": "string", "required": true, "description": "Payroll record ID" },
+        "payslipNumber": { "type": "string", "required": true, "description": "Official payslip code e.g. SLIP-202609-001" },
+        "month": { "type": "string", "required": true, "description": "Salary month YYYY-MM" },
+        "staffId": { "type": "string", "required": true, "description": "Reference to staff document" },
+        "staffName": { "type": "string", "required": true, "description": "Staff employee name" },
+        "employeeId": { "type": "string", "required": true, "description": "Staff employee code" },
+        "designation": { "type": "string", "required": true, "description": "Job title" },
+        "department": { "type": "string", "required": true, "description": "Department" },
+        "baseSalary": { "type": "number", "required": true, "description": "Base salary in INR" },
+        "allowances": { "type": "map", "required": true, "description": "HRA, DA, bonus, conveyance allowances" },
+        "totalEarnings": { "type": "number", "required": true, "description": "Gross monthly earnings" },
+        "deductions": { "type": "map", "required": true, "description": "EPF, professional tax, LWP, TDS deductions" },
+        "totalDeductions": { "type": "number", "required": true, "description": "Total statutory and advance deductions" },
+        "netSalary": { "type": "number", "required": true, "description": "Net payable salary in INR" },
+        "workingDays": { "type": "number", "required": true, "description": "Standard working days in month" },
+        "presentDays": { "type": "number", "required": true, "description": "Days attended" },
+        "paidLeaveDays": { "type": "number", "required": true, "description": "Approved paid leaves" },
+        "unpaidLeaveDays": { "type": "number", "required": true, "description": "Leave without pay days" },
+        "paymentStatus": { "type": "string", "required": true, "description": "Pending, Processing, Paid, or Held" },
+        "paymentDate": { "type": "string", "required": false, "description": "Disbursement date YYYY-MM-DD" },
+        "paymentMethod": { "type": "string", "required": true, "description": "Bank Transfer, Cash, UPI, Cheque" },
+        "transactionRef": { "type": "string", "required": false, "description": "Bank UTR or cash voucher reference" },
+        "disbursedBy": { "type": "string", "required": false, "description": "Officer who authorized disbursement" }
+      }
+    },
+    "StaffLeave": {
+      "collectionName": "staff_leaves",
+      "description": "Staff leave applications, approvals, and absence records",
+      "fields": {
+        "id": { "type": "string", "required": true, "description": "Leave application ID" },
+        "staffId": { "type": "string", "required": true, "description": "Staff ID" },
+        "staffName": { "type": "string", "required": true, "description": "Staff member name" },
+        "employeeId": { "type": "string", "required": true, "description": "Employee ID" },
+        "designation": { "type": "string", "required": true, "description": "Job title" },
+        "department": { "type": "string", "required": true, "description": "Department" },
+        "leaveType": { "type": "string", "required": true, "description": "Casual, Medical, Earned, Duty, LWP" },
+        "startDate": { "type": "string", "required": true, "description": "Start date YYYY-MM-DD" },
+        "endDate": { "type": "string", "required": true, "description": "End date YYYY-MM-DD" },
+        "totalDays": { "type": "number", "required": true, "description": "Number of days requested" },
+        "reason": { "type": "string", "required": true, "description": "Reason for leave" },
+        "status": { "type": "string", "required": true, "description": "Pending, Approved, Rejected" },
+        "appliedDate": { "type": "string", "required": true, "description": "Application date YYYY-MM-DD" },
+        "reviewedBy": { "type": "string", "required": false, "description": "Approving administrator" },
+        "reviewedDate": { "type": "string", "required": false, "description": "Review date" }
+      }
+    },
+    "Admission": {
+      "collectionName": "admissions",
+      "description": "Online admission applications, document verification, interview scheduling, and enrollment tracking",
+      "fields": {
+        "id": { "type": "string", "required": true, "description": "Admission document ID" },
+        "applicationNo": { "type": "string", "required": true, "description": "Official application number e.g. ADM-2026-001" },
+        "applicantName": { "type": "string", "required": true, "description": "Full student applicant name" },
+        "dob": { "type": "string", "required": true, "description": "Date of birth YYYY-MM-DD" },
+        "gender": { "type": "string", "required": true, "description": "Male, Female, Other" },
+        "bloodGroup": { "type": "string", "required": false, "description": "Blood group" },
+        "targetClass": { "type": "string", "required": true, "description": "Target admission grade e.g. Class 10" },
+        "academicYear": { "type": "string", "required": true, "description": "Academic session e.g. 2026-2027" },
+        "parentName": { "type": "string", "required": true, "description": "Parent or legal guardian name" },
+        "parentRelation": { "type": "string", "required": true, "description": "Father, Mother, Guardian" },
+        "parentPhone": { "type": "string", "required": true, "description": "Parent mobile contact" },
+        "parentEmail": { "type": "string", "required": false, "description": "Parent email address" },
+        "address": { "type": "string", "required": true, "description": "Residential Veng / locality" },
+        "city": { "type": "string", "required": true, "description": "City or Town e.g. Aizawl" },
+        "district": { "type": "string", "required": true, "description": "District in Mizoram" },
+        "previousSchool": { "type": "string", "required": true, "description": "Previous institution attended" },
+        "previousBoard": { "type": "string", "required": true, "description": "MBSE, CBSE, ICSE, Other" },
+        "previousMarksPercentage": { "type": "number", "required": true, "description": "Aggregate score percentage" },
+        "mediumOfInstruction": { "type": "string", "required": true, "description": "English or Mizo" },
+        "documents": { "type": "object", "required": true, "description": "Checklist of submitted certificates" },
+        "status": { "type": "string", "required": true, "description": "Pending, Under Review, Interview Scheduled, Approved, Rejected" },
+        "interviewDate": { "type": "string", "required": false, "description": "Scheduled interview date" },
+        "interviewVenue": { "type": "string", "required": false, "description": "Interview location" },
+        "reviewerRemarks": { "type": "string", "required": false, "description": "Staff or principal assessment notes" },
+        "assignedClassId": { "type": "string", "required": false, "description": "Assigned class ID if enrolled" },
+        "assignedRollNo": { "type": "number", "required": false, "description": "Assigned roll number if enrolled" },
+        "appliedDate": { "type": "string", "required": true, "description": "Application submission date YYYY-MM-DD" },
+        "createdAt": { "type": "string", "required": true, "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "required": true, "description": "ISO timestamp" }
+      }
+    },
+    "Notice": {
+      "collectionName": "notices",
+      "description": "Institutional circulars, holiday declarations, MBSE exam routines, and general school announcements",
+      "fields": {
+        "id": { "type": "string", "required": true, "description": "Notice unique ID" },
+        "noticeNo": { "type": "string", "required": true, "description": "Circular reference number e.g. CIR/MBSE/2026/09-01" },
+        "title": { "type": "string", "required": true, "description": "Notice headline" },
+        "content": { "type": "string", "required": true, "description": "Announcement body and instructions" },
+        "category": { "type": "string", "required": true, "description": "Circular, Holiday, Exam, General, Event, Urgent" },
+        "targetAudience": { "type": "string", "required": true, "description": "All, Parents & Students, Teachers & Staff, Class 10 Only" },
+        "priority": { "type": "string", "required": true, "description": "Normal, High, Urgent" },
+        "publishDate": { "type": "string", "required": true, "description": "Publication date YYYY-MM-DD" },
+        "expiryDate": { "type": "string", "required": false, "description": "Expiration or event date YYYY-MM-DD" },
+        "isActive": { "type": "boolean", "required": true, "description": "Whether circular is active and visible" },
+        "isPinned": { "type": "boolean", "required": true, "description": "Featured pin at top of board" },
+        "authorName": { "type": "string", "required": true, "description": "Issuing officer name" },
+        "authorDesignation": { "type": "string", "required": true, "description": "Designation e.g. Principal" },
+        "attachmentName": { "type": "string", "required": false, "description": "Optional PDF attachment name" },
+        "attachmentUrl": { "type": "string", "required": false, "description": "Download link or URL" },
+        "createdAt": { "type": "string", "required": true, "description": "ISO timestamp" },
+        "updatedAt": { "type": "string", "required": true, "description": "ISO timestamp" }
+      }
+    }
+  },
+  "roles": {
+    "Principal": {
+      "description": "School head administrator with complete read and write access across all collections",
+      "collections": {
+        "users": ["create", "read", "update", "delete"],
+        "classes": ["create", "read", "update", "delete"],
+        "students": ["create", "read", "update", "delete"],
+        "fees": ["create", "read", "update", "delete"],
+        "fee_records": ["create", "read", "update", "delete"],
+        "attendance": ["create", "read", "update", "delete"],
+        "grades": ["create", "read", "update", "delete"],
+        "timetables": ["create", "read", "update", "delete"],
+        "library_books": ["create", "read", "update", "delete"],
+        "book_issues": ["create", "read", "update", "delete"],
+        "staff": ["create", "read", "update", "delete"],
+        "payroll": ["create", "read", "update", "delete"],
+        "staff_leaves": ["create", "read", "update", "delete"],
+        "admissions": ["create", "read", "update", "delete"],
+        "notices": ["create", "read", "update", "delete"]
+      }
+    },
+    "Teacher": {
+      "description": "Faculty member responsible for student roster and daily attendance marking",
+      "collections": {
+        "users": ["read"],
+        "classes": ["read", "update"],
+        "students": ["create", "read", "update"],
+        "fees": ["read", "create", "update"],
+        "fee_records": ["read", "create", "update"],
+        "attendance": ["create", "read", "update", "delete"],
+        "grades": ["create", "read", "update", "delete"],
+        "timetables": ["read", "update"],
+        "library_books": ["create", "read", "update"],
+        "book_issues": ["create", "read", "update"],
+        "admissions": ["read", "update"],
+        "notices": ["read", "create", "update"]
+      }
+    },
+    "Student": {
+      "description": "Enrolled student or parent with self-service viewing access",
+      "collections": {
+        "users": ["read"],
+        "classes": ["read"],
+        "students": ["read_self"],
+        "fees": ["read_self"],
+        "fee_records": ["read_self"],
+        "attendance": ["read_self"],
+        "grades": ["read_self"],
+        "timetables": ["read"],
+        "library_books": ["read"],
+        "book_issues": ["read_self"],
+        "admissions": ["create", "read_self"],
+        "notices": ["read"]
+      }
+    }
+  }
+}
