@@ -1,0 +1,9 @@
+{
+  "appId": "edu.mizoram.school.sms",
+  "appName": "Mizoram School System",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

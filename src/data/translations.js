@@ -1,0 +1,115 @@
+// Global Localization Dictionary: English & Mizo (Mizoram)
+export const TRANSLATIONS = {
+  en: {
+    // Navigation
+    dashboard: 'Dashboard',
+    academics: 'Academics & Exams',
+    report_cards: 'Report Card Generator',
+    certificates: 'Certificates & TC',
+    routine: 'Class Routine & Time Table',
+    calendar: 'Calendar & Vacations',
+    attendance: 'QR Scanner & Attendance',
+    leave_management: 'Leave Applications',
+    hostel: 'Hostel Management Suite',
+    financials: 'Financials & Fees',
+    students: 'Students Directory',
+    portal: 'Student Portal',
+    ward_portal: 'Ward Portal',
+    library: 'Library Management',
+    staff_payroll: 'Staff & Governance',
+    admissions: 'Online Admissions',
+    transport: 'Transport & Bus Fleet',
+    notices: 'Notice Board',
+    dev_studio: 'Developer Studio',
+
+    // Common Actions
+    save: 'Save Changes',
+    cancel: 'Cancel',
+    search: 'Search...',
+    filter: 'Filter',
+    export_csv: 'Export CSV',
+    print: 'Print',
+    delete: 'Delete',
+    edit: 'Edit',
+    apply: 'Apply',
+    confirm: 'Confirm',
+    close: 'Close',
+    view_details: 'View Details',
+    download: 'Download',
+
+    // Statuses
+    cleared: 'Cleared',
+    pending: 'Pending',
+    overdue: 'Overdue',
+    approved: 'Approved',
+    rejected: 'Rejected',
+    present: 'Present',
+    absent: 'Absent',
+    late: 'Late',
+    live: 'LIVE',
+
+    // Dashboard & Metrics
+    total_students: 'Total Enrolled Students',
+    attendance_rate: 'Average Attendance',
+    fees_collected: 'Total Fees Collected',
+    active_notices: 'Active Circulars',
+    recent_activity: 'Recent Campus Activity',
+    live_broadcast: 'Live Classroom Broadcast'
+  },
+  mizo: {
+    // Navigation
+    dashboard: 'Pualpui (Dashboard)',
+    academics: 'Zirlaibuk & Exam',
+    report_cards: 'Report Card Buatsaihna',
+    certificates: 'Certificate & TC Lakna',
+    routine: 'Class Routine & Hunbi',
+    calendar: 'Chawlh & Hunpawimawh',
+    attendance: 'QR Attendance Scanner',
+    leave_management: 'Chawlh Dilna (Leave)',
+    hostel: 'Hostel Enkawlna',
+    financials: 'Sum & Fee Khawnna',
+    students: 'Zirlai Hming Ziahna',
+    portal: 'Zirlai Pual (Portal)',
+    ward_portal: 'Nu & Pa Pual (Portal)',
+    library: 'Lehkhabu In (Library)',
+    staff_payroll: 'Zirtirtu & Hlawh (Staff)',
+    admissions: 'Admission Tharlam',
+    transport: 'School Bus & Motor',
+    notices: 'Hriattirna (Notices)',
+    dev_studio: 'Developer Studio',
+
+    // Common Actions
+    save: 'Vawng Ṭha Rawh',
+    cancel: 'Sut Leh Rawh',
+    search: 'Zawnna...',
+    filter: 'Thlitfimna',
+    export_csv: 'CSV-a Download',
+    print: 'Print Chhuahna',
+    delete: 'Nuaibo Rawh',
+    edit: 'Siamṭhatna',
+    apply: 'Hman nghalna',
+    confirm: 'Nemngheh Rawh',
+    close: 'Kharna',
+    view_details: 'Chipchiar Enna',
+    download: 'Download Rawh',
+
+    // Statuses
+    cleared: 'Pek Tling Tlak',
+    pending: 'La Ngaihtuah Mek',
+    overdue: 'Hun Pel Tawh',
+    approved: 'Pawm A Ni',
+    rejected: 'Hnar A Ni',
+    present: 'Kal',
+    absent: 'Kal Lo',
+    late: 'Tlaitlai',
+    live: 'A NGHALIN',
+
+    // Dashboard & Metrics
+    total_students: 'Zirlai Awm Zawng',
+    attendance_rate: 'Kal Rualkhai Dan',
+    fees_collected: 'Fee Tling Khawm',
+    active_notices: 'Hriattirna Chhuak',
+    recent_activity: 'Thil Thleng Tharlam',
+    live_broadcast: 'Live Classroom Zirtirna'
+  }
+};
