@@ -65,6 +65,7 @@ import { useAuth } from '../context/AuthContext';
 import PluginConfigModal from '../components/PluginConfigModal';
 import WebsiteEditorModal from '../components/WebsiteEditorModal';
 import AcademicCenterSetupWizardModal from '../components/AcademicCenterSetupWizardModal';
+import ExternalSoftwareApiHub from '../components/ExternalSoftwareApiHub';
 
 export default function DevStudioView() {
   const { user } = useAuth();
@@ -493,6 +494,18 @@ export default function DevStudioView() {
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
             )}
           </button>
+
+          <button
+            onClick={() => setActiveTab('api_hub')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition shrink-0 ${
+              activeTab === 'api_hub'
+                ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 font-bold'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <Zap className="w-4 h-4 text-amber-400" />
+            <span>External Software &amp; APIs</span>
+          </button>
         </div>
       </div>
 
@@ -502,6 +515,11 @@ export default function DevStudioView() {
           inlineMode={true}
           onClose={() => setActiveTab('branding')}
         />
+      )}
+
+      {/* TAB: EXTERNAL SOFTWARE & OPEN API HUB */}
+      {activeTab === 'api_hub' && (
+        <ExternalSoftwareApiHub />
       )}
 
       {/* TAB: CLOUD SYNC — Superadmin Firebase wiring panel */}
