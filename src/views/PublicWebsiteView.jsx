@@ -43,7 +43,7 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
   const contact = cfg.contact || {};
   const social = cfg.socialLinks || {};
 
-  const schoolDisplayName = cfg.schoolName || activeSchoolInfo?.name || 'Oxford Higher Academy';
+  const schoolDisplayName = cfg.schoolName || activeSchoolInfo?.name || 'One Heart Academy';
   const affiliationDisplayName = cfg.affiliationBadge || activeSchoolInfo?.affiliationBadge || 'MBSE Affiliated • Lunglawn, Lunglei';
   const schoolMotto = cfg.motto || activeSchoolInfo?.motto || 'Excellence in Truth & Service';
   const contactAddress = contact.address || activeSchoolInfo?.address || 'Lunglawn, Lunglei, Mizoram - 796701';

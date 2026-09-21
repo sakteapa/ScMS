@@ -2945,7 +2945,7 @@ console.log("[Zoxs Script Studio] In-App Custom Script executed successfully at:
 };
 
 export const INITIAL_SYSTEM_CONFIG = {
-  schoolName: 'OHA (Oxford Higher Academy)',
+  schoolName: 'OHA (One Heart Academy)',
   motto: 'Knowledge is Light (Hriatna chu Eng a ni)',
   establishedYear: '1998',
   affiliationNo: 'MBSE-HSS-LGL-0421',
@@ -4251,7 +4251,7 @@ export const INITIAL_STUDY_MATERIALS = [
 // 8. OFFICIAL SCHOOL SEAL & PRINCIPAL SIGNATURE CONFIG
 // ==========================================
 export const INITIAL_SEAL_CONFIG = {
-  schoolCrestText: 'OHA • OXFORD HIGHER ACADEMY • LUNGLAWN, LUNGLEI',
+  schoolCrestText: 'OHA • ONE HEART ACADEMY • LUNGLAWN, LUNGLEI',
   affiliationNumber: 'MBSE Affiliation No: MBSE-HSS-LGL-0421',
   mottoText: 'KNOWLEDGE IS LIGHT',
   establishedYear: '1998',
@@ -4276,7 +4276,7 @@ export const INITIAL_SEAL_CONFIG = {
 // ==========================================
 export const INITIAL_WEBSITE_CONFIG = {
   enabled: true,
-  schoolName: 'OHA (Oxford Higher Academy)',
+  schoolName: 'OHA (One Heart Academy)',
   tagline: 'Excellence in Education, Discipline & Moral Character',
   motto: 'Knowledge is Light (Hriatna chu Eng a ni)',
   establishedYear: '1998',
@@ -4320,7 +4320,7 @@ export const INITIAL_WEBSITE_CONFIG = {
     designation: 'Principal & Head of Institution',
     photoUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80',
     quote: 'Our mission is to nurture not just academic toppers, but compassionate leaders grounded in moral integrity and service to Mizoram and the nation.',
-    fullMessage: 'At OHA (Oxford Higher Academy), Lunglawn, Lunglei, we believe that true education enlightens the mind and strengthens character. For nearly three decades, our institution has stood as a beacon of academic rigor and moral discipline in southern Mizoram. We warmly welcome every student and parent to join our OHA family.'
+    fullMessage: 'At OHA (One Heart Academy), Lunglawn, Lunglei, we believe that true education enlightens the mind and strengthens character. For nearly three decades, our institution has stood as a beacon of academic rigor and moral discipline in southern Mizoram. We warmly welcome every student and parent to join our OHA family.'
   },
   programs: [
     {
@@ -4501,7 +4501,7 @@ export const INITIAL_FEE_HEADS = [
 export const INITIAL_DOCUMENT_TEMPLATES = {
   transferCertificate: {
     header: 'TRANSFER CERTIFICATE (TC) / SCHOOL LEAVING RECORD',
-    subHeader: 'Issued under the authority of Oxford Higher Academy, Lunglawn, Lunglei (MBSE Affiliated)',
+    subHeader: 'Issued under the authority of One Heart Academy, Lunglawn, Lunglei (MBSE Affiliated)',
     bodyTemplate: 'This is to certify that {{studentName}}, Son/Daughter of {{guardianName}}, bearing Admission No: {{admissionNo}} and Roll No: {{rollNo}}, was admitted to this institution in Class {{class}} on {{admissionDate}}. He/She has paid all institutional school dues and has passed the qualifying board assessments with exemplary conduct. He/She is granted this Transfer Certificate to pursue further education.',
     conductRemark: 'Exemplary and Diligent',
     signatoryLeft: 'Class Teacher',

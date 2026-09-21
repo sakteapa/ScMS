@@ -637,7 +637,7 @@ export default function StudentSuspensionModal({ isOpen, student, onClose }) {
                 {/* Header */}
                 <div className="text-center border-b-2 border-slate-900 pb-4 space-y-1">
                   <h1 className="text-xl font-bold uppercase tracking-wider text-slate-950 font-['Outfit']">
-                    {systemConfig?.schoolName || 'OHA (Oxford Higher Academy)'}
+                    {systemConfig?.schoolName || 'OHA (One Heart Academy)'}
                   </h1>
                   <p className="text-xs text-slate-600 font-sans">
                     Affiliation: {systemConfig?.affiliationNo || 'MBSE'} • Est. {systemConfig?.establishedYear || '1998'}
@@ -696,7 +696,7 @@ export default function StudentSuspensionModal({ isOpen, student, onClose }) {
                       {sealConfig?.principalSignatoryName || 'Dr. F. Lalhmachhuana'}
                     </p>
                     <p className="font-bold text-slate-900">{sealConfig?.principalDesignation || 'Principal & Head of Institution'}</p>
-                    <p className="text-[10px] text-slate-500">{sealConfig?.schoolCrestText || 'OHA • OXFORD HIGHER ACADEMY • LUNGLAWN, LUNGLEI'}</p>
+                    <p className="text-[10px] text-slate-500">{sealConfig?.schoolCrestText || 'OHA • ONE HEART ACADEMY • LUNGLAWN, LUNGLEI'}</p>
                   </div>
                 </div>
               </div>

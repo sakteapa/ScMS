@@ -38,7 +38,7 @@ export default function OnlineCheckoutModal({ isOpen, onClose, student, feeAmoun
 
   if (!isOpen) return null;
 
-  const schoolName = systemConfig?.schoolName || 'OHA (Oxford Higher Academy)';
+  const schoolName = systemConfig?.schoolName || 'OHA (One Heart Academy)';
   const activeGwKey = paymentConfig?.activeGateway || 'direct_upi';
   const activeGw = paymentConfig?.gateways?.[activeGwKey] || {};
   const upiId = activeGw.upiId || 'ohalunglawn@oksbi';

@@ -402,7 +402,7 @@ export default function OfficialSealSignatureModal({ isOpen, onClose }) {
                   GOVERNMENT OF MIZORAM • SCHOOL EDUCATION
                 </span>
                 <h4 className="text-base font-extrabold tracking-wide uppercase font-serif text-slate-950 mt-1">
-                  {formData.schoolCrestText || 'OHA • OXFORD HIGHER ACADEMY • LUNGLAWN, LUNGLEI'}
+                  {formData.schoolCrestText || 'OHA • ONE HEART ACADEMY • LUNGLAWN, LUNGLEI'}
                 </h4>
                 <p className="text-[11px] text-slate-600 font-mono">
                   {formData.affiliationNumber}

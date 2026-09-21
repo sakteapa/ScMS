@@ -120,8 +120,25 @@ export function SchoolProvider({ children }) {
           localStorage.setItem(`zoxs_${activeSchoolId}_website_config`, JSON.stringify(updated));
           return updated;
         }
-        if (key === 'seal_config' && (parsed?.schoolCrestText?.includes('MIZORAM HIGHER SECONDARY') || !parsed?.schoolCrestText?.includes('LUNGLAWN'))) {
-          const updated = { ...parsed, schoolCrestText: fallback.schoolCrestText, principalSignatoryName: fallback.principalSignatoryName, mottoText: fallback.mottoText };
+        if (key === 'system_config' && (parsed?.schoolName?.includes('Oxford') || parsed?.schoolName?.includes('MIZORAM HIGHER SECONDARY'))) {
+          const updated = { ...parsed, schoolName: 'OHA (One Heart Academy)' };
+          localStorage.setItem(`zoxs_${activeSchoolId}_system_config`, JSON.stringify(updated));
+          return updated;
+        }
+        if (key === 'website_config' && (parsed?.schoolName?.includes('Oxford') || parsed?.principalMessage?.fullMessage?.includes('Oxford'))) {
+          const updated = {
+            ...parsed,
+            schoolName: 'OHA (One Heart Academy)',
+            principalMessage: {
+              ...(parsed.principalMessage || {}),
+              fullMessage: fallback.principalMessage?.fullMessage || 'At OHA (One Heart Academy), Lunglawn, Lunglei, we believe that true education enlightens the mind and strengthens character.'
+            }
+          };
+          localStorage.setItem(`zoxs_${activeSchoolId}_website_config`, JSON.stringify(updated));
+          return updated;
+        }
+        if (key === 'seal_config' && (parsed?.schoolCrestText?.includes('OXFORD') || parsed?.schoolCrestText?.includes('MIZORAM HIGHER SECONDARY') || !parsed?.schoolCrestText?.includes('LUNGLAWN'))) {
+          const updated = { ...parsed, schoolCrestText: 'OHA • ONE HEART ACADEMY • LUNGLAWN, LUNGLEI', principalSignatoryName: fallback.principalSignatoryName, mottoText: fallback.mottoText };
           localStorage.setItem(`zoxs_${activeSchoolId}_seal_config`, JSON.stringify(updated));
           return updated;
         }

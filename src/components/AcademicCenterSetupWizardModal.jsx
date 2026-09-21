@@ -62,7 +62,7 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
   // Form state pre-populated with current systemConfig, sealConfig, and paymentConfig
   const [formData, setFormData] = useState({
     // Step 1: Institutional Identity
-    schoolName: systemConfig?.schoolName || 'OHA (Oxford Higher Academy)',
+    schoolName: systemConfig?.schoolName || 'OHA (One Heart Academy)',
     motto: systemConfig?.motto || 'Knowledge is Light (Hriatna chu Eng a ni)',
     schoolCode: 'OHA-LGL-02',
     affiliationBoard: 'MBSE (Mizoram Board of School Education)',
@@ -142,7 +142,7 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
     enableMobilePwa: true,
 
     // Step 6: Seal & Signatory
-    schoolCrestText: sealConfig?.schoolCrestText || 'OHA • OXFORD HIGHER ACADEMY • LUNGLAWN, LUNGLEI',
+    schoolCrestText: sealConfig?.schoolCrestText || 'OHA • ONE HEART ACADEMY • LUNGLAWN, LUNGLEI',
     sealColor: sealConfig?.sealColor || '#d97706',
     sealMottoText: sealConfig?.mottoText || 'KNOWLEDGE IS LIGHT',
     sealType: sealConfig?.sealType || 'circular_crest',
@@ -156,7 +156,7 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
   // Load OHA Lunglawn preset directly
   const handleLoadOhaPreset = () => {
     setFormData({
-      schoolName: 'OHA (Oxford Higher Academy)',
+      schoolName: 'OHA (One Heart Academy)',
       motto: 'Knowledge is Light (Hriatna chu Eng a ni)',
       schoolCode: 'OHA-LGL-02',
       affiliationBoard: 'MBSE (Mizoram Board of School Education)',
@@ -231,7 +231,7 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
       enableOnlineAdmissions: true,
       enableMobilePwa: true,
 
-      schoolCrestText: 'OHA • OXFORD HIGHER ACADEMY • LUNGLAWN, LUNGLEI',
+      schoolCrestText: 'OHA • ONE HEART ACADEMY • LUNGLAWN, LUNGLEI',
       sealColor: '#d97706',
       sealMottoText: 'KNOWLEDGE IS LIGHT',
       sealType: 'circular_crest',
@@ -440,7 +440,7 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
       {saveSuccessToast && (
         <div className="mx-6 mt-3 p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-medium flex items-center gap-2 animate-fadeIn">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>OHA (Oxford Higher Academy), Lunglawn, Lunglei preset data loaded successfully!</span>
+          <span>OHA (One Heart Academy), Lunglawn, Lunglei preset data loaded successfully!</span>
         </div>
       )}
 
@@ -468,7 +468,7 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
                   type="text"
                   value={formData.schoolName}
                   onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
-                  placeholder="e.g. OHA (Oxford Higher Academy)"
+                  placeholder="e.g. OHA (One Heart Academy)"
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
@@ -1295,7 +1295,7 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
                     type="text"
                     value={formData.schoolCrestText}
                     onChange={(e) => setFormData({ ...formData, schoolCrestText: e.target.value })}
-                    placeholder="OHA • OXFORD HIGHER ACADEMY • LUNGLAWN, LUNGLEI"
+                    placeholder="OHA • ONE HEART ACADEMY • LUNGLAWN, LUNGLEI"
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white font-mono"
                   />
                 </div>

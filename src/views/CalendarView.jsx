@@ -1193,7 +1193,7 @@ Approved By: ${activeCircularVacation.approvedBy || 'Rev. Dr. L. H. Rohmingliana
                 </div>
               </div>
               <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-white print:text-black">
-                {systemConfig?.schoolName || 'OHA (Oxford Higher Academy)'}
+                {systemConfig?.schoolName || 'OHA (One Heart Academy)'}
               </h1>
               <p className="text-xs font-sans text-slate-400 print:text-slate-600 uppercase tracking-widest">
                 Affiliated to {systemConfig?.affiliationNo || 'MBSE'} • Est. {systemConfig?.establishedYear || '1998'} • Lunglei, Mizoram
@@ -1227,7 +1227,7 @@ Approved By: ${activeCircularVacation.approvedBy || 'Rev. Dr. L. H. Rohmingliana
             {/* Circular Body Content */}
             <div className="space-y-4 text-xs sm:text-sm leading-relaxed text-slate-300 print:text-slate-900 font-sans">
               <p>
-                He circular hmang hian {systemConfig?.schoolName || 'OHA (Oxford Higher Academy)'} zirlai, nu leh pa (guardians), zirtirtu leh staff zawng zawngte hriattir in ni a, academic calendar {systemConfig?.academicSession || '2026-2027'} dungzuiin <strong>{activeCircularVacation.title}</strong> chu hetiang hian chawlh a ni ang:
+                He circular hmang hian {systemConfig?.schoolName || 'OHA (One Heart Academy)'} zirlai, nu leh pa (guardians), zirtirtu leh staff zawng zawngte hriattir in ni a, academic calendar {systemConfig?.academicSession || '2026-2027'} dungzuiin <strong>{activeCircularVacation.title}</strong> chu hetiang hian chawlh a ni ang:
               </p>
 
               {/* Schedule Table */}
@@ -1311,7 +1311,7 @@ Approved By: ${activeCircularVacation.approvedBy || 'Rev. Dr. L. H. Rohmingliana
                   Principal &amp; Secretary
                 </p>
                 <p className="text-[11px] text-slate-400 print:text-slate-600">
-                  {systemConfig?.schoolName || 'OHA (Oxford Higher Academy)'}, {systemConfig?.address?.split(',')[0] || 'Lunglawn'}, Lunglei
+                  {systemConfig?.schoolName || 'OHA (One Heart Academy)'}, {systemConfig?.address?.split(',')[0] || 'Lunglawn'}, Lunglei
                 </p>
               </div>
             </div>

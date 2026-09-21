@@ -475,7 +475,7 @@ export default function CertificatesView() {
                 {/* Certificate Watermark Background */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
                   <span className="text-8xl font-black uppercase tracking-widest text-slate-900 rotate-[-30deg]">
-                    {systemConfig?.schoolName?.slice(0, 15) || 'OXFORD HIGHER'}
+                    {systemConfig?.schoolName?.slice(0, 15) || 'ONE HEART'}
                   </span>
                 </div>
 
@@ -485,7 +485,7 @@ export default function CertificatesView() {
                     Government of Mizoram • Department of School Education
                   </span>
                   <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-slate-950 font-['Outfit']">
-                    {systemConfig?.schoolName || 'OHA (Oxford Higher Academy)'}
+                    {systemConfig?.schoolName || 'OHA (One Heart Academy)'}
                   </h1>
                   <p className="text-[11px] text-slate-700 uppercase tracking-wide font-sans font-semibold">
                     Affiliated to Mizoram Board of School Education (MBSE)
@@ -615,7 +615,7 @@ export default function CertificatesView() {
                       TO WHOMSOEVER IT MAY CONCERN
                     </p>
                     <p>
-                      This is to certify that <strong className="uppercase font-bold text-slate-950">{certForm.studentName}</strong>, Son/Daughter of <strong className="text-slate-950">{certForm.fatherName}</strong>, resident of {certForm.district || 'Lunglei'}, Mizoram, is a bonafide student of {systemConfig?.schoolName || 'OHA (Oxford Higher Academy)'}, studying in <strong className="text-slate-950">{certForm.classLastStudied}</strong>, Roll No: <strong className="font-mono text-slate-950">{certForm.rollNo}</strong>, Admission No: <strong className="font-mono text-slate-950">{certForm.admissionNo}</strong>.
+                      This is to certify that <strong className="uppercase font-bold text-slate-950">{certForm.studentName}</strong>, Son/Daughter of <strong className="text-slate-950">{certForm.fatherName}</strong>, resident of {certForm.district || 'Lunglei'}, Mizoram, is a bonafide student of {systemConfig?.schoolName || 'OHA (One Heart Academy)'}, studying in <strong className="text-slate-950">{certForm.classLastStudied}</strong>, Roll No: <strong className="font-mono text-slate-950">{certForm.rollNo}</strong>, Admission No: <strong className="font-mono text-slate-950">{certForm.admissionNo}</strong>.
                     </p>
                     <p>
                       To the best of our official knowledge and institutional records, he/she bears an <strong className="text-slate-950">{certForm.conduct}</strong> moral character and has shown sincere diligence and exemplary participation in school curricular and sports activities.
@@ -634,7 +634,7 @@ export default function CertificatesView() {
                       <div className="p-1 border border-slate-400 rounded-lg bg-white shadow-sm">
                         <QRCodeSVG
                           value={JSON.stringify({
-                            school: systemConfig?.schoolName || "OHA (Oxford Higher Academy)",
+                            school: systemConfig?.schoolName || "OHA (One Heart Academy)",
                             certType: selectedCertType,
                             certNo: certForm.certNumber,
                             student: certForm.studentName,

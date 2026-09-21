@@ -894,7 +894,7 @@ export default function AdmissionsView({ setCurrentTab }) {
               Online Admission Registration {systemConfig?.academicSession || '2026-2027'}
             </span>
             <h3 className="text-2xl font-bold text-white font-['Outfit'] pt-2">
-              {systemConfig?.schoolName || 'OHA (Oxford Higher Academy)'}
+              {systemConfig?.schoolName || 'OHA (One Heart Academy)'}
             </h3>
             <p className="text-xs text-slate-400">
               Online enrollment portal with document attachments for Nursery to Class 12 • {systemConfig?.address?.split(',')[0] || 'Lunglawn, Lunglei'}.

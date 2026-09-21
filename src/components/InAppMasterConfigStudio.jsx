@@ -1110,7 +1110,7 @@ export default function InAppMasterConfigStudio() {
                 <div className="bg-white text-slate-900 rounded-xl p-8 shadow-2xl border-4 border-double border-indigo-900 font-serif relative">
                   <div className="text-center border-b-2 border-indigo-900/40 pb-4 mb-4">
                     <h3 className="text-lg font-black tracking-wider text-indigo-950 uppercase">
-                      {systemConfig?.schoolName || 'Oxford Higher Academy'}
+                      {systemConfig?.schoolName || 'One Heart Academy'}
                     </h3>
                     <p className="text-xs text-slate-600 italic">
                       {systemConfig?.address || 'Lunglawn, Lunglei, Mizoram'}
@@ -1132,7 +1132,7 @@ export default function InAppMasterConfigStudio() {
                         .replace(/\{\{rollNo\}\}/g, '01')
                         .replace(/\{\{class\}\}/g, 'Class 12 - Science')
                         .replace(/\{\{admissionDate\}\}/g, '01-Apr-2025')
-                        .replace(/\{\{schoolName\}\}/g, systemConfig?.schoolName || 'Oxford Higher Academy')
+                        .replace(/\{\{schoolName\}\}/g, systemConfig?.schoolName || 'One Heart Academy')
                         .replace(/\{\{address\}\}/g, 'Lunglawn, Lunglei, Mizoram')}
                     </p>
                   </div>

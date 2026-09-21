@@ -40,7 +40,7 @@ export default function StudentIdCardModal({
 
   // ID Card & Admit Card Custom Configuration State
   const [cardConfig, setCardConfig] = useState({
-    schoolName: systemConfig?.schoolName || 'OHA (Oxford Higher Academy)',
+    schoolName: systemConfig?.schoolName || 'OHA (One Heart Academy)',
     schoolMotto: systemConfig?.motto || 'Knowledge is Light',
     affiliationNo: systemConfig?.affiliationNo || 'MBSE-HSS-LGL-0421',
     validThru: 'March 2027',

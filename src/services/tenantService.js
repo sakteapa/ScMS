@@ -6,20 +6,20 @@
  * 1. URL Query Parameter (?school=stpauls, ?school=oha)
  * 2. Hostname Subdomain (e.g. oha.zoxs.in -> oha, stpauls.zoxs.in -> stpauls)
  * 3. Stored Active School in LocalStorage
- * 4. Master Default Fallback ('oha' - Oxford Higher Academy, Lunglawn)
+ * 4. Master Default Fallback ('oha' - One Heart Academy, Lunglawn)
  */
 
 export const DEFAULT_REGISTERED_SCHOOLS = [
   {
     id: 'oha',
-    name: 'Oxford Higher Academy',
+    name: 'One Heart Academy',
     shortName: 'OHA Lunglawn',
     subdomain: 'oha',
     code: 'OHA-MZ-02',
     address: 'Lunglawn, Lunglei, Mizoram - 796701',
     contactPhone: '+91 98623 45678',
     contactEmail: 'admissions@ohalunglawn.edu.in',
-    motto: 'Excellence in Truth & Service',
+    motto: 'Knowledge is Light (Hriatna chu Eng a ni)',
     affiliationBadge: 'MBSE Affiliated • Lunglawn, Lunglei',
     primaryColor: '#6366f1',
     secondaryColor: '#a855f7',

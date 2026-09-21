@@ -212,7 +212,7 @@ Malsawmtluanga,Hmar,Male,cls-12-comm,08,F. Zohmingliana,9436155221,"Bazar Veng, 
         response: {
           success: true,
           event: 'fee.collected',
-          institution: systemConfig?.schoolName || 'OHA (Oxford Higher Academy)',
+          institution: systemConfig?.schoolName || 'OHA (One Heart Academy)',
           timestamp: new Date().toISOString(),
           simulatedPayload: {
             receiptNo: 'REC-2026-9912',
@@ -301,7 +301,7 @@ Malsawmtluanga,Hmar,Male,cls-12-comm,08,F. Zohmingliana,9436155221,"Bazar Veng, 
 
   // Generate SQL Dump String
   const generateSqlDump = () => {
-    let sql = `-- OHA (Oxford Higher Academy), Lunglawn, Lunglei Database Export\n-- Generated on: ${new Date().toISOString()}\n\n`;
+    let sql = `-- OHA (One Heart Academy), Lunglawn, Lunglei Database Export\n-- Generated on: ${new Date().toISOString()}\n\n`;
     sql += `CREATE TABLE IF NOT EXISTS students (\n  id VARCHAR(64) PRIMARY KEY,\n  admission_no VARCHAR(32),\n  first_name VARCHAR(64),\n  last_name VARCHAR(64),\n  class_id VARCHAR(32),\n  roll_no VARCHAR(16),\n  guardian_phone VARCHAR(20),\n  fee_status VARCHAR(20)\n);\n\n`;
 
     students.forEach(s => {

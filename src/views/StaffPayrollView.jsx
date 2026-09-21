@@ -1873,7 +1873,7 @@ export default function StaffPayrollView() {
                   <div className="flex items-center justify-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-cyan-300 print:text-white" />
                     <h4 className="font-black text-xs uppercase tracking-wider font-['Outfit']">
-                      {systemConfig?.schoolName || 'OHA (Oxford Higher Academy)'}
+                      {systemConfig?.schoolName || 'OHA (One Heart Academy)'}
                     </h4>
                   </div>
                   <p className="text-[9px] uppercase tracking-widest text-cyan-200/90 print:text-slate-200 font-semibold mt-0.5">
@@ -2766,7 +2766,7 @@ export default function StaffPayrollView() {
                 <div className="flex items-center justify-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-cyan-400" />
                   <h4 className="font-black text-xs uppercase tracking-wider font-['Outfit']">
-                    {systemConfig?.schoolName || 'OHA (Oxford Higher Academy)'}
+                    {systemConfig?.schoolName || 'OHA (One Heart Academy)'}
                   </h4>
                 </div>
                 <p className="text-[9px] uppercase tracking-widest text-slate-300 font-semibold mt-0.5">
@@ -2839,7 +2839,7 @@ export default function StaffPayrollView() {
                           empId: singlePrintCard.employeeId,
                           name: singlePrintCard.name,
                           designation: singlePrintCard.designation,
-                          school: systemConfig?.schoolName || "OHA (Oxford Higher Academy)",
+                          school: systemConfig?.schoolName || "OHA (One Heart Academy)",
                           verified: true
                         })}
                         size={54}
@@ -2895,7 +2895,7 @@ export default function StaffPayrollView() {
             <div className="printable-area border-2 border-slate-900 rounded-xl p-6 space-y-4">
               <div className="text-center border-b-2 border-slate-900 pb-3">
                 <h3 className="font-black text-lg uppercase tracking-tight font-['Outfit']">
-                  {systemConfig?.schoolName || 'OHA (Oxford Higher Academy)'}
+                  {systemConfig?.schoolName || 'OHA (One Heart Academy)'}
                 </h3>
                 <p className="text-[11px] text-slate-600 uppercase tracking-wider font-semibold">
                   Institutional Salary Voucher &amp; Remuneration Slip • {systemConfig?.address?.split(',')[0] || 'Lunglawn, Lunglei'}

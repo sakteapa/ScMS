@@ -30,7 +30,7 @@ export default function FeeReceiptModal({
   // Custom Receipt Configuration
   const [receiptConfig, setReceiptConfig] = useState({
     prefix: 'OHA-REC-2026-',
-    schoolName: systemConfig?.schoolName || 'OHA (Oxford Higher Academy)',
+    schoolName: systemConfig?.schoolName || 'OHA (One Heart Academy)',
     schoolAddress: systemConfig?.address || 'Lunglawn, Lunglei, Mizoram - 796701',
     affiliationNo: systemConfig?.affiliationNo || 'MBSE-HSS-LGL-0421',
     contactPhone: systemConfig?.contactPhone || '+91 372 2322104',

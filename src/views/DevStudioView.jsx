@@ -1727,7 +1727,7 @@ export default function DevStudioView() {
                       value={systemConfig?.schoolName || ''}
                       onChange={(e) => updateSystemConfig({ schoolName: e.target.value })}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500 text-sm"
-                      placeholder="e.g. OHA (Oxford Higher Academy)"
+                      placeholder="e.g. OHA (One Heart Academy)"
                     />
                   </div>
 

@@ -546,7 +546,7 @@ export default function ReportCardView({ selectedStudentForReport }) {
               <GraduationCap className="w-8 h-8" />
             </div>
             <h1 className="text-2xl font-black tracking-tight text-slate-950 font-['Outfit'] uppercase">
-              {systemConfig?.schoolName || 'OHA (Oxford Higher Academy)'}
+              {systemConfig?.schoolName || 'OHA (One Heart Academy)'}
             </h1>
             <p className="text-xs font-semibold text-slate-700 tracking-wider uppercase">
               Affiliated to Mizoram Board of School Education (MBSE) • Affiliation No: {systemConfig?.affiliationNo || 'MBSE-HSS-LGL-0421'} • Estd: {systemConfig?.establishedYear || '1998'}
@@ -760,7 +760,7 @@ export default function ReportCardView({ selectedStudentForReport }) {
                       name: `${student?.firstName} ${student?.lastName}`,
                       percentage: overallPercentage,
                       verified: true,
-                      school: systemConfig?.schoolName || 'OHA (Oxford Higher Academy)'
+                      school: systemConfig?.schoolName || 'OHA (One Heart Academy)'
                     })}
                     size={42}
                     level="M"
@@ -776,7 +776,7 @@ export default function ReportCardView({ selectedStudentForReport }) {
 
               <div className="text-right font-mono">
                 <div>Date of Issue: {new Date().toLocaleDateString('en-IN')}</div>
-                <div>{systemConfig?.schoolName || 'OHA (Oxford Higher Academy)'} • MBSE Regd.</div>
+                <div>{systemConfig?.schoolName || 'OHA (One Heart Academy)'} • MBSE Regd.</div>
               </div>
             </div>
           </div>

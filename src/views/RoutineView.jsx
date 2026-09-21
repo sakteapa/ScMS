@@ -192,7 +192,7 @@ export default function RoutineView() {
         {/* School Crest & Header */}
         <div className="text-center border-b-2 border-slate-900 pb-4 space-y-1">
           <h1 className="text-2xl font-black uppercase tracking-tight font-['Outfit']">
-            {systemConfig?.schoolName || 'OHA (Oxford Higher Academy)'}
+            {systemConfig?.schoolName || 'OHA (One Heart Academy)'}
           </h1>
           <p className="text-xs font-semibold text-slate-700 tracking-wider uppercase">
             Mizoram Board of School Education (MBSE) • Academic Session: {systemConfig?.academicSession || '2026-2027'}
