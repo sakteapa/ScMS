@@ -68,6 +68,28 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
     actionLinkTab: 'academics'
   });
 
+  // Sound Mute / Active State with persistence
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    try {
+      return localStorage.getItem('zoxs_sound_enabled') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+
+  const [markedReadFeedback, setMarkedReadFeedback] = useState(false);
+
+  // Close drawer on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const currentUserId = isStudent 
@@ -136,28 +158,6 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
 
   const privateNotices = userNotices.filter(n => n.scope === 'private');
   const broadcastNotices = userNotices.filter(n => n.scope !== 'private');
-
-  // Sound Mute / Active State with persistence
-  const [soundEnabled, setSoundEnabled] = useState(() => {
-    try {
-      return localStorage.getItem('zoxs_sound_enabled') !== 'false';
-    } catch {
-      return true;
-    }
-  });
-
-  const [markedReadFeedback, setMarkedReadFeedback] = useState(false);
-
-  // Close drawer on Escape key
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
 
   // Counts
   const unreadNoticesCount = userNotices.filter(n => !(n.readBy || []).includes(currentUserId)).length;
