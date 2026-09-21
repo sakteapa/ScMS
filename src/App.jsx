@@ -8,6 +8,7 @@ import FirebaseConfigModal from './components/FirebaseConfigModal';
 import ExportModal from './components/ExportModal';
 import PrivateCallModal from './components/PrivateCallModal';
 import MobileAppDownloadModal from './components/MobileAppDownloadModal';
+import SuperAdminAiWidget from './components/SuperAdminAiWidget';
 
 import DashboardView from './views/DashboardView';
 import AcademicsView from './views/AcademicsView';
@@ -280,6 +281,9 @@ function SchoolAppContent() {
           initialType={activePrivateCall.type || 'video'}
         />
       )}
+
+      {/* Global Super Admin AI Co-Pilot Widget */}
+      <SuperAdminAiWidget setCurrentTab={setCurrentTab} />
     </div>
   );
 }

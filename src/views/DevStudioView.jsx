@@ -58,7 +58,8 @@ import {
   Award,
   PenTool,
   FileCheck,
-  DollarSign
+  DollarSign,
+  Bot
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
@@ -67,6 +68,7 @@ import WebsiteEditorModal from '../components/WebsiteEditorModal';
 import AcademicCenterSetupWizardModal from '../components/AcademicCenterSetupWizardModal';
 import ExternalSoftwareApiHub from '../components/ExternalSoftwareApiHub';
 import InAppMasterConfigStudio from '../components/InAppMasterConfigStudio';
+import DevStudioAiCoPilot from '../components/DevStudioAiCoPilot';
 
 export default function DevStudioView() {
   const { user } = useAuth();
@@ -419,6 +421,21 @@ export default function DevStudioView() {
           </button>
 
           <button
+            onClick={() => setActiveTab('ai_copilot')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition shrink-0 ${
+              activeTab === 'ai_copilot'
+                ? 'bg-gradient-to-r from-cyan-500 via-indigo-600 to-purple-600 text-slate-950 font-bold shadow-lg shadow-cyan-500/25'
+                : 'text-cyan-300 hover:text-white hover:bg-slate-800/50 border border-cyan-500/40'
+            }`}
+          >
+            <Bot className="w-4 h-4 text-cyan-400" />
+            <span>AI System Co-Pilot &amp; Code Agent</span>
+            <span className="px-1.5 py-0.2 rounded-full text-xs bg-cyan-400/20 text-cyan-300 font-mono font-bold">
+              Auto-Audit
+            </span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('code')}
             className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition shrink-0 ${
               activeTab === 'code' 
@@ -541,6 +558,11 @@ export default function DevStudioView() {
       {/* TAB: EXTERNAL SOFTWARE & OPEN API HUB */}
       {activeTab === 'api_hub' && (
         <ExternalSoftwareApiHub />
+      )}
+
+      {/* TAB: AI SYSTEM CO-PILOT & CODE AGENT */}
+      {activeTab === 'ai_copilot' && (
+        <DevStudioAiCoPilot />
       )}
 
       {/* TAB: CLOUD SYNC — Superadmin Firebase wiring panel */}
