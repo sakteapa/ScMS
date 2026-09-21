@@ -20,13 +20,13 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useSchool } from '../context/SchoolContext';
 
 export default function MobileAppDownloadModal({ isOpen, onClose, deferredPrompt, onDirectInstall }) {
-  const { systemConfig } = useSchool();
+  const { systemConfig, activeSchoolInfo } = useSchool();
   const [activeTab, setActiveTab] = useState('qr'); // 'qr' | 'android' | 'ios' | 'apk'
   const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
 
-  const currentUrl = typeof window !== 'undefined' ? window.location.origin : 'https://mizoramschool.edu.in';
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : 'https://mizoramschool.edu.in';
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(currentUrl);
@@ -51,14 +51,14 @@ export default function MobileAppDownloadModal({ isOpen, onClose, deferredPrompt
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-bold text-white tracking-tight">
-                  Mobile Application Download Center
+                  {activeSchoolInfo?.shortName || activeSchoolInfo?.name || 'School'} Mobile App
                 </h2>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">
                   PWA Ready
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                Play Store kual ngai lovin Android & iPhone-ah App puitling angin dah nghal rawh.
+                Play Store kual ngai lovin {activeSchoolInfo?.shortName || 'School'} hi Android & iPhone-ah App puitling angin dah nghal rawh.
               </p>
             </div>
           </div>

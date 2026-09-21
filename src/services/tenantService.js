@@ -190,7 +190,7 @@ export function switchActiveSchool(schoolId) {
 }
 
 /**
- * Dynamically update Document Title and PWA Manifest for personalized desktop installation
+ * Dynamically update Document Title and PWA Manifest for personalized mobile & desktop installation
  */
 export function updateDynamicPwaBranding(school) {
   if (typeof document === 'undefined' || !school) return;
@@ -208,5 +208,45 @@ export function updateDynamicPwaBranding(school) {
   const metaDesc = document.querySelector('meta[name="description"]');
   if (metaDesc) {
     metaDesc.setAttribute('content', `${school.name} - Institutional Management Portal (${school.affiliationBadge})`);
+  }
+
+  // 4. Inject Dynamic School-Specific PWA Manifest for Android, iOS & Windows Desktop App
+  try {
+    const currentHref = typeof window !== 'undefined' ? window.location.href : '/';
+    const dynamicManifest = {
+      name: school.name,
+      short_name: school.shortName || school.name.slice(0, 12),
+      description: `${school.name} - Official School & Student Mobile Portal (${school.affiliationBadge})`,
+      start_url: currentHref,
+      id: currentHref,
+      display: "standalone",
+      background_color: "#090d16",
+      theme_color: school.primaryColor || "#090d16",
+      orientation: "portrait-primary",
+      icons: [
+        {
+          src: `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="24" fill="${encodeURIComponent(school.primaryColor || '#6366f1')}"/><text x="50" y="68" font-size="52" text-anchor="middle" fill="white">🏫</text></svg>`,
+          sizes: "192x192 512x512",
+          type: "image/svg+xml",
+          purpose: "any maskable"
+        }
+      ],
+      categories: ["education", "productivity"]
+    };
+
+    const manifestBlob = new Blob([JSON.stringify(dynamicManifest)], { type: 'application/manifest+json' });
+    const manifestUrl = URL.createObjectURL(manifestBlob);
+
+    let manifestLink = document.querySelector('link[rel="manifest"]');
+    if (manifestLink) {
+      manifestLink.setAttribute('href', manifestUrl);
+    } else {
+      manifestLink = document.createElement('link');
+      manifestLink.setAttribute('rel', 'manifest');
+      manifestLink.setAttribute('href', manifestUrl);
+      document.head.appendChild(manifestLink);
+    }
+  } catch (e) {
+    console.warn('[TenantService] Failed to inject dynamic manifest:', e);
   }
 }
