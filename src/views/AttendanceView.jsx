@@ -278,89 +278,89 @@ export default function AttendanceView({ setCurrentTab }) {
   return (
     <div className="space-y-6 pb-20">
       {/* Top Banner & Tab Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-[#0e1628] to-slate-900 p-5 sm:p-6 rounded-3xl border border-slate-800 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-[#0e1628] to-slate-900 p-4 sm:p-6 rounded-3xl border border-slate-800 shadow-xl">
         <div>
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <h2 className="text-xl font-bold text-white font-['Outfit'] flex items-center gap-2">
-              <span>QR Attendance &amp; ID Card Management</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-lg sm:text-xl font-bold text-white font-['Outfit'] flex items-center gap-2">
+              <span>QR Attendance &amp; ID Cards</span>
             </h2>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-              Live Cam + Manual Override
+            <span className="text-[11px] sm:text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              Live Cam + Manual
             </span>
-            <span className={`text-xs px-2.5 py-0.5 rounded-full flex items-center gap-1 border ${
+            <span className={`text-[11px] sm:text-xs px-2 py-0.5 rounded-full flex items-center gap-1 border ${
               autoAbsentNotificationEnabled
                 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                 : 'bg-slate-800 text-slate-400 border-slate-700'
             }`}>
               <Bell className="w-3 h-3" />
-              Auto-Absent Alert: {autoAbsentNotificationEnabled ? 'ON' : 'OFF'}
+              Auto-Alert: {autoAbsentNotificationEnabled ? 'ON' : 'OFF'}
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
             Real-time QR scanning, batch ID card printing, automated absent parent notifications, and manual status override.
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="inline-flex p-1 rounded-2xl bg-slate-950 border border-slate-800 overflow-x-auto">
+        <div className="w-full sm:w-auto flex items-center p-1 rounded-2xl bg-slate-950 border border-slate-800 overflow-x-auto max-w-full gap-1">
           <button
             onClick={() => setActiveTab('scanner')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap ${
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               activeTab === 'scanner'
                 ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <Camera className="w-4 h-4" />
-            <span>Live Camera Scanner</span>
+            <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Camera</span>
           </button>
           <button
             onClick={() => {
               stopCamera();
               setActiveTab('face_attendance');
             }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap ${
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               activeTab === 'face_attendance'
                 ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold shadow-md shadow-purple-500/20'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <Scan className="w-4 h-4" />
-            <span>Face Biometric &amp; Blink</span>
+            <Scan className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Biometric</span>
           </button>
           <button
             onClick={() => {
               stopCamera();
               setActiveTab('manual_matrix');
             }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap ${
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               activeTab === 'manual_matrix'
                 ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <Calendar className="w-4 h-4" />
-            <span>Manual Grid &amp; Override</span>
+            <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Manual Grid</span>
           </button>
           <button
             onClick={() => setActiveTab('batch_id_cards')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap ${
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               activeTab === 'batch_id_cards'
                 ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            <QrCode className="w-4 h-4" />
-            <span>Batch ID Cards</span>
+            <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>ID Cards</span>
           </button>
           <button
             onClick={() => {
               if (setCurrentTab) setCurrentTab('leave_management');
             }}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 text-slate-400 hover:text-white whitespace-nowrap"
+            className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 text-slate-400 hover:text-white whitespace-nowrap shrink-0"
           >
-            <Clock className="w-4 h-4 text-purple-400" />
-            <span>Leave Requests ({leaveApplications.filter(l => l.status?.startsWith('pending')).length})</span>
+            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400" />
+            <span>Leaves ({leaveApplications.filter(l => l.status?.startsWith('pending')).length})</span>
           </button>
         </div>
       </div>
@@ -732,8 +732,8 @@ export default function AttendanceView({ setCurrentTab }) {
           </div>
 
           {/* Table Matrix */}
-          <div className="rounded-3xl bg-slate-900/80 border border-slate-800 overflow-hidden shadow-xl">
-            <table className="w-full text-left text-xs">
+          <div className="rounded-3xl bg-slate-900/80 border border-slate-800 overflow-x-auto shadow-xl">
+            <table className="w-full text-left text-xs min-w-[620px]">
               <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 uppercase font-semibold text-[11px]">
                 <tr>
                   <th className="py-3 px-4">Roll</th>

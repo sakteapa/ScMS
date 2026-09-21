@@ -140,10 +140,10 @@ export default function SuperAdminAiWidget({ setCurrentTab }) {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
+    <div className="fixed bottom-20 sm:bottom-6 right-3 sm:right-6 z-50 font-sans">
       {/* 1. EXPANDED AI DOCK */}
       {isOpen && (
-        <div className="w-[360px] sm:w-[420px] max-w-[calc(100vw-2rem)] h-[580px] max-h-[85vh] bg-[#0c1322] border border-cyan-500/30 rounded-3xl shadow-2xl flex flex-col overflow-hidden mb-3 animate-in fade-in slide-in-from-bottom-5">
+        <div className="w-[calc(100vw-1.5rem)] sm:w-[420px] max-w-[420px] h-[520px] sm:h-[580px] max-h-[75vh] sm:max-h-[85vh] bg-[#0c1322] border border-cyan-500/30 rounded-3xl shadow-2xl flex flex-col overflow-hidden mb-3 animate-in fade-in slide-in-from-bottom-5">
           {/* Top Dock Header */}
           <div className="p-4 bg-gradient-to-r from-slate-900 via-indigo-950/60 to-slate-900 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-2.5">

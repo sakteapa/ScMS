@@ -105,27 +105,29 @@ export default function FinancialsView({ openExportModal }) {
   return (
     <div className="space-y-6 pb-16">
       {/* Header & Metrics */}
-      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white font-['Outfit'] flex items-center gap-2">
-            <span>Financials &amp; Dual Payment Gateway</span>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-              UPI + Cash Dual Ledger
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-lg sm:text-xl font-bold text-white font-['Outfit'] flex items-center gap-2">
+              <span>Financials &amp; Dual Ledger</span>
+            </h2>
+            <span className="text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              UPI + Cash
             </span>
-          </h2>
-          <p className="text-xs text-slate-400">
+          </div>
+          <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
             Real-time fee verification, dynamic UPI/GPay QR codes, and cashier counter receipts.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 flex-wrap">
           {canManageGateways && (
             <button
               onClick={() => setIsGatewayConfigOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-500/50 text-cyan-300 hover:text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm"
+              className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-500/50 text-cyan-300 hover:text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm"
               title="Configure Payment Gateways"
             >
-              <Settings2 className="w-4 h-4 text-cyan-400" />
+              <Settings2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400" />
               <span>Gateways</span>
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 uppercase font-mono font-bold border border-cyan-500/30">
                 {paymentConfig?.activeGateway || 'UPI'}
@@ -134,68 +136,69 @@ export default function FinancialsView({ openExportModal }) {
           )}
           <button
             onClick={() => exportDataToCSV('financials')}
-            className="px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition flex items-center gap-1.5"
+            className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-200 hover:text-white text-xs font-semibold transition flex items-center gap-1.5"
           >
-            <FileSpreadsheet className="w-4 h-4 text-cyan-400" />
-            <span>Export Financials</span>
+            <FileSpreadsheet className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400" />
+            <span className="hidden sm:inline">Export Financials</span>
+            <span className="sm:hidden">Export</span>
           </button>
           <button
             onClick={() => setIsPaymentModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-cyan-500/20 flex items-center gap-2"
+            className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-cyan-500/20 flex items-center gap-1.5"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span>Record Payment</span>
           </button>
         </div>
       </div>
 
       {/* Financial KPI Cards */}
-      <div className="no-print grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
-          <span className="text-xs text-slate-400 font-medium">Total Fees Collected</span>
+      <div className="no-print grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
+          <span className="text-[11px] sm:text-xs text-slate-400 font-medium">Total Fees Collected</span>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">
+            <span className="text-xl sm:text-2xl font-bold text-white font-['Outfit']">
               ₹{totalCollected.toLocaleString('en-IN')}
             </span>
           </div>
-          <span className="text-[11px] text-emerald-400 flex items-center gap-1">
-            <TrendingUp className="w-3.5 h-3.5" />
+          <span className="text-[10px] sm:text-[11px] text-emerald-400 flex items-center gap-1">
+            <TrendingUp className="w-3 h-3" />
             <span>Across All Grade Levels (Nursery - 12)</span>
           </span>
         </div>
 
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
+        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400 font-medium">UPI / GPay Settlements</span>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+            <span className="text-[11px] sm:text-xs text-slate-400 font-medium">UPI / GPay Settlements</span>
+            <span className="text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
               UTR Verified
             </span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-bold text-cyan-300 font-['Outfit']">
+            <span className="text-xl sm:text-2xl font-bold text-cyan-300 font-['Outfit']">
               ₹{upiCollected.toLocaleString('en-IN')}
             </span>
-            <span className="text-xs text-slate-400">({fees.filter(f => f.paymentMode === 'upi').length} payments)</span>
+            <span className="text-[11px] text-slate-400">({fees.filter(f => f.paymentMode === 'upi').length} payments)</span>
           </div>
-          <span className="text-[11px] text-slate-500">
+          <span className="text-[10px] sm:text-[11px] text-slate-500">
             Automated bank reference matching
           </span>
         </div>
 
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
+        <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400 font-medium">Cash Desk Receipts</span>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+            <span className="text-[11px] sm:text-xs text-slate-400 font-medium">Cash Desk Receipts</span>
+            <span className="text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
               Cashier Certified
             </span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-bold text-purple-300 font-['Outfit']">
+            <span className="text-xl sm:text-2xl font-bold text-purple-300 font-['Outfit']">
               ₹{cashCollected.toLocaleString('en-IN')}
             </span>
-            <span className="text-xs text-slate-400">({fees.filter(f => f.paymentMode === 'cash').length} receipts)</span>
+            <span className="text-[11px] text-slate-400">({fees.filter(f => f.paymentMode === 'cash').length} receipts)</span>
           </div>
-          <span className="text-[11px] text-slate-500">
+          <span className="text-[10px] sm:text-[11px] text-slate-500">
             Physical counter deposits with serial numbering
           </span>
         </div>
@@ -245,7 +248,7 @@ export default function FinancialsView({ openExportModal }) {
       {/* Fee Records Table */}
       <div className="no-print rounded-2xl bg-slate-900/80 border border-slate-800 overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs min-w-[650px]">
             <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 uppercase font-semibold">
               <tr>
                 <th className="py-3.5 px-4">Receipt No</th>

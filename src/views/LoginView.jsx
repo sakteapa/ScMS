@@ -18,7 +18,8 @@ import {
   EyeOff, 
   Sparkles, 
   Globe, 
-  School
+  School,
+  ShieldAlert
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
@@ -58,9 +59,10 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
       subtitle: 'Full institution control, fee collections, staff duties & MBSE compliance',
       user: DEFAULT_USERS.find(u => u.role === 'principal'),
       color: 'from-amber-500/20 to-orange-500/20 border-amber-500/40 text-amber-300 hover:border-amber-400',
-      badge: 'Principal',
+      badge: 'Showcase Demo',
       badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-      icon: ShieldCheck
+      icon: ShieldCheck,
+      isDemo: true
     },
     {
       role: 'vice_principal',
@@ -68,9 +70,10 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
       subtitle: 'Timetables, academic monitoring, student discipline & admissions',
       user: DEFAULT_USERS.find(u => u.role === 'vice_principal'),
       color: 'from-blue-500/20 to-indigo-500/20 border-blue-500/40 text-blue-300 hover:border-blue-400',
-      badge: 'Vice Principal',
+      badge: 'Showcase Demo',
       badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
-      icon: Award
+      icon: Award,
+      isDemo: true
     },
     {
       role: 'teacher',
@@ -78,9 +81,10 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
       subtitle: 'QR attendance scanner, continuous test entries & term grading',
       user: DEFAULT_USERS.find(u => u.role === 'teacher'),
       color: 'from-cyan-500/20 to-teal-500/20 border-cyan-500/40 text-cyan-300 hover:border-cyan-400',
-      badge: 'Faculty',
+      badge: 'Showcase Demo',
       badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
-      icon: GraduationCap
+      icon: GraduationCap,
+      isDemo: true
     },
     {
       role: 'warden',
@@ -88,9 +92,10 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
       subtitle: 'Hostel rooms, night roll calls, outing gate passes & dining mess',
       user: DEFAULT_USERS.find(u => u.role === 'warden'),
       color: 'from-purple-500/20 to-violet-500/20 border-purple-500/40 text-purple-300 hover:border-purple-400',
-      badge: 'Warden',
+      badge: 'Showcase Demo',
       badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
-      icon: Building2
+      icon: Building2,
+      isDemo: true
     },
     {
       role: 'student',
@@ -98,9 +103,10 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
       subtitle: 'Personal attendance, exam marks, fee receipts, routine & leave requests',
       user: DEFAULT_USERS.find(u => u.role === 'student'),
       color: 'from-emerald-500/20 to-green-500/20 border-emerald-500/40 text-emerald-300 hover:border-emerald-400',
-      badge: 'Student',
+      badge: 'Showcase Demo',
       badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-      icon: UserCheck
+      icon: UserCheck,
+      isDemo: true
     },
     {
       role: 'parent',
@@ -108,9 +114,10 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
       subtitle: 'Ward attendance alerts, academic progress report cards & online fees',
       user: DEFAULT_USERS.find(u => u.role === 'parent'),
       color: 'from-rose-500/20 to-pink-500/20 border-rose-500/40 text-rose-300 hover:border-rose-400',
-      badge: 'Parent',
+      badge: 'Showcase Demo',
       badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-      icon: HeartHandshake
+      icon: HeartHandshake,
+      isDemo: true
     },
     {
       role: 'superadmin',
@@ -118,14 +125,25 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
       subtitle: 'Platform architecture, in-app developer studio & system integrations',
       user: DEFAULT_USERS.find(u => u.role === 'superadmin'),
       color: 'from-violet-500/20 to-indigo-500/20 border-violet-500/40 text-violet-300 hover:border-violet-400',
-      badge: 'Developer',
+      badge: '👑 Master Live',
       badgeColor: 'bg-violet-500/20 text-violet-300 border-violet-500/40',
-      icon: Sparkles
+      icon: Sparkles,
+      isDemo: false
     }
   ];
 
   const handleFastRoleLogin = (user) => {
     if (!user) return;
+    if (user.role === 'superadmin') {
+      setEmail(user.email);
+      setPassword('');
+      setActiveTab('email_login');
+      setLoginMessage({
+        type: 'error',
+        text: '👑 Super Admin Live Mode: Khawngaihin Master Password chhu lut rawh. (Password required for live mode).'
+      });
+      return;
+    }
     if (loginAsUser) {
       const logged = loginAsUser(user);
       if (onLoginSuccess) onLoginSuccess(logged);
@@ -224,23 +242,24 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
         </div>
 
         {/* Login Card */}
-        <div className="bg-[#0b111e]/90 border border-slate-800/90 rounded-3xl p-5 sm:p-7 shadow-2xl backdrop-blur-xl space-y-6">
+        <div className="bg-[#0b111e]/90 border border-slate-800/90 rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-2xl backdrop-blur-xl space-y-5 sm:space-y-6">
           {/* Navigation Tabs */}
-          <div className="flex items-center justify-center gap-2 p-1.5 rounded-2xl bg-slate-950/80 border border-slate-800 text-xs font-bold max-w-lg mx-auto">
+          <div className="flex items-center justify-center gap-1 sm:gap-2 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl bg-slate-950/80 border border-slate-800 text-[11px] sm:text-xs font-bold max-w-lg mx-auto">
             <button
               onClick={() => {
                 setActiveTab('fast_switch');
                 setLoginMessage(null);
                 setAuthError(null);
               }}
-              className={`flex-1 py-2.5 px-3 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-lg sm:rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 ${
                 activeTab === 'fast_switch'
                   ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-md shadow-cyan-500/25'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Sparkles className="w-4 h-4" />
-              <span>Fast Role Login</span>
+              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="hidden sm:inline">Fast Role Login</span>
+              <span className="sm:hidden">Fast Roles</span>
             </button>
 
             <button
@@ -249,14 +268,15 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
                 setLoginMessage(null);
                 setAuthError(null);
               }}
-              className={`flex-1 py-2.5 px-3 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-lg sm:rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 ${
                 activeTab === 'email_login'
                   ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-md shadow-cyan-500/25'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Mail className="w-4 h-4" />
-              <span>Email & Password</span>
+              <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="hidden sm:inline">Email &amp; Password</span>
+              <span className="sm:hidden">Email</span>
             </button>
 
             <button
@@ -265,27 +285,38 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
                 setOtpMessage(null);
                 setAuthError(null);
               }}
-              className={`flex-1 py-2.5 px-3 rounded-xl transition cursor-pointer flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-lg sm:rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 ${
                 activeTab === 'phone_otp'
                   ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-md shadow-cyan-500/25'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Phone className="w-4 h-4" />
-              <span>Phone SMS OTP</span>
+              <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="hidden sm:inline">Phone SMS OTP</span>
+              <span className="sm:hidden">Phone OTP</span>
             </button>
           </div>
 
           {/* TAB 1: FAST ROLE SELECTOR (1-Click Instant Login) */}
           {activeTab === 'fast_switch' && (
             <div className="space-y-4">
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2.5">
+                <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="text-white block font-medium">Showcase Demo Mode (Read-Only Guard)</strong>
+                  <span className="text-slate-300 text-[11px] leading-relaxed">
+                    Role account (Principal, Teacher, Student, Parent, Warden) te hi <strong>Showcase Mode</strong>-ah a awm a, live database ti danglam miah loin a en kual theih vek e. Database khawih danglam leh cloud sync tak tak ti tur chuan <strong>Super Admin</strong>-a in-login tur a ni.
+                  </span>
+                </div>
+              </div>
+
               <div className="text-center space-y-1">
                 <p className="text-xs text-slate-400">
                   Select your role account to sign in instantly with verified credentials:
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-3.5 pt-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3.5 pt-1">
                 {roleCards.map((rc) => {
                   const Icon = rc.icon;
                   const u = rc.user;
@@ -293,39 +324,39 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
                     <div
                       key={rc.role}
                       onClick={() => handleFastRoleLogin(u)}
-                      className={`p-4 rounded-2xl bg-slate-900/60 border ${rc.color} transition cursor-pointer group flex items-start gap-3.5 hover:shadow-lg hover:scale-[1.01]`}
+                      className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-900/60 border ${rc.color} transition cursor-pointer group flex items-start gap-2.5 sm:gap-3.5 hover:shadow-lg hover:scale-[1.01]`}
                     >
                       <div className="relative shrink-0 mt-0.5">
                         <img
                           src={u?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
                           alt={u?.displayName || rc.title}
-                          className="w-11 h-11 rounded-xl object-cover ring-1 ring-white/10 group-hover:ring-cyan-400/50 transition"
+                          className="w-10 h-10 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl object-cover ring-1 ring-white/10 group-hover:ring-cyan-400/50 transition"
                         />
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-md bg-slate-950 border border-slate-700 flex items-center justify-center">
-                          <Icon className="w-3 h-3 text-cyan-400" />
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-md bg-slate-950 border border-slate-700 flex items-center justify-center">
+                          <Icon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-cyan-400" />
                         </div>
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1.5">
-                          <span className="text-sm font-bold text-white group-hover:text-cyan-300 transition truncate">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-xs sm:text-sm font-bold text-white group-hover:text-cyan-300 transition truncate">
                             {rc.title}
                           </span>
-                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${rc.badgeColor}`}>
+                          <span className={`text-[9px] sm:text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${rc.badgeColor}`}>
                             {rc.badge}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-300 font-medium truncate mt-0.5">
+                        <p className="text-[11px] sm:text-xs text-slate-300 font-medium truncate mt-0.5">
                           {u?.displayName}
                         </p>
-                        <p className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+                        <p className="text-[10px] sm:text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
                           {rc.subtitle}
                         </p>
                       </div>
 
                       <div className="shrink-0 self-center">
-                        <div className="w-7 h-7 rounded-lg bg-slate-800 group-hover:bg-cyan-500 group-hover:text-white text-slate-400 flex items-center justify-center transition">
-                          <ArrowRight className="w-4 h-4" />
+                        <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-slate-800 group-hover:bg-cyan-500 group-hover:text-white text-slate-400 flex items-center justify-center transition">
+                          <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </div>
                       </div>
                     </div>

@@ -11,6 +11,7 @@ import PrivateCallModal from './components/PrivateCallModal';
 import MobileAppDownloadModal from './components/MobileAppDownloadModal';
 import SuperAdminAiWidget from './components/SuperAdminAiWidget';
 import SchoolAiAssistant from './components/SchoolAiAssistant';
+import MobileBottomNav from './components/MobileBottomNav';
 
 import DashboardView from './views/DashboardView';
 import ClassAdminLiveView from './views/ClassAdminLiveView';
@@ -47,7 +48,7 @@ import { PublicAdmissionPortalModal } from './components/admissions/PublicAdmiss
 
 function SchoolAppContent() {
   const { currentUser, isPrincipal, isVicePrincipal, isTeacher, isWarden, isStudent, isParent, isSuperAdmin } = useAuth();
-  const { staff = [] } = useSchool();
+  const { staff = [], showcaseNotice } = useSchool();
   const userRole = currentUser?.role || 'principal';
 
   const isAllowedTab = (tab, role) => {
@@ -385,6 +386,46 @@ function SchoolAppContent() {
 
       {/* Main Content Area */}
       <div className="lg:pl-72 flex flex-col min-h-screen">
+        {/* Institutional Mode Status Indicator */}
+        {isSuperAdmin ? (
+          <div className="bg-gradient-to-r from-violet-950/70 via-slate-900/90 to-indigo-950/70 border-b border-violet-500/30 px-3.5 sm:px-6 py-1.5 text-xs flex items-center justify-between z-30">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/40 text-[10px] font-bold tracking-wider flex items-center gap-1 shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                👑 MASTER LIVE
+              </span>
+              <span className="text-slate-300 text-[11px] truncate hidden sm:inline">
+                Authenticated as <strong className="text-white">{currentUser?.displayName || 'Super Admin'}</strong>. Full database write & cloud sync active.
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 text-[11px]">
+              <span className="text-emerald-400 font-mono text-[10px] bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                Database Write Active ✓
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gradient-to-r from-amber-950/50 via-slate-900/90 to-amber-950/50 border-b border-amber-500/30 px-3.5 sm:px-6 py-1.5 text-xs flex items-center justify-between z-30">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold tracking-wider flex items-center gap-1 shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                SHOWCASE DEMO
+              </span>
+              <span className="text-slate-300 text-[11px] truncate hidden md:inline">
+                Signed in as <strong className="text-white">{currentUser?.displayName}</strong> ({currentUser?.role}). Read-only protected against accidental data loss.
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 text-[11px]">
+              <button
+                onClick={() => setIsRoleModalOpen(true)}
+                className="text-amber-400 hover:text-amber-300 font-semibold underline text-[11px] cursor-pointer"
+              >
+                Switch Demo Role
+              </button>
+            </div>
+          </div>
+        )}
+
         <Navbar
           currentTab={currentTab}
           setCurrentTab={setCurrentTab}
@@ -397,10 +438,17 @@ function SchoolAppContent() {
           onViewWebsite={() => setCurrentTab('public_website')}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-3.5 sm:p-6 lg:p-8 pb-24 sm:pb-28 lg:pb-8 max-w-7xl w-full mx-auto min-w-0">
           {renderActiveView()}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation Bar (Phone & Tablet) */}
+      <MobileBottomNav
+        currentTab={currentTab}
+        setCurrentTab={setCurrentTab}
+        setIsMobileOpen={setIsMobileOpen}
+      />
 
       {/* Interactive Global Modals */}
       <RoleSwitcherModal
@@ -449,6 +497,22 @@ function SchoolAppContent() {
       {/* School-Level AI Assistant for Principal / Vice Principal / Admin */}
       {(isPrincipal || isVicePrincipal || isSuperAdmin) && (
         <SchoolAiAssistant setCurrentTab={setCurrentTab} />
+      )}
+
+      {/* Floating Showcase Mode Toast Alert */}
+      {showcaseNotice && (
+        <div className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 z-50 max-w-sm p-4 rounded-2xl bg-amber-950/95 border border-amber-500/60 shadow-2xl backdrop-blur-xl text-amber-200 flex items-start gap-3 animate-bounce">
+          <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <div className="font-bold text-white flex items-center justify-between gap-2">
+              <span>Showcase Demo Protection</span>
+              <span className="text-[10px] text-amber-400/80 uppercase tracking-wider font-mono">Protected</span>
+            </div>
+            <p className="text-slate-300 text-[11px] leading-relaxed">
+              {showcaseNotice.message}
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );

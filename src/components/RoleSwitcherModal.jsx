@@ -47,6 +47,11 @@ export default function RoleSwitcherModal({ isOpen, onClose }) {
   const [password, setPassword] = useState('');
   const [loginMessage, setLoginMessage] = useState(null);
 
+  // Super Admin Master Password Prompt
+  const [adminPasswordPrompt, setAdminPasswordPrompt] = useState(false);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminPasswordError, setAdminPasswordError] = useState('');
+
   if (!isOpen) return null;
 
   const roleConfigs = [
@@ -116,8 +121,27 @@ export default function RoleSwitcherModal({ isOpen, onClose }) {
   ];
 
   const handleFastSwitch = (roleKey) => {
+    if (roleKey === 'superadmin' && currentUser?.role !== 'superadmin') {
+      setAdminPasswordPrompt(true);
+      setAdminPassword('');
+      setAdminPasswordError('');
+      return;
+    }
     switchRole(roleKey);
     onClose();
+  };
+
+  const handleVerifySuperAdminPassword = (e) => {
+    e.preventDefault();
+    const superAdminUser = DEFAULT_USERS.find(u => u.role === 'superadmin');
+    const validPassword = superAdminUser?.password || 'Srenthlei16#';
+    if (adminPassword === validPassword) {
+      switchRole('superadmin');
+      setAdminPasswordPrompt(false);
+      onClose();
+    } else {
+      setAdminPasswordError('Master password dik lo a ni. (Incorrect password).');
+    }
   };
 
   const handleSendOtp = async (e) => {
@@ -371,9 +395,70 @@ export default function RoleSwitcherModal({ isOpen, onClose }) {
           {/* TAB 2: FAST DEMO SWITCHER */}
           {activeTab === 'fast_switch' && (
             <div className="space-y-3.5">
+              {adminPasswordPrompt ? (
+                <div className="p-5 rounded-2xl bg-gradient-to-b from-violet-950/40 to-slate-900 border border-violet-500/40 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-400">
+                      <Lock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Super Admin Master Authentication</h4>
+                      <p className="text-xs text-slate-400">Enter master password for <strong>Samuel Lalrinfela</strong> to unlock live modification mode.</p>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleVerifySuperAdminPassword} className="space-y-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-slate-300 font-medium">Master Password</label>
+                      <input
+                        type="password"
+                        autoFocus
+                        value={adminPassword}
+                        onChange={(e) => setAdminPassword(e.target.value)}
+                        placeholder="Enter Super Admin password"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-violet-500"
+                        required
+                      />
+                    </div>
+
+                    {adminPasswordError && (
+                      <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-xs text-rose-300 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{adminPasswordError}</span>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="submit"
+                        className="flex-1 py-2 px-4 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs shadow-lg shadow-violet-600/30 transition cursor-pointer"
+                      >
+                        Unlock Master Super Admin
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setAdminPasswordPrompt(false); setAdminPasswordError(''); }}
+                        className="py-2 px-3 rounded-xl bg-slate-800 text-slate-400 hover:text-white text-xs transition cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              ) : null}
+
+              {/* Showcase demo description banner */}
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200/90 flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>
+                  Demo role accounts (Principal, Teacher, Student, Parent, Warden) are provided in <strong>Showcase Mode</strong> to explore freely without risking live database changes.
+                </span>
+              </div>
+
               {roleConfigs.map((cfg) => {
                 const Icon = cfg.icon;
                 const isSelected = currentUser?.role === cfg.role;
+                const isSuper = cfg.role === 'superadmin';
                 return (
                   <div
                     key={cfg.role}
@@ -394,9 +479,17 @@ export default function RoleSwitcherModal({ isOpen, onClose }) {
                           <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition">
                             {cfg.title}
                           </h3>
-                          {isSelected && (
+                          {isSelected ? (
                             <span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                               Active
+                            </span>
+                          ) : isSuper ? (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30">
+                              👑 Master Live (Protected)
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800/80 text-amber-400/80 border border-amber-500/20">
+                              Showcase Demo
                             </span>
                           )}
                         </div>
@@ -418,7 +511,7 @@ export default function RoleSwitcherModal({ isOpen, onClose }) {
                         </div>
                       ) : (
                         <button className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 text-slate-300 group-hover:bg-cyan-500 group-hover:text-slate-950 transition">
-                          Switch
+                          {isSuper ? 'Authenticate' : 'Switch'}
                         </button>
                       )}
                     </div>

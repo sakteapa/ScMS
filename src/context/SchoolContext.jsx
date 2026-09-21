@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
 import {
   INITIAL_CLASSES,
   INITIAL_STUDENTS,
@@ -64,7 +65,7 @@ import {
   INITIAL_OFFLINE_ADMISSION_CONFIG
 } from '../data/mockData';
 import { TRANSLATIONS } from '../data/translations';
-import { db, collection, getDocs, setDoc, addDoc, doc, query, orderBy, onSnapshot, isOfflinePersistenceActive } from '../services/firebase';
+import { db, collection, getDocs, setDoc, addDoc, doc, query, orderBy, onSnapshot, isOfflinePersistenceActive, isLiveFirebaseConfigured } from '../services/firebase';
 import {
   getActiveSchoolId,
   getActiveSchoolInfo,
@@ -81,6 +82,38 @@ export function SchoolProvider({ children }) {
   const [activeSchoolId, setActiveSchoolId] = useState(() => getActiveSchoolId());
   const [activeSchoolInfo, setActiveSchoolInfo] = useState(() => getActiveSchoolInfo());
   const [registeredSchools, setRegisteredSchools] = useState(() => getRegisteredSchools());
+
+  // Authentication Context & Showcase Mode Guard
+  const auth = useAuth();
+  const isSuperAdmin = auth?.currentUser?.role === 'superadmin';
+  const isShowcaseMode = Boolean(auth?.currentUser && !isSuperAdmin);
+  const [showcaseNotice, setShowcaseNotice] = useState(null);
+
+  const triggerShowcaseNotice = (action = 'Action') => {
+    setShowcaseNotice({
+      action,
+      timestamp: Date.now(),
+      message: `${action} is protected in Showcase Demo Mode. Please sign in as Super Admin (Samuel Lalrinfela) to apply permanent live changes.`
+    });
+    setTimeout(() => {
+      setShowcaseNotice(null);
+    }, 4500);
+  };
+
+  // Safe Tenant Item Persistence (guarded for Showcase Mode)
+  const persistTenantItem = (key, data) => {
+    if (isShowcaseMode) {
+      return; // Safe guard: Never overwrite live database in demo showcase
+    }
+    try {
+      const val = JSON.stringify(data);
+      localStorage.setItem(`zoxs_${activeSchoolId}_${key}`, val);
+      if (activeSchoolId === 'oha' || activeSchoolId === 'default') {
+        localStorage.setItem(`zoxs_${key}`, val);
+      }
+    } catch (e) {}
+  };
+  const saveTenantItem = persistTenantItem;
 
   // Dynamic PWA and document title updating based on active school
   useEffect(() => {
@@ -147,7 +180,8 @@ export function SchoolProvider({ children }) {
           localStorage.setItem(`zoxs_${activeSchoolId}_seal_config`, JSON.stringify(updated));
           return updated;
         }
-        if (Array.isArray(parsed) && Array.isArray(fallback)) {
+        const isCleanSlate = localStorage.getItem(`zoxs_${activeSchoolId}_clean_slate`) === 'true';
+        if (!isCleanSlate && Array.isArray(parsed) && Array.isArray(fallback)) {
           const parsedIds = new Set(parsed.map(i => i.id).filter(Boolean));
           const missing = fallback.filter(item => item.id && !parsedIds.has(item.id));
           if (missing.length > 0) {
@@ -155,6 +189,9 @@ export function SchoolProvider({ children }) {
           }
         }
         return parsed;
+      } else if (localStorage.getItem(`zoxs_${activeSchoolId}_clean_slate`) === 'true' && Array.isArray(fallback)) {
+        // When clean slate is active for this school and no saved array exists, return empty array (zero mock data)
+        return [];
       }
     } catch (e) {
       console.warn(`Error loading key ${key}:`, e);
@@ -546,6 +583,10 @@ export function SchoolProvider({ children }) {
 
   // Push all localStorage collections to Firestore
   const syncToFirestore = async () => {
+    if (isShowcaseMode) {
+      triggerShowcaseNotice('Cloud Sync to Firestore');
+      return { success: false, error: 'Database mutation is protected in Showcase Demo Mode.' };
+    }
     if (!db) {
       setFirebaseSyncStatus(p => ({ ...p, lastError: 'Firebase not initialised. Enter credentials first.', pushProgress: null }));
       return { success: false };
@@ -671,16 +712,12 @@ export function SchoolProvider({ children }) {
 
   // Auto save to local storage (offline cache mirror with multi-tenant partitioning)
   useEffect(() => {
-    const saveTenantItem = (key, data) => {
-      try {
-        const val = JSON.stringify(data);
-        localStorage.setItem(`zoxs_${activeSchoolId}_${key}`, val);
-        // If master default school 'oha', mirror to legacy key for compatibility
-        if (activeSchoolId === 'oha' || activeSchoolId === 'default') {
-          localStorage.setItem(`zoxs_${key}`, val);
-        }
-      } catch (e) {}
-    };
+    // If running in Showcase Demo mode, do not persist mutations into master storage!
+    if (isShowcaseMode) {
+      return;
+    }
+
+    const saveTenantItem = persistTenantItem;
 
     saveTenantItem('classes', classes);
     saveTenantItem('students', students);
@@ -1643,7 +1680,7 @@ export function SchoolProvider({ children }) {
 
   // Real-time Firestore synchronizer for in-application notices & alerts
   useEffect(() => {
-    if (!db) return;
+    if (!db || !isLiveFirebaseConfigured) return;
     try {
       const q = query(collection(db, 'notices'), orderBy('publishedAt', 'desc'));
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -4361,7 +4398,7 @@ export function SchoolProvider({ children }) {
   };
 
   // ==========================================
-  // MULTI-TENANT ACTIONS
+  // MULTI-TENANT ACTIONS & CLEAN SLATE INITIALIZATION
   // ==========================================
   const switchSchool = (schoolId) => {
     switchActiveSchool(schoolId);
@@ -4371,6 +4408,186 @@ export function SchoolProvider({ children }) {
     const created = registerNewSchool(schoolData);
     setRegisteredSchools(getRegisteredSchools());
     return created;
+  };
+
+  const generateCleanClasses = (levelsOffered = {}, streamsOffered = {}, academicSession = '2026 - 2027') => {
+    const generated = [];
+    if (levelsOffered?.prePrimary) {
+      generated.push(
+        { id: 'cls-nursery', name: 'Nursery', level: 'nursery', stream: null, section: 'A', roomNumber: 'N-101', academicYear: academicSession, teacherName: 'Unassigned', classTeacherId: null, classLeaderId: null, classLeaderName: null },
+        { id: 'cls-lkg', name: 'LKG', level: 'lkg', stream: null, section: 'A', roomNumber: 'K-101', academicYear: academicSession, teacherName: 'Unassigned', classTeacherId: null, classLeaderId: null, classLeaderName: null },
+        { id: 'cls-ukg', name: 'UKG', level: 'ukg', stream: null, section: 'A', roomNumber: 'K-102', academicYear: academicSession, teacherName: 'Unassigned', classTeacherId: null, classLeaderId: null, classLeaderName: null }
+      );
+    }
+    if (levelsOffered?.primary) {
+      for (let i = 1; i <= 5; i++) {
+        generated.push({
+          id: `cls-${i}`,
+          name: `Class ${i}`,
+          level: `${i}`,
+          stream: null,
+          section: 'A',
+          roomNumber: `P-${100 + i}`,
+          academicYear: academicSession,
+          teacherName: 'Unassigned',
+          classTeacherId: null,
+          classLeaderId: null,
+          classLeaderName: null
+        });
+      }
+    }
+    if (levelsOffered?.middle) {
+      for (let i = 6; i <= 8; i++) {
+        generated.push({
+          id: `cls-${i}`,
+          name: `Class ${i}`,
+          level: `${i}`,
+          stream: null,
+          section: 'A',
+          roomNumber: `M-${200 + i}`,
+          academicYear: academicSession,
+          teacherName: 'Unassigned',
+          classTeacherId: null,
+          classLeaderId: null,
+          classLeaderName: null
+        });
+      }
+    }
+    if (levelsOffered?.highSchool) {
+      generated.push(
+        { id: 'cls-9', name: 'Class 9', level: '9', stream: null, section: 'A', roomNumber: 'H-301', academicYear: academicSession, teacherName: 'Unassigned', classTeacherId: null, classLeaderId: null, classLeaderName: null },
+        { id: 'cls-10', name: 'Class 10 (Board)', level: '10', stream: null, section: 'A', roomNumber: 'H-302', academicYear: academicSession, teacherName: 'Unassigned', classTeacherId: null, classLeaderId: null, classLeaderName: null }
+      );
+    }
+    if (levelsOffered?.higherSecondary) {
+      if (streamsOffered?.science) {
+        generated.push(
+          { id: 'cls-11-sci', name: 'Class 11 - Science', level: '11', stream: 'science', section: 'A', roomNumber: 'S-401', academicYear: academicSession, teacherName: 'Unassigned', classTeacherId: null, classLeaderId: null, classLeaderName: null },
+          { id: 'cls-12-sci', name: 'Class 12 - Science', level: '12', stream: 'science', section: 'A', roomNumber: 'S-402', academicYear: academicSession, teacherName: 'Unassigned', classTeacherId: null, classLeaderId: null, classLeaderName: null }
+        );
+      }
+      if (streamsOffered?.arts) {
+        generated.push(
+          { id: 'cls-11-arts', name: 'Class 11 - Arts', level: '11', stream: 'arts', section: 'A', roomNumber: 'A-401', academicYear: academicSession, teacherName: 'Unassigned', classTeacherId: null, classLeaderId: null, classLeaderName: null },
+          { id: 'cls-12-arts', name: 'Class 12 - Arts', level: '12', stream: 'arts', section: 'A', roomNumber: 'A-402', academicYear: academicSession, teacherName: 'Unassigned', classTeacherId: null, classLeaderId: null, classLeaderName: null }
+        );
+      }
+      if (streamsOffered?.commerce) {
+        generated.push(
+          { id: 'cls-11-comm', name: 'Class 11 - Commerce', level: '11', stream: 'commerce', section: 'A', roomNumber: 'C-401', academicYear: academicSession, teacherName: 'Unassigned', classTeacherId: null, classLeaderId: null, classLeaderName: null },
+          { id: 'cls-12-comm', name: 'Class 12 - Commerce', level: '12', stream: 'commerce', section: 'A', roomNumber: 'C-402', academicYear: academicSession, teacherName: 'Unassigned', classTeacherId: null, classLeaderId: null, classLeaderName: null }
+        );
+      }
+    }
+    if (generated.length === 0) {
+      generated.push(
+        { id: 'cls-1', name: 'Class 1', level: '1', stream: null, section: 'A', roomNumber: '101', academicYear: academicSession, teacherName: 'Unassigned', classTeacherId: null, classLeaderId: null, classLeaderName: null }
+      );
+    }
+    return generated;
+  };
+
+  const initializeCleanSlateSchool = (options = {}) => {
+    if (isShowcaseMode) {
+      triggerShowcaseNotice('Clean Slate Institutional Reset');
+      return { success: false, error: 'Database reset is protected in Showcase Demo Mode.' };
+    }
+    const targetSchoolId = options.schoolId || activeSchoolId;
+    try {
+      localStorage.setItem(`zoxs_${targetSchoolId}_clean_slate`, 'true');
+    } catch (e) {}
+
+    const cleanClasses = generateCleanClasses(
+      options.levelsOffered || { prePrimary: true, primary: true, middle: true, highSchool: true, higherSecondary: true },
+      options.streamsOffered || { science: true, arts: true, commerce: true },
+      options.academicSession || '2026 - 2027'
+    );
+
+    const cleanStaff = [
+      {
+        id: `stf-${Date.now().toString().slice(-4)}`,
+        name: options.principalName || 'Principal',
+        role: 'principal',
+        designation: options.principalTitle || 'Principal & Head of Institution',
+        department: 'Administration',
+        email: options.contactEmail || 'principal@school.edu.in',
+        phone: options.contactPhone || '+91 94361 00000',
+        status: 'active',
+        joiningDate: `${options.establishedYear || new Date().getFullYear()}-01-15`,
+        qualification: 'M.Ed / Post Graduate',
+        assignedDuties: ['General Administration', 'Institutional Council Head', 'Financial Signatory']
+      }
+    ];
+
+    const cleanNotices = [
+      {
+        id: `not-${Date.now()}`,
+        title: `🎉 Welcome to ${options.schoolName || 'Our School'}`,
+        content: `Academic session ${options.academicSession || '2026 - 2027'} has officially commenced. Student registration, admissions, and routine are now configured.`,
+        category: 'academic',
+        priority: 'high',
+        author: options.principalName || 'Principal Office',
+        date: new Date().toISOString().split('T')[0],
+        targetRole: 'all',
+        audience: 'public'
+      }
+    ];
+
+    setClasses(cleanClasses);
+    setStudents([]);
+    setGrades([]);
+    setFees([]);
+    setAttendance([]);
+    setStaff(cleanStaff);
+    setPayroll([]);
+    setLibraryBooks([]);
+    setNotices(cleanNotices);
+    setAdmissions([]);
+    setIssuedCertificates([]);
+    setReportCardWithholds([]);
+    setTasks([]);
+    setClinicRecords([]);
+    setVisitors([]);
+    setMaintenanceTickets([]);
+    setPtmEvents([]);
+    setAlumni([]);
+    setTranscriptRequests([]);
+
+    try {
+      localStorage.setItem(`zoxs_${targetSchoolId}_classes`, JSON.stringify(cleanClasses));
+      localStorage.setItem(`zoxs_${targetSchoolId}_students`, JSON.stringify([]));
+      localStorage.setItem(`zoxs_${targetSchoolId}_grades`, JSON.stringify([]));
+      localStorage.setItem(`zoxs_${targetSchoolId}_fees`, JSON.stringify([]));
+      localStorage.setItem(`zoxs_${targetSchoolId}_attendance`, JSON.stringify([]));
+      localStorage.setItem(`zoxs_${targetSchoolId}_staff`, JSON.stringify(cleanStaff));
+      localStorage.setItem(`zoxs_${targetSchoolId}_payroll`, JSON.stringify([]));
+      localStorage.setItem(`zoxs_${targetSchoolId}_library_books`, JSON.stringify([]));
+      localStorage.setItem(`zoxs_${targetSchoolId}_notices`, JSON.stringify(cleanNotices));
+      localStorage.setItem(`zoxs_${targetSchoolId}_admissions`, JSON.stringify([]));
+      localStorage.setItem(`zoxs_${targetSchoolId}_issued_certificates`, JSON.stringify([]));
+      localStorage.setItem(`zoxs_${targetSchoolId}_report_card_withholds`, JSON.stringify([]));
+      localStorage.setItem(`zoxs_${targetSchoolId}_tasks`, JSON.stringify([]));
+      localStorage.setItem(`zoxs_${targetSchoolId}_clinic_records`, JSON.stringify([]));
+      localStorage.setItem(`zoxs_${targetSchoolId}_visitors`, JSON.stringify([]));
+      localStorage.setItem(`zoxs_${targetSchoolId}_maintenance_tickets`, JSON.stringify([]));
+      localStorage.setItem(`zoxs_${targetSchoolId}_ptm_events`, JSON.stringify([]));
+      localStorage.setItem(`zoxs_${targetSchoolId}_alumni`, JSON.stringify([]));
+      localStorage.setItem(`zoxs_${targetSchoolId}_transcript_requests`, JSON.stringify([]));
+
+      if (targetSchoolId === 'oha' || targetSchoolId === 'default') {
+        localStorage.setItem('zoxs_students', JSON.stringify([]));
+        localStorage.setItem('zoxs_classes', JSON.stringify(cleanClasses));
+        localStorage.setItem('zoxs_staff', JSON.stringify(cleanStaff));
+        localStorage.setItem('zoxs_grades', JSON.stringify([]));
+        localStorage.setItem('zoxs_fees', JSON.stringify([]));
+        localStorage.setItem('zoxs_attendance', JSON.stringify([]));
+        localStorage.setItem('zoxs_notices', JSON.stringify(cleanNotices));
+      }
+    } catch (e) {
+      console.warn('Error saving clean slate:', e);
+    }
+
+    return { success: true, count: cleanClasses.length };
   };
 
   return (
@@ -4628,6 +4845,7 @@ export function SchoolProvider({ children }) {
       registeredSchools,
       switchSchool,
       registerSchoolTenant,
+      initializeCleanSlateSchool,
       isSyncing,
       lastSyncTime,
       isOfflinePersistenceActive,
@@ -4635,6 +4853,11 @@ export function SchoolProvider({ children }) {
       testFirebaseConnection,
       syncToFirestore,
       pullFromFirestore,
+      // 13. Showcase Demo Mode Guard
+      isShowcaseMode,
+      isSuperAdmin,
+      showcaseNotice,
+      triggerShowcaseNotice,
     }}>
       {children}
     </SchoolContext.Provider>

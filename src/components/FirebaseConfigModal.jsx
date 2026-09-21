@@ -10,7 +10,7 @@ import {
   RotateCcw,
   Sparkles
 } from 'lucide-react';
-import { getStoredFirebaseConfig, saveStoredFirebaseConfig, isOfflinePersistenceActive } from '../services/firebase';
+import { getStoredFirebaseConfig, saveStoredFirebaseConfig, isOfflinePersistenceActive, isLiveFirebaseConfigured } from '../services/firebase';
 import { useSchool } from '../context/SchoolContext';
 
 export default function FirebaseConfigModal({ isOpen, onClose }) {
@@ -64,12 +64,18 @@ export default function FirebaseConfigModal({ isOpen, onClose }) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <HardDrive className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs font-semibold text-slate-200">Offline Multi-Tab Persistence</span>
+                <span className="text-xs font-semibold text-slate-200">Persistence &amp; Backend State</span>
               </div>
-              <span className="text-[11px] px-2 py-0.5 rounded-md font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" />
-                Active
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`text-[11px] px-2 py-0.5 rounded-md font-semibold border flex items-center gap-1 ${
+                  isLiveFirebaseConfigured 
+                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' 
+                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                }`}>
+                  <CheckCircle2 className="w-3 h-3" />
+                  {isLiveFirebaseConfigured ? 'Live Cloud Connected' : 'Local Offline Multi-Tab Cache'}
+                </span>
+              </div>
             </div>
             <p className="text-xs text-slate-400">
               Configured with <code className="text-cyan-300 font-mono">persistentLocalCache</code> &amp; <code className="text-cyan-300 font-mono">persistentMultipleTabManager</code>. All 13 collections stay cached locally in IndexedDB and sync seamlessly when online.

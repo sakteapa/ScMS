@@ -90,33 +90,35 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
   return (
     <div className="space-y-6 pb-16">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white font-['Outfit'] flex items-center gap-2">
-            <span>Student Master Directory</span>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-lg sm:text-xl font-bold text-white font-['Outfit']">
+              Student Master Directory
+            </h2>
+            <span className="text-[11px] sm:text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold">
               {students.length} Total
             </span>
-            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono font-bold">
-              Session: {activeSessionName}
+            <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono font-bold">
+              {activeSessionName}
             </span>
-          </h2>
-          <p className="text-xs text-slate-400">
+          </div>
+          <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
             Nursery through Class 12 with Higher Secondary Arts, Science, and Commerce streams.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           {(isPrincipal || isVicePrincipal || isSuperAdmin) && (
             <button
               onClick={() => {
                 setPromotionTargetStudent(null);
                 setIsPromotionModalOpen(true);
               }}
-              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-purple-600/25 flex items-center gap-2 transition shrink-0 cursor-pointer"
+              className="px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-purple-600/25 flex items-center gap-1.5 transition shrink-0 cursor-pointer"
             >
-              <GraduationCap className="w-4 h-4" />
-              <span>Academic Sessions &amp; Class Promotion</span>
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span>Sessions &amp; Promotion</span>
             </button>
           )}
 
@@ -125,26 +127,26 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
               setIdCardTargetStudent(null);
               setIsIdCardModalOpen(true);
             }}
-            className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/25 flex items-center gap-2 transition shrink-0"
+            className="px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/25 flex items-center gap-1.5 transition shrink-0"
           >
-            <CreditCard className="w-4 h-4" />
-            <span>Student ID Cards &amp; Admit Cards</span>
+            <CreditCard className="w-3.5 h-3.5" />
+            <span>ID &amp; Admit Cards</span>
           </button>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="p-3 sm:p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
+        <div className="grid grid-cols-2 lg:flex lg:flex-wrap items-end gap-2 sm:gap-3">
           {/* Class Filter */}
           <div>
             <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Class</label>
             <select
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
-              className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
+              className="w-full px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
             >
-              <option value="all">All Classes (Nursery - 12)</option>
+              <option value="all">All Classes</option>
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>{c.name} {c.stream ? `(${c.stream.toUpperCase()})` : ''}</option>
               ))}
@@ -157,53 +159,53 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
             <select
               value={selectedFeeStatus}
               onChange={(e) => setSelectedFeeStatus(e.target.value)}
-              className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
+              className="w-full px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
             >
-              <option value="all">All Fee Statuses</option>
-              <option value="cleared">Cleared (Full Paid)</option>
+              <option value="all">All Fees</option>
+              <option value="cleared">Cleared</option>
               <option value="partial">Partial</option>
-              <option value="overdue">Overdue / Unpaid</option>
+              <option value="overdue">Overdue</option>
             </select>
           </div>
 
           {/* Session Enrollment Status Filter */}
           <div>
-            <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Session Enrollment</label>
+            <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Session</label>
             <select
               value={selectedSessionStatus}
               onChange={(e) => setSelectedSessionStatus(e.target.value)}
-              className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
+              className="w-full px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
             >
-              <option value="all">All Student Records</option>
-              <option value="enrolled">Enrolled in Active ({activeSessionName})</option>
-              <option value="awaiting_rollover">Pending Promotion / Rollover</option>
+              <option value="all">All Sessions</option>
+              <option value="enrolled">Active ({activeSessionName})</option>
+              <option value="awaiting_rollover">Pending Rollover</option>
             </select>
           </div>
 
           {/* Conduct & Status Filter */}
           <div>
-            <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Conduct &amp; Status</label>
+            <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Status</label>
             <select
               value={selectedConductStatus}
               onChange={(e) => setSelectedConductStatus(e.target.value)}
-              className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
+              className="w-full px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
             >
-              <option value="all">All Student Statuses</option>
-              <option value="active">Active Enrolled</option>
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
               <option value="suspended">⛔ Suspended</option>
             </select>
           </div>
         </div>
 
         {/* Search */}
-        <div className="relative w-full sm:w-72">
+        <div className="relative w-full">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by student name or admission number..."
-            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
+            className="w-full pl-8 pr-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
           />
         </div>
       </div>
@@ -368,7 +370,7 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
           return (
             <div
               key={st.id}
-              className={`p-5 rounded-2xl bg-slate-900/80 border transition space-y-4 shadow-lg group ${
+              className={`p-3.5 sm:p-5 rounded-2xl bg-slate-900/80 border transition space-y-3 sm:space-y-4 shadow-lg group ${
                 isSuspended
                   ? 'border-rose-600/70 hover:border-rose-500 bg-gradient-to-b from-rose-950/20 to-slate-900/95 ring-1 ring-rose-500/30'
                   : isLeader 
@@ -379,12 +381,12 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
               }`}
             >
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div className="relative shrink-0">
                     <img
                       src={st.photoUrl}
                       alt=""
-                      className={`w-12 h-12 rounded-xl object-cover ring-2 transition ${
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover ring-2 transition ${
                         isSuspended
                           ? 'ring-rose-500 animate-pulse'
                           : isLeader 

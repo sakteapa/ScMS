@@ -92,6 +92,7 @@ export function registerNewSchool(schoolData = {}) {
     name: schoolData.name || 'New Academy',
     shortName: schoolData.shortName || schoolData.name || 'New Academy',
     subdomain: rawSubdomain,
+    customDomain: schoolData.customDomain ? schoolData.customDomain.toLowerCase().trim() : '',
     code: schoolData.code || `SCH-${Date.now().toString().slice(-4)}`,
     address: schoolData.address || 'Mizoram, India',
     contactPhone: schoolData.contactPhone || '+91 98620 00000',
@@ -130,7 +131,28 @@ export function getActiveSchoolId() {
     }
   } catch {}
 
-  // 2. Check Hostname Subdomain (e.g. stpauls.zoxs.in -> stpauls)
+  // 2. Check Custom Domain (e.g. school has its own domain name like stpaulsaizawl.edu.in)
+  try {
+    const rawHost = (window.location.hostname || '').toLowerCase().replace(/^www\./, '');
+    const isLocalhost = rawHost === 'localhost' || rawHost === '127.0.0.1';
+    const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(rawHost);
+
+    if (!isLocalhost && !isIp && rawHost) {
+      const allRegistered = getRegisteredSchools();
+      const domainMatch = allRegistered.find(s => {
+        if (!s.customDomain) return false;
+        const cleanCustom = s.customDomain.toLowerCase().trim().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+        return cleanCustom === rawHost;
+      });
+
+      if (domainMatch) {
+        localStorage.setItem('zoxs_active_school_id', domainMatch.id);
+        return domainMatch.id;
+      }
+    }
+  } catch {}
+
+  // 3. Check Hostname Subdomain (e.g. stpauls.zoxs.in -> stpauls)
   try {
     const hostname = window.location.hostname;
     const parts = hostname.split('.');
@@ -148,7 +170,7 @@ export function getActiveSchoolId() {
     }
   } catch {}
 
-  // 3. Check Stored Active School in LocalStorage
+  // 4. Check Stored Active School in LocalStorage
   try {
     const saved = localStorage.getItem('zoxs_active_school_id');
     if (saved && saved.trim()) {
@@ -156,7 +178,7 @@ export function getActiveSchoolId() {
     }
   } catch {}
 
-  // 4. Default Fallback Master Tenant
+  // 5. Default Fallback Master Tenant
   return 'oha';
 }
 

@@ -5,6 +5,8 @@ import {
   persistentLocalCache, 
   persistentMultipleTabManager,
   getFirestore,
+  disableNetwork,
+  enableNetwork,
   collection,
   doc,
   getDocs,
@@ -38,6 +40,22 @@ const DEFAULT_FIREBASE_CONFIG = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:928374910283:web:a9f82d1c7e4b901a"
 };
 
+// Check if a configuration object represents an active live backend rather than a demo placeholder
+export function checkIsLiveConfig(config) {
+  if (!config || !config.apiKey || !config.projectId) return false;
+  if (
+    config.apiKey.includes('Demo') ||
+    config.apiKey.includes('demo') ||
+    config.apiKey.startsWith('demo-') ||
+    config.apiKey === 'AIzaSyDemoMizoramSchoolKey2026Secure01' ||
+    config.projectId === 'zoxs-sms-demo' ||
+    config.projectId === 'zoxs-sms-mizoram'
+  ) {
+    return false;
+  }
+  return true;
+}
+
 // Check if user has provided custom config in localStorage
 export function getStoredFirebaseConfig() {
   try {
@@ -60,6 +78,10 @@ export function saveStoredFirebaseConfig(config) {
   }
 }
 
+// Check whether live Firebase is genuinely configured
+const currentConfig = getStoredFirebaseConfig();
+export const isLiveFirebaseConfigured = checkIsLiveConfig(currentConfig);
+
 // Initialize Firebase App
 let app;
 let db;
@@ -67,7 +89,6 @@ let auth;
 let isOfflinePersistenceActive = false;
 
 try {
-  const currentConfig = getStoredFirebaseConfig();
   app = !getApps().length ? initializeApp(currentConfig) : getApp();
 
   // Initialize Firestore with robust multi-tab offline persistence
@@ -84,6 +105,12 @@ try {
     db = getFirestore(app);
   }
 
+  // If live backend credentials are not configured, keep Firestore strictly in offline mode
+  // so the SDK does not attempt remote connections that fail with permission errors
+  if (!isLiveFirebaseConfigured && db) {
+    disableNetwork(db).catch(() => {});
+  }
+
   auth = getAuth(app);
 } catch (err) {
   console.error('Firebase initialization notice:', err);
@@ -94,6 +121,8 @@ export {
   db, 
   auth, 
   isOfflinePersistenceActive,
+  disableNetwork,
+  enableNetwork,
   collection, 
   doc, 
   getDocs, 

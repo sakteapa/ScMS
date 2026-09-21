@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useSchool } from "../context/SchoolContext";
-import { db, collection, addDoc, onSnapshot, query, orderBy } from "../services/firebase";
+import { db, collection, addDoc, onSnapshot, query, orderBy, isLiveFirebaseConfigured } from "../services/firebase";
 
 const INITIAL_CHANNELS = [
   {
@@ -100,7 +100,7 @@ export default function StaffChatView() {
 
   // Real-time Firestore synchronizer for staff chat messages
   useEffect(() => {
-    if (!db) return;
+    if (!db || !isLiveFirebaseConfigured) return;
     try {
       const q = query(collection(db, "staff_messages"), orderBy("timestamp", "asc"));
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -169,8 +169,8 @@ export default function StaffChatView() {
     setChannels(prev => prev.map(c => c.id === activeChannelId ? { ...c, messages: [...c.messages, msg], unread: 0 } : c));
     setNewMsg("");
 
-    // Broadcast to Firestore real-time collection if connected
-    if (db) {
+    // Broadcast to Firestore real-time collection if connected to live backend
+    if (db && isLiveFirebaseConfigured) {
       addDoc(collection(db, "staff_messages"), {
         channelId: activeChannelId,
         sender: msg.sender,

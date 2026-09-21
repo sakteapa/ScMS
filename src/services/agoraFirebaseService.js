@@ -22,7 +22,8 @@ import {
   updateDoc, 
   onSnapshot, 
   query, 
-  where 
+  where,
+  isLiveFirebaseConfigured
 } from './firebase';
 
 // Default Agora RTC App ID fallback
@@ -96,7 +97,7 @@ export async function createAgoraClassroomSession({
   };
 
   // Save to Firebase Firestore so all students see it immediately
-  if (db) {
+  if (db && isLiveFirebaseConfigured) {
     try {
       await setDoc(doc(db, "agora_classrooms", sessionId), sessionData);
     } catch (err) {
@@ -118,7 +119,7 @@ export function subscribeToAgoraClassroom(classId, onSessionUpdate) {
   if (!classId) return () => {};
 
   // Firebase Firestore real-time onSnapshot subscription
-  if (db) {
+  if (db && isLiveFirebaseConfigured) {
     try {
       const q = query(
         collection(db, "agora_classrooms"),

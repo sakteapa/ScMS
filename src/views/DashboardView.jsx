@@ -43,50 +43,50 @@ export default function DashboardView({ setCurrentTab, openRoleSwitcher }) {
   return (
     <div className="space-y-6 pb-12">
       {/* Welcome Banner */}
-      <div className="relative rounded-2xl overflow-hidden p-6 sm:p-8 bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-slate-800 shadow-xl">
+      <div className="relative rounded-2xl overflow-hidden p-4 sm:p-6 lg:p-8 bg-gradient-to-r from-slate-900 via-indigo-950/70 to-slate-900 border border-slate-800 shadow-xl">
         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-cyan-500/10 to-transparent pointer-events-none"></div>
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+          <div className="space-y-1.5 sm:space-y-2">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                 {systemConfig?.schoolName || 'OHA (One Heart Academy)'}
               </span>
-              <span className="text-xs text-slate-400">Nursery to Class 12</span>
+              <span className="text-[11px] sm:text-xs text-slate-400">Nursery to Class 12</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white font-['Outfit']">
               Chibai, {currentUser?.displayName || 'Principal'}!
             </h2>
-            <p className="text-sm text-slate-300 max-w-2xl">
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
               Welcome to the integrated Mizoram School System (<span className="text-cyan-400 font-mono">zoxs-sms</span>).
               Real-time attendance, dual UPI/Cash fees, continuous tests &amp; MBSE exams, and offline-enabled Firestore v10.8.0.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {(!isWarden) && (
               <button
                 onClick={() => setCurrentTab('attendance')}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-lg shadow-cyan-500/25 flex items-center gap-2"
+                className="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-lg shadow-cyan-500/25 flex items-center gap-1.5 sm:gap-2"
               >
-                <QrCode className="w-4 h-4" />
+                <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>QR Scanner</span>
               </button>
             )}
             {(!isWarden) && (
               <button
                 onClick={() => setCurrentTab('report_cards')}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition border border-slate-700 flex items-center gap-2"
+                className="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition border border-slate-700 flex items-center gap-1.5 sm:gap-2"
               >
-                <FileText className="w-4 h-4 text-cyan-400" />
+                <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400" />
                 <span>Report Cards</span>
               </button>
             )}
             {isWarden && (
               <button
                 onClick={() => setCurrentTab('hostel')}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-lg shadow-purple-600/25 flex items-center gap-2"
+                className="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-lg shadow-purple-600/25 flex items-center gap-1.5 sm:gap-2"
               >
-                <Building2 className="w-4 h-4" />
+                <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>Hostel Suite</span>
               </button>
             )}
@@ -95,35 +95,35 @@ export default function DashboardView({ setCurrentTab, openRoleSwitcher }) {
       </div>
 
       {/* KPI Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
         {/* Total Students */}
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Enrolled Students</span>
-            <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30">
-              <Users className="w-4.5 h-4.5" />
+        <div className="p-3 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[11px] sm:text-xs font-medium text-slate-400 truncate">Enrolled Students</span>
+            <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30 shrink-0">
+              <Users className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
             </div>
           </div>
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">{students.length}</span>
-            <span className="text-xs text-emerald-400 font-medium">Nursery to 12</span>
+          <div className="mt-2.5 sm:mt-4 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-white font-['Outfit']">{students.length}</span>
+            <span className="text-[10px] sm:text-xs text-emerald-400 font-medium truncate">Nursery-12</span>
           </div>
-          <p className="mt-1 text-[11px] text-slate-500">
-            Arts, Science, Commerce streams active
+          <p className="mt-1 text-[10px] sm:text-[11px] text-slate-500 truncate">
+            Arts, Science, Commerce
           </p>
         </div>
 
         {/* Today's Attendance */}
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Today's Attendance</span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
-              <UserCheck className="w-4.5 h-4.5" />
+        <div className="p-3 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-1">
+            <span className="text-[11px] sm:text-xs font-medium text-slate-400 truncate">Attendance</span>
+            <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 shrink-0">
+              <UserCheck className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
             </div>
           </div>
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">{attendanceRate}%</span>
-            <span className="text-xs text-emerald-400 font-medium">Present Rate</span>
+          <div className="mt-2.5 sm:mt-4 flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-white font-['Outfit']">{attendanceRate}%</span>
+            <span className="text-[10px] sm:text-xs text-emerald-400 font-medium truncate">Present</span>
           </div>
           <div className="mt-2 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
             <div className="bg-emerald-400 h-1.5 rounded-full" style={{ width: `${attendanceRate}%` }}></div>
@@ -132,123 +132,123 @@ export default function DashboardView({ setCurrentTab, openRoleSwitcher }) {
 
         {/* Total Fee Collections (Admin/Principal only) or Academic/Hostel Overview for Staff */}
         {(isPrincipal || isSuperAdmin) ? (
-          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400">Fees Collected</span>
-              <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
-                <CreditCard className="w-4.5 h-4.5" />
+          <div className="p-3 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] sm:text-xs font-medium text-slate-400 truncate">Fees Collected</span>
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30 shrink-0">
+                <CreditCard className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               </div>
             </div>
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">
+            <div className="mt-2.5 sm:mt-4 flex items-baseline gap-1.5 sm:gap-2">
+              <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-white font-['Outfit']">
                 ₹{(totalFeesCollected / 1000).toFixed(1)}k
               </span>
-              <span className="text-xs text-cyan-400 font-medium">{fees.length} Receipts</span>
+              <span className="text-[10px] sm:text-xs text-cyan-400 font-medium truncate">{fees.length} rcvd</span>
             </div>
-            <p className="mt-1 text-[11px] text-slate-500 flex items-center gap-1">
+            <p className="mt-1 text-[10px] sm:text-[11px] text-slate-500 flex items-center gap-1 truncate">
               <span>UPI: ₹{(upiFees / 1000).toFixed(0)}k</span>
               <span>•</span>
               <span>Cash: ₹{(cashFees / 1000).toFixed(0)}k</span>
             </p>
           </div>
         ) : isWarden ? (
-          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400">Hostel Boarding</span>
-              <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
-                <Building2 className="w-4.5 h-4.5" />
+          <div className="p-3 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] sm:text-xs font-medium text-slate-400 truncate">Hostel Boarding</span>
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30 shrink-0">
+                <Building2 className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               </div>
             </div>
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">Residential</span>
-              <span className="text-xs text-purple-400 font-medium">Active</span>
+            <div className="mt-2.5 sm:mt-4 flex items-baseline gap-1.5 sm:gap-2">
+              <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-white font-['Outfit']">Hostel</span>
+              <span className="text-[10px] sm:text-xs text-purple-400 font-medium truncate">Active</span>
             </div>
-            <p className="mt-1 text-[11px] text-slate-500">
-              Boys &amp; Girls Boarding Quarters
+            <p className="mt-1 text-[10px] sm:text-[11px] text-slate-500 truncate">
+              Boys &amp; Girls Boarding
             </p>
           </div>
         ) : (
-          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400">Academic Schedule</span>
-              <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
-                <GraduationCap className="w-4.5 h-4.5" />
+          <div className="p-3 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] sm:text-xs font-medium text-slate-400 truncate">Academic</span>
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30 shrink-0">
+                <GraduationCap className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               </div>
             </div>
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">{classes.length}</span>
-              <span className="text-xs text-purple-400 font-medium">Classes Active</span>
+            <div className="mt-2.5 sm:mt-4 flex items-baseline gap-1.5 sm:gap-2">
+              <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-white font-['Outfit']">{classes.length}</span>
+              <span className="text-[10px] sm:text-xs text-purple-400 font-medium truncate">Classes</span>
             </div>
-            <p className="mt-1 text-[11px] text-slate-500">
-              MBSE Curriculum &amp; Routine
+            <p className="mt-1 text-[10px] sm:text-[11px] text-slate-500 truncate">
+              MBSE Curriculum
             </p>
           </div>
         )}
 
         {/* Pending Admissions (Principal/VP) or Faculty Desk */}
         {(isPrincipal || isSuperAdmin || isVicePrincipal) ? (
-          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400">Online Admissions</span>
-              <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
-                <Sparkles className="w-4.5 h-4.5" />
+          <div className="p-3 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] sm:text-xs font-medium text-slate-400 truncate">Admissions</span>
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 shrink-0">
+                <Sparkles className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               </div>
             </div>
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">{pendingAdmissions.length}</span>
-              <span className="text-xs text-amber-400 font-medium">Pending Review</span>
+            <div className="mt-2.5 sm:mt-4 flex items-baseline gap-1.5 sm:gap-2">
+              <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-white font-['Outfit']">{pendingAdmissions.length}</span>
+              <span className="text-[10px] sm:text-xs text-amber-400 font-medium truncate">Pending</span>
             </div>
-            <div className="mt-1 flex items-center justify-between text-[11px]">
-              <span className="text-slate-500">{admissions.length} total applications</span>
+            <div className="mt-1 flex items-center justify-between text-[10px] sm:text-[11px]">
+              <span className="text-slate-500 truncate">{admissions.length} total</span>
               <button
                 onClick={() => setCurrentTab('admissions')}
-                className="text-cyan-400 hover:underline font-medium"
+                className="text-cyan-400 hover:underline font-medium shrink-0 ml-1"
               >
                 Review →
               </button>
             </div>
           </div>
         ) : isWarden ? (
-          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400">Hostel Pass Desk</span>
-              <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
-                <Sparkles className="w-4.5 h-4.5" />
+          <div className="p-3 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] sm:text-xs font-medium text-slate-400 truncate">Hostel Pass</span>
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 shrink-0">
+                <Sparkles className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               </div>
             </div>
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">Gate Log</span>
-              <span className="text-xs text-amber-400 font-medium">Ready</span>
+            <div className="mt-2.5 sm:mt-4 flex items-baseline gap-1.5 sm:gap-2">
+              <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-white font-['Outfit']">Gate Log</span>
+              <span className="text-[10px] sm:text-xs text-amber-400 font-medium truncate">Ready</span>
             </div>
-            <div className="mt-1 flex items-center justify-between text-[11px]">
-              <span className="text-slate-500">Boarder Outing &amp; Night Roll</span>
+            <div className="mt-1 flex items-center justify-between text-[10px] sm:text-[11px]">
+              <span className="text-slate-500 truncate">Passes</span>
               <button
                 onClick={() => setCurrentTab('hostel')}
-                className="text-cyan-400 hover:underline font-medium"
+                className="text-cyan-400 hover:underline font-medium shrink-0 ml-1"
               >
-                Open →
+                View →
               </button>
             </div>
           </div>
         ) : (
-          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400">Faculty Desk</span>
-              <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
-                <Sparkles className="w-4.5 h-4.5" />
+          <div className="p-3 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] sm:text-xs font-medium text-slate-400 truncate">Faculty Desk</span>
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 shrink-0">
+                <Sparkles className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
               </div>
             </div>
-            <div className="mt-4 flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">Gradebook</span>
-              <span className="text-xs text-amber-400 font-medium">Active</span>
+            <div className="mt-2.5 sm:mt-4 flex items-baseline gap-1.5 sm:gap-2">
+              <span className="text-xl sm:text-2xl lg:text-3xl font-bold text-white font-['Outfit']">Marks</span>
+              <span className="text-[10px] sm:text-xs text-amber-400 font-medium truncate">Active</span>
             </div>
-            <div className="mt-1 flex items-center justify-between text-[11px]">
-              <span className="text-slate-500">Continuous Assessment &amp; Tests</span>
+            <div className="mt-1 flex items-center justify-between text-[10px] sm:text-[11px]">
+              <span className="text-slate-500 truncate">Assessments</span>
               <button
                 onClick={() => setCurrentTab('academics')}
-                className="text-cyan-400 hover:underline font-medium"
+                className="text-cyan-400 hover:underline font-medium shrink-0 ml-1"
               >
-                Enter Marks →
+                Enter →
               </button>
             </div>
           </div>

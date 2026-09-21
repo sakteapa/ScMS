@@ -30,7 +30,8 @@ import {
   MessageSquare,
   BarChart3,
   Globe,
-  LogOut
+  LogOut,
+  X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
@@ -294,20 +295,31 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Brand Header */}
-        <div className="h-20 px-6 flex items-center gap-3.5 border-b border-slate-800/80 bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-900">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 ring-1 ring-white/20">
-            <GraduationCap className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-bold text-base tracking-wide text-white font-['Outfit']">
-              MIZORAM SCHOOL
-            </span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-medium text-cyan-400 font-mono tracking-wider">zoxs-sms</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="text-[10px] text-slate-400">Nursery - 12</span>
+        <div className="h-16 lg:h-20 px-4 lg:px-6 flex items-center justify-between border-b border-slate-800/80 bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-900">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 lg:w-11 lg:h-11 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 ring-1 ring-white/20 shrink-0">
+              <GraduationCap className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="font-bold text-sm lg:text-base tracking-wide text-white font-['Outfit'] truncate">
+                MIZORAM SCHOOL
+              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-medium text-cyan-400 font-mono tracking-wider">zoxs-sms</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className="text-[10px] text-slate-400">Nursery - 12</span>
+              </div>
             </div>
           </div>
+
+          {/* Close button on mobile */}
+          <button
+            onClick={() => setIsMobileOpen(false)}
+            className="lg:hidden p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition"
+            aria-label="Close sidebar"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Current Active Role Badge */}

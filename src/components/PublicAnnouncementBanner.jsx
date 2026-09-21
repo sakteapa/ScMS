@@ -189,13 +189,13 @@ export default function PublicAnnouncementBanner({
 
   // Repeated Item in the ticker
   const renderItemContent = (key) => (
-    <div key={key} className="flex items-center gap-3 shrink-0 px-6">
+    <div key={key} className="flex items-center gap-2 sm:gap-3 shrink-0 px-3 sm:px-6">
       {/* Media: GIF / Image / Emoji */}
       {mediaNode}
 
       {/* Badge Tag */}
       {badgeText && (
-        <span className={`text-[10px] sm:text-[11px] font-black tracking-wide uppercase px-2.5 py-0.5 rounded-full shrink-0 font-mono ${theme.badgeClass}`}>
+        <span className={`text-[10px] sm:text-[11px] font-black tracking-wide uppercase px-2 sm:px-2.5 py-0.5 rounded-full shrink-0 font-mono ${theme.badgeClass}`}>
           {badgeText}
         </span>
       )}
@@ -210,7 +210,7 @@ export default function PublicAnnouncementBanner({
         <button
           type="button"
           onClick={handleActionClick}
-          className={`px-3 py-1 rounded-full text-[11px] font-bold transition flex items-center gap-1 shrink-0 shadow-sm cursor-pointer ${theme.btnClass}`}
+          className={`px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-bold transition flex items-center gap-1 shrink-0 shadow-sm cursor-pointer ${theme.btnClass}`}
         >
           <span>{linkText}</span>
           {linkType === 'custom_url' ? (
@@ -222,7 +222,7 @@ export default function PublicAnnouncementBanner({
       )}
 
       {/* Subtle Separator Dot */}
-      <span className="w-1.5 h-1.5 rounded-full bg-white/30 shrink-0 mx-2" />
+      <span className="w-1.5 h-1.5 rounded-full bg-white/30 shrink-0 mx-1 sm:mx-2" />
     </div>
   );
 
@@ -234,15 +234,15 @@ export default function PublicAnnouncementBanner({
       }`}
       style={{ minHeight: '38px' }}
     >
-      <div className="flex items-center justify-between w-full h-full py-1.5 px-3">
+      <div className="flex items-center justify-between w-full h-full py-1 sm:py-1.5 px-2 sm:px-3">
         {/* Banner Content Container */}
         <div className="flex-1 overflow-hidden relative">
           {isStatic ? (
             // Static centered mode
-            <div className="flex items-center justify-center flex-wrap gap-2 text-center py-0.5">
+            <div className="flex items-center justify-center flex-wrap gap-1.5 sm:gap-2 text-center py-0.5">
               {mediaNode}
               {badgeText && (
-                <span className={`text-[10px] sm:text-[11px] font-black tracking-wide uppercase px-2.5 py-0.5 rounded-full font-mono ${theme.badgeClass}`}>
+                <span className={`text-[10px] sm:text-[11px] font-black tracking-wide uppercase px-2 sm:px-2.5 py-0.5 rounded-full font-mono ${theme.badgeClass}`}>
                   {badgeText}
                 </span>
               )}
@@ -253,7 +253,7 @@ export default function PublicAnnouncementBanner({
                 <button
                   type="button"
                   onClick={handleActionClick}
-                  className={`ml-2 px-3 py-0.5 rounded-full text-[11px] font-bold transition inline-flex items-center gap-1 shrink-0 ${theme.btnClass}`}
+                  className={`ml-1 sm:ml-2 px-2.5 sm:px-3 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold transition inline-flex items-center gap-1 shrink-0 ${theme.btnClass}`}
                 >
                   <span>{linkText}</span>
                   <ChevronRight className="w-3 h-3" />

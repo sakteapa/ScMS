@@ -329,38 +329,40 @@ export default function RoutineView() {
         </div>
 
         {/* Sub-Tab Navigation Bar */}
-        <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/60 px-4 pt-2 rounded-2xl gap-2">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/60 px-2 sm:px-4 pt-2 rounded-2xl gap-1.5 sm:gap-2 overflow-x-auto max-w-full">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               onClick={() => setActiveMainTab('class_routine')}
-              className={`px-4 py-2.5 rounded-t-xl text-xs font-bold transition flex items-center gap-2 ${
+              className={`px-3 py-2 sm:px-4 sm:py-2.5 rounded-t-xl text-xs font-bold transition flex items-center gap-1.5 sm:gap-2 shrink-0 ${
                 activeMainTab === 'class_routine'
                   ? 'bg-slate-950 text-cyan-300 border-t-2 border-cyan-400 shadow-md'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
               }`}
             >
-              <Clock className="w-4 h-4 text-cyan-400" />
-              <span>Class Time Table (Daily Periods)</span>
+              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400" />
+              <span className="hidden sm:inline">Class Time Table (Daily Periods)</span>
+              <span className="sm:hidden">Time Table</span>
             </button>
 
             <button
               onClick={() => setActiveMainTab('exam_routine')}
-              className={`px-4 py-2.5 rounded-t-xl text-xs font-bold transition flex items-center gap-2 ${
+              className={`px-3 py-2 sm:px-4 sm:py-2.5 rounded-t-xl text-xs font-bold transition flex items-center gap-1.5 sm:gap-2 shrink-0 ${
                 activeMainTab === 'exam_routine'
                   ? 'bg-slate-950 text-amber-300 border-t-2 border-amber-400 shadow-md'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
               }`}
             >
-              <FileText className="w-4 h-4 text-amber-400" />
-              <span>Exam Routine (Date-Sheet &amp; Schedule)</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                {currentClassExams.length} Papers
+              <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+              <span className="hidden sm:inline">Exam Routine (Date-Sheet &amp; Schedule)</span>
+              <span className="sm:hidden">Exam Routine</span>
+              <span className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                {currentClassExams.length}
               </span>
             </button>
           </div>
 
           {/* RBAC Authority Indicator Badge */}
-          <div className="hidden sm:flex items-center gap-2 pb-2">
+          <div className="hidden md:flex items-center gap-2 pb-2 shrink-0">
             {canManage ? (
               <span className="text-[11px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
@@ -433,25 +435,25 @@ export default function RoutineView() {
       {activeMainTab === 'class_routine' && (
         <div className="space-y-6">
           {/* Day Selector Tabs (Hidden in print) */}
-          <div className="no-print flex border-b border-slate-800 bg-slate-900/60 px-4 pt-3 gap-2 overflow-x-auto rounded-t-2xl">
+          <div className="no-print flex border-b border-slate-800 bg-slate-900/60 px-2 sm:px-4 pt-2 sm:pt-3 gap-1.5 sm:gap-2 overflow-x-auto rounded-t-2xl max-w-full">
             {days.map((day) => (
               <button
                 key={day}
                 onClick={() => setActiveDay(day)}
-                className={`px-4 py-2.5 rounded-t-xl text-xs font-bold transition flex items-center gap-2 ${
+                className={`px-3 py-2 sm:px-4 sm:py-2.5 rounded-t-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
                   activeDay === day
                     ? 'bg-slate-950 text-cyan-300 border-t-2 border-cyan-400 shadow'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
                 }`}
               >
-                <Clock className="w-3.5 h-3.5" />
+                <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 <span>{day}</span>
               </button>
             ))}
           </div>
 
           {/* Interactive Day Routine Grid (Screen View) */}
-          <div className="no-print p-6 rounded-b-3xl bg-slate-900/80 border border-slate-800 space-y-4 shadow-xl">
+          <div className="no-print p-4 sm:p-6 rounded-b-3xl bg-slate-900/80 border border-slate-800 space-y-4 shadow-xl">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="text-base font-bold text-white font-['Outfit']">

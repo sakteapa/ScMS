@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
 import { agoraService, getStoredAgoraAppId } from '../services/agoraService';
-import { db, collection, query, where, onSnapshot } from '../services/firebase';
+import { db, collection, query, where, onSnapshot, isLiveFirebaseConfigured } from '../services/firebase';
 
 export interface AgoraVideoRoomProps {
   channelName?: string;
@@ -286,7 +286,7 @@ export function LiveClassroomStudentOverlay({
   const [isDismissed, setIsDismissed] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!db) return;
+    if (!db || !isLiveFirebaseConfigured) return;
 
     try {
       // Query classrooms collection

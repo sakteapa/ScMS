@@ -34,7 +34,11 @@ import {
   Sliders,
   FileCheck,
   Info,
-  CheckCheck
+  CheckCheck,
+  Database,
+  Layers,
+  ExternalLink,
+  Copy
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 
@@ -51,18 +55,33 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
     configureSiblingDiscountPolicy,
     websiteConfig,
     updateWebsiteConfig,
-    registerSchoolTenant
+    registerSchoolTenant,
+    initializeCleanSlateSchool
   } = useSchool();
 
   // Active step in the wizard: 1 to 7
   const [currentStep, setCurrentStep] = useState(1);
   const [showCharterModal, setShowCharterModal] = useState(false);
   const [saveSuccessToast, setSaveSuccessToast] = useState(false);
+  // Setup Mode in Step 7: 'clean_slate' (Zero Mock Data) vs 'demo_data' (Sandbox with sample students)
+  const [setupMode, setSetupMode] = useState('clean_slate');
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  // Helper to generate a clean URL-friendly subdomain slug from school name
+  const generateSlug = (text = '') => {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 18);
+  };
 
   // Form state pre-populated with current systemConfig, sealConfig, and paymentConfig
   const [formData, setFormData] = useState({
     // Step 1: Institutional Identity
     schoolName: systemConfig?.schoolName || 'OHA (One Heart Academy)',
+    subdomain: 'oha',
+    customDomain: '',
     motto: systemConfig?.motto || 'Knowledge is Light (Hriatna chu Eng a ni)',
     schoolCode: 'OHA-LGL-02',
     affiliationBoard: 'MBSE (Mizoram Board of School Education)',
@@ -313,8 +332,12 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
     }
 
     // 6. Register as new school tenant in registry
+    let registeredInfo = null;
     if (registerSchoolTenant) {
-      registerSchoolTenant({
+      registeredInfo = registerSchoolTenant({
+        id: formData.subdomain || undefined,
+        subdomain: formData.subdomain,
+        customDomain: formData.customDomain,
         name: formData.schoolName,
         shortName: formData.schoolName.length > 20 ? formData.schoolName.slice(0, 18) + '...' : formData.schoolName,
         motto: formData.motto,
@@ -323,6 +346,22 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
         contactEmail: formData.contactEmail,
         affiliationBadge: `${formData.affiliationBoard}`,
         establishedYear: Number(formData.establishedYear) || 2026
+      });
+    }
+
+    // 7. Clean Slate Initialization (Zero Mock Data)
+    if (setupMode === 'clean_slate' && initializeCleanSlateSchool) {
+      initializeCleanSlateSchool({
+        schoolId: registeredInfo?.id,
+        schoolName: formData.schoolName,
+        principalName: formData.principalName,
+        principalTitle: formData.principalTitle,
+        contactEmail: formData.contactEmail,
+        contactPhone: formData.contactPhone,
+        establishedYear: formData.establishedYear,
+        academicSession: formData.academicSession,
+        levelsOffered: formData.levelsOffered,
+        streamsOffered: formData.streamsOffered
       });
     }
 
@@ -467,8 +506,19 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
                 <input
                   type="text"
                   value={formData.schoolName}
-                  onChange={(e) => setFormData({ ...formData, schoolName: e.target.value })}
-                  placeholder="e.g. OHA (One Heart Academy)"
+                  onChange={(e) => {
+                    const newName = e.target.value;
+                    const autoSlug = generateSlug(newName);
+                    setFormData(prev => ({
+                      ...prev,
+                      schoolName: newName,
+                      // Auto-update subdomain slug if user hasn't heavily customized it
+                      subdomain: prev.subdomain === 'oha' || prev.subdomain === generateSlug(prev.schoolName)
+                        ? autoSlug || 'school'
+                        : prev.subdomain
+                    }));
+                  }}
+                  placeholder="e.g. St. Paul's Higher Secondary School"
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500"
                 />
               </div>
@@ -593,6 +643,109 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
                     onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* DEDICATED SUBDOMAIN & WEB PORTAL URL CONFIGURATION */}
+            <div className="bg-gradient-to-r from-slate-900/90 via-indigo-950/40 to-slate-900/90 p-5 rounded-2xl border-2 border-indigo-500/40 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                      <span>Dedicated Sub-domain & Web Portal Link</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        Multi-Tenant SaaS Link
+                      </span>
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      He zirna in (School) tana website leh mobile portal pual liau liau URL ruahmanna.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Subdomain Slug Input */}
+                <div>
+                  <label className="block text-xs font-semibold text-indigo-300 mb-1.5 flex items-center justify-between">
+                    <span>School Sub-domain Slug *</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Auto-generated / Editable</span>
+                  </label>
+                  <div className="flex items-center rounded-xl bg-slate-950 border border-indigo-500/50 focus-within:border-indigo-400 overflow-hidden">
+                    <span className="px-3 text-xs text-slate-400 font-mono select-none bg-slate-900 border-r border-slate-800 py-2.5">
+                      https://
+                    </span>
+                    <input
+                      type="text"
+                      value={formData.subdomain}
+                      onChange={(e) => {
+                        const clean = generateSlug(e.target.value);
+                        setFormData({ ...formData, subdomain: clean });
+                      }}
+                      placeholder="e.g. stpauls"
+                      className="w-full bg-transparent px-3 py-2 text-sm text-white font-mono font-semibold focus:outline-none"
+                    />
+                    <span className="px-3 text-xs text-indigo-400 font-mono font-bold select-none bg-indigo-950/60 border-l border-slate-800 py-2.5">
+                      .zoxs.in
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Nu leh pa, zirtirtu, leh zirlaite'n portal an luhna tur address: <span className="text-indigo-300 font-mono font-semibold">https://{formData.subdomain || 'school'}.zoxs.in</span>
+                  </p>
+                </div>
+
+                {/* Optional Custom Domain */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                    <span>Custom Domain (Optional)</span>
+                    <span className="text-[10px] text-slate-400 font-normal">.edu.in / .com / .org</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.customDomain}
+                    onChange={(e) => setFormData({ ...formData, customDomain: e.target.value.toLowerCase().trim() })}
+                    placeholder="e.g. stpaulshss.edu.in"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-white font-mono placeholder:text-slate-600 focus:outline-none focus:border-indigo-500"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    School-in an mahni website domain an nei sa a nih chuan hetah hian dah theih a ni.
+                  </p>
+                </div>
+              </div>
+
+              {/* LIVE LINK PREVIEW PILL */}
+              <div className="p-3 rounded-xl bg-slate-950/80 border border-indigo-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <span className="text-xs text-slate-300">Live Dedicated Portal Preview:</span>
+                  <a
+                    href={`https://${formData.subdomain || 'school'}.zoxs.in`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs font-mono font-bold text-indigo-400 hover:text-indigo-300 hover:underline inline-flex items-center gap-1"
+                  >
+                    <span>https://{formData.subdomain || 'school'}.zoxs.in</span>
+                    <ExternalLink className="w-3 h-3 text-indigo-400" />
+                  </a>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`https://${formData.subdomain || 'school'}.zoxs.in`);
+                      setCopiedLink(true);
+                      setTimeout(() => setCopiedLink(false), 2000);
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 text-xs font-semibold flex items-center gap-1 border border-indigo-500/40 transition"
+                  >
+                    {copiedLink ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    <span>{copiedLink ? 'Copied!' : 'Copy Portal Link'}</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1453,6 +1606,137 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
               </button>
             </div>
 
+            {/* SETUP MODE SELECTION (CLEAN SLATE VS DEMO DATA) */}
+            <div className="p-5 rounded-2xl bg-slate-900 border-2 border-indigo-500/40 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Database className="w-5 h-5 text-indigo-400" />
+                    <h4 className="text-sm font-bold text-white">
+                      School Data Setup Mode (Database Initialization)
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      I duh zawk thlang rawh
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    School thar hlak, mock data tel miah lo a setup nge i duh a, sample mock data awmsa kawl ṭhat zawk?
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Mode 1: Clean Slate (Zero Mock Data) */}
+                <div
+                  onClick={() => setSetupMode('clean_slate')}
+                  className={`p-4 rounded-xl border-2 cursor-pointer transition relative flex flex-col justify-between ${
+                    setupMode === 'clean_slate'
+                      ? 'bg-emerald-950/30 border-emerald-500 text-white shadow-lg shadow-emerald-500/10'
+                      : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          setupMode === 'clean_slate' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-400'
+                        }`}>
+                          <Sparkles className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                            <span>Clean Slate (School Thar Hlak)</span>
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500 text-slate-950">
+                              RECOMMENDED
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-emerald-400 font-semibold">Zero Mock Data • Blank Database</div>
+                        </div>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        setupMode === 'clean_slate' ? 'border-emerald-400 bg-emerald-500' : 'border-slate-600'
+                      }`}>
+                        {setupMode === 'clean_slate' && <Check className="w-3 h-3 text-slate-950 stroke-[3]" />}
+                      </div>
+                    </div>
+                    
+                    <p className="text-[11px] text-slate-300 leading-relaxed mb-3">
+                      School thar tak tak atan a ṭha ber. Mock data zawng zawng (students, attendance, fees, marks) a paih fai vek ang a, class schedule i thlan sa aṭangin clean classes siam a ni ang.
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-800/80 space-y-1 text-[10px]">
+                    <div className="flex items-center gap-1.5 text-emerald-300">
+                      <CheckCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Students: 0 (Blank database - ready for real admissions)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-emerald-300">
+                      <CheckCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Attendance, Grades & Fees: 0 records</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-emerald-300">
+                      <CheckCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Staff: Principal account chauh official-in awm</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-emerald-300">
+                      <CheckCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Classes: Generated from Step 2 academic levels</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mode 2: Demo / Sandbox Mode */}
+                <div
+                  onClick={() => setSetupMode('demo_data')}
+                  className={`p-4 rounded-xl border-2 cursor-pointer transition relative flex flex-col justify-between ${
+                    setupMode === 'demo_data'
+                      ? 'bg-indigo-950/30 border-indigo-500 text-white shadow-lg shadow-indigo-500/10'
+                      : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          setupMode === 'demo_data' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400'
+                        }`}>
+                          <Layers className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-white">Keep Demo Data (Testing Sandbox)</div>
+                          <div className="text-[11px] text-indigo-400 font-semibold">Keep Sample Students & Records</div>
+                        </div>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        setupMode === 'demo_data' ? 'border-indigo-400 bg-indigo-500' : 'border-slate-600'
+                      }`}>
+                        {setupMode === 'demo_data' && <Check className="w-3 h-3 text-slate-950 stroke-[3]" />}
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-slate-300 leading-relaxed mb-3">
+                      Features test leh enchhin nan sample students (Lalrinsanga, Zodinpuii etc.), demo teachers, test marks leh fee receipt awmsa te kawl ṭhat a ni ang.
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-800/80 space-y-1 text-[10px]">
+                    <div className="flex items-center gap-1.5 text-slate-300">
+                      <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                      <span>Includes sample students across classes</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-300">
+                      <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                      <span>Includes sample subject teachers & attendance</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-300">
+                      <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                      <span>Includes sample report card grades & receipts</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* AUDIT SUMMARY GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Card 1: Identity & Affiliation */}
@@ -1467,6 +1751,18 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
                 </div>
                 <div className="space-y-1.5 text-xs">
                   <div className="flex justify-between"><span className="text-slate-400">School Name:</span> <span className="font-semibold text-white">{formData.schoolName}</span></div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Dedicated Portal:</span>
+                    <span className="font-mono text-indigo-400 font-bold text-[11px] bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-500/30">
+                      https://{formData.subdomain || 'school'}.zoxs.in
+                    </span>
+                  </div>
+                  {formData.customDomain && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400">Custom Domain:</span>
+                      <span className="font-mono text-cyan-300 font-semibold text-[11px]">{formData.customDomain}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between"><span className="text-slate-400">Affiliation:</span> <span className="text-slate-200">{formData.affiliationBoard}</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">Board Reg No:</span> <span className="font-mono text-amber-300">{formData.affiliationNo}</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">Principal:</span> <span className="text-slate-200">{formData.principalName}</span></div>
@@ -1598,19 +1894,73 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
               </div>
             </div>
 
-            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 inline-block mb-2">
-              Official Charter Initialized Successfully
-            </span>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 inline-block">
+                Official Charter Initialized Successfully
+              </span>
+              <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border inline-flex items-center gap-1 ${
+                setupMode === 'clean_slate'
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                  : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+              }`}>
+                {setupMode === 'clean_slate' ? <Sparkles className="w-3 h-3 text-emerald-400" /> : <Layers className="w-3 h-3 text-indigo-400" />}
+                {setupMode === 'clean_slate' ? 'Clean Slate Mode (Zero Mock Data)' : 'Demo Sandbox Mode'}
+              </span>
+            </div>
 
             <h3 className="text-2xl font-bold text-white tracking-tight">
               {formData.schoolName}
             </h3>
             <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-              Academic Center Setup fel takin a zo ta! Configuration zawng zawng hi system database, live portal, payment QR, leh official seals-ah update vek a ni tawh e.
+              {setupMode === 'clean_slate'
+                ? 'Academic Center Setup fel takin a zo ta! Mock data awm miah lo in school thar hlak (0 students, 0 fake attendance, fresh classes) a in setup ta e.'
+                : 'Academic Center Setup fel takin a zo ta! Configuration zawng zawng hi system database, live portal, payment QR, leh official seals-ah update vek a ni tawh e.'}
             </p>
+
+            {/* STATUS BADGES */}
+            <div className="grid grid-cols-3 gap-2 max-w-md mx-auto my-4 text-center">
+              <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800">
+                <div className="text-[10px] text-slate-400">Enrolled Students</div>
+                <div className="text-sm font-bold text-emerald-400">{setupMode === 'clean_slate' ? '0 (Clean)' : 'Sample Set'}</div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800">
+                <div className="text-[10px] text-slate-400">Staff Account</div>
+                <div className="text-sm font-bold text-indigo-300">{setupMode === 'clean_slate' ? '1 (Principal)' : '15+ Staff'}</div>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800">
+                <div className="text-[10px] text-slate-400">Admissions Portal</div>
+                <div className="text-sm font-bold text-cyan-400">Live & Open</div>
+              </div>
+            </div>
 
             {/* CHARTER SPECIMEN CARD */}
             <div className="my-6 p-5 rounded-2xl bg-slate-950 border border-amber-500/30 text-left text-xs space-y-2">
+              <div className="flex justify-between items-center border-b border-slate-800/80 pb-2.5">
+                <span className="text-slate-400">Dedicated Portal Link:</span>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://${formData.subdomain || 'school'}.zoxs.in`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono text-indigo-400 font-bold hover:underline inline-flex items-center gap-1 bg-indigo-950/70 px-2 py-0.5 rounded border border-indigo-500/40"
+                  >
+                    <span>https://{formData.subdomain || 'school'}.zoxs.in</span>
+                    <ExternalLink className="w-3 h-3 text-indigo-400" />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`https://${formData.subdomain || 'school'}.zoxs.in`);
+                      setCopiedLink(true);
+                      setTimeout(() => setCopiedLink(false), 2000);
+                    }}
+                    className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+                    title="Copy Link"
+                  >
+                    {copiedLink ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  </button>
+                </div>
+              </div>
               <div className="flex justify-between border-b border-slate-800/80 pb-2">
                 <span className="text-slate-400">Affiliation & Board:</span>
                 <span className="font-semibold text-white">{formData.affiliationNo} ({formData.affiliationBoard})</span>

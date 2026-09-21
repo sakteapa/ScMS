@@ -5,6 +5,7 @@ import {
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
+  disableNetwork,
   collection as fbCollection,
   doc as fbDoc,
   addDoc as fbAddDoc,
@@ -74,7 +75,12 @@ const firebaseConfig = {
 };
 
 export const isLiveFirebaseConfigured = Boolean(
-  import.meta.env.VITE_FIREBASE_API_KEY && import.meta.env.VITE_FIREBASE_PROJECT_ID
+  import.meta.env.VITE_FIREBASE_API_KEY &&
+  !import.meta.env.VITE_FIREBASE_API_KEY.includes('demo') &&
+  !import.meta.env.VITE_FIREBASE_API_KEY.includes('Demo') &&
+  import.meta.env.VITE_FIREBASE_PROJECT_ID &&
+  import.meta.env.VITE_FIREBASE_PROJECT_ID !== 'zoxs-sms-demo' &&
+  import.meta.env.VITE_FIREBASE_PROJECT_ID !== 'zoxs-sms-mizoram'
 );
 
 let app: FirebaseApp;
@@ -98,6 +104,13 @@ try {
 }
 
 export const db = firestoreInstance;
+
+if (!isLiveFirebaseConfigured && db) {
+  try {
+    disableNetwork(db).catch(() => {});
+  } catch (e) {}
+}
+
 export const auth = getAuth(app);
 
 /* =========================================================================

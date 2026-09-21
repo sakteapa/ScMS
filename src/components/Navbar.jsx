@@ -184,30 +184,31 @@ export default function Navbar({
   const RoleIcon = badge.icon;
 
   return (
-    <header className="sticky top-0 z-30 h-20 bg-[#090d16]/85 backdrop-blur-xl border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+    <header className="sticky top-0 z-30 h-14 sm:h-16 lg:h-20 bg-[#090d16]/90 backdrop-blur-xl border-b border-slate-800/80 px-3 sm:px-6 lg:px-8 flex items-center justify-between">
       {/* Left: Mobile hamburger & Active Page Title */}
-      <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1 mr-2 sm:mr-4">
+      <div className="flex items-center gap-2.5 sm:gap-4 min-w-0 flex-1 mr-2 sm:mr-4">
         <button
           onClick={() => setIsMobileOpen(true)}
-          className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition shrink-0"
+          className="lg:hidden p-1.5 sm:p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 transition shrink-0"
+          aria-label="Open menu"
         >
-          <Menu className="w-6 h-6" />
+          <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
         </button>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-base sm:text-lg lg:text-xl font-bold text-white font-['Outfit'] tracking-tight truncate whitespace-nowrap">
+            <h1 className="text-sm sm:text-base lg:text-xl font-bold text-white font-['Outfit'] tracking-tight truncate max-w-[200px] xs:max-w-[260px] sm:max-w-none">
               {getTabLabel(currentTab)}
             </h1>
           </div>
-          <p className="text-xs text-slate-400 hidden sm:block truncate whitespace-nowrap">
+          <p className="text-[11px] text-slate-400 hidden md:block truncate whitespace-nowrap">
             Mizoram School System • Academic Year 2026-2027
           </p>
         </div>
       </div>
 
       {/* Right: Actions, Sync Status, Role Switcher */}
-      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         {/* Offline / Firestore Persistence Status Pill */}
         <div 
           onClick={openFirebaseModal}
@@ -223,7 +224,7 @@ export default function Navbar({
 
         {/* Multi-Tenant School Selector Dropdown (Principal / SuperAdmin only if multiple schools) */}
         {(isPrincipal || isSuperAdmin) && registeredSchools.length > 1 && (
-          <div className="relative">
+          <div className="relative hidden sm:block">
             <button
               onClick={() => setIsSchoolMenuOpen(!isSchoolMenuOpen)}
               className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-gradient-to-r from-slate-900 to-indigo-950/60 border border-indigo-500/40 hover:border-indigo-400 text-white transition flex items-center gap-2 text-xs font-bold shadow-md shadow-indigo-950/30"
@@ -276,19 +277,19 @@ export default function Navbar({
         {/* Global Language Localization Switcher Toggle */}
         <button
           onClick={toggleLanguage}
-          className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-bold"
+          className="p-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white transition flex items-center gap-1 text-xs font-bold"
           title={language === 'en' ? 'Thlak rawh: Mizo Ṭawng' : 'Switch to: English Language'}
         >
-          <span className="text-sm">{language === 'en' ? '🇬🇧' : '🇲🇿'}</span>
-          <span className="font-mono text-[11px] uppercase tracking-wider text-cyan-400">
-            {language === 'en' ? 'EN' : 'MIZO'}
+          <span className="text-xs sm:text-sm">{language === 'en' ? '🇬🇧' : '🇲🇿'}</span>
+          <span className="font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-cyan-400">
+            {language === 'en' ? 'EN' : 'MZ'}
           </span>
         </button>
 
         {/* Public Website Switcher */}
         <button
           onClick={onViewWebsite}
-          className="p-1.5 sm:px-2.5 sm:py-2 rounded-xl bg-purple-950/40 border border-purple-800/40 hover:border-purple-500 text-purple-300 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold shadow-md shadow-purple-950/30"
+          className="hidden md:flex p-1.5 sm:px-2.5 sm:py-2 rounded-xl bg-purple-950/40 border border-purple-800/40 hover:border-purple-500 text-purple-300 hover:text-white transition items-center gap-1.5 text-xs font-semibold shadow-md shadow-purple-950/30"
           title="View Public School Website & Landing Page"
         >
           <Globe className="w-3.5 h-3.5 text-purple-400 shrink-0" />
@@ -299,7 +300,7 @@ export default function Navbar({
         {!isAlreadyInstalled && (
           <button
             onClick={openMobileAppModal}
-            className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-950/80 to-purple-950/80 border border-indigo-700/40 hover:border-indigo-500 text-slate-200 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold shadow-md shadow-indigo-950/40"
+            className="hidden md:flex px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-950/80 to-purple-950/80 border border-indigo-700/40 hover:border-indigo-500 text-slate-200 hover:text-white transition items-center gap-1.5 text-xs font-semibold shadow-md shadow-indigo-950/40"
             title="Download & Install Mobile Application (Android, iOS & Standalone APK)"
           >
             <Smartphone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -314,7 +315,7 @@ export default function Navbar({
         {(isPrincipal || isVicePrincipal || isSuperAdmin) && (
           <button
             onClick={openExportModal}
-            className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2 text-xs font-medium"
+            className="hidden lg:flex p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition items-center gap-2 text-xs font-medium"
             title="Export Excel / CSV Data Center"
           >
             <Download className="w-4 h-4 text-cyan-400" />
@@ -326,7 +327,7 @@ export default function Navbar({
         {(isPrincipal || isSuperAdmin) && (
           <button
             onClick={openFirebaseModal}
-            className="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition text-xs"
+            className="hidden lg:flex p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition text-xs"
             title="Firebase Web SDK v10.8.0 Settings"
           >
             <Database className="w-4 h-4 text-indigo-400" />
@@ -336,7 +337,7 @@ export default function Navbar({
         {/* Notifications & Private Alerts Bell Trigger */}
         <button
           onClick={() => setIsNotificationDrawerOpen(true)}
-          className="relative p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white transition text-xs"
+          className="relative p-1.5 sm:p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white transition text-xs shrink-0"
           title="Notifications, Circulars & Private Direct Alerts"
         >
           <Bell className="w-4 h-4 text-cyan-400" />
@@ -383,16 +384,16 @@ export default function Navbar({
         <button
           type="button"
           onClick={() => setIsProfileOpen(true)}
-          className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-gradient-to-r from-slate-900 to-[#0f172a] border border-slate-800 hover:border-violet-500/60 cursor-pointer transition shadow-sm group shrink-0"
+          className="flex items-center gap-1.5 sm:gap-2 p-1 sm:pl-2 sm:pr-3 sm:py-1.5 rounded-xl bg-gradient-to-r from-slate-900 to-[#0f172a] border border-slate-800 hover:border-violet-500/60 cursor-pointer transition shadow-sm group shrink-0"
           title="Open Profile Settings & Switch Roles"
         >
           <div className="relative shrink-0">
             <img
               src={currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
               alt={currentUser?.displayName || 'Principal'}
-              className="w-8 h-8 rounded-lg object-cover ring-1 ring-violet-400/40"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover ring-1 ring-violet-400/40"
             />
-            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-900" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-500 border-2 border-slate-900" />
           </div>
 
           <div className="hidden sm:flex flex-col text-left leading-tight shrink-0">
@@ -404,13 +405,13 @@ export default function Navbar({
             </span>
           </div>
 
-          <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-violet-300 transition shrink-0 ml-0.5" />
+          <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-violet-300 transition shrink-0 ml-0.5 hidden sm:block" />
         </button>
 
-        {/* Logout Action Button */}
+        {/* Logout Action Button (Desktop only, mobile has it inside profile & drawer) */}
         <button
           onClick={handleLogout}
-          className="p-2 sm:px-3 sm:py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 transition flex items-center gap-1.5 text-xs font-bold shrink-0 shadow-sm"
+          className="hidden sm:flex p-2 sm:px-3 sm:py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 transition items-center gap-1.5 text-xs font-bold shrink-0 shadow-sm"
           title="Log out and return to Public Website"
         >
           <LogOut className="w-4 h-4 text-rose-400" />

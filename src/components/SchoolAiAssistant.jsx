@@ -304,11 +304,11 @@ export default function SchoolAiAssistant({ setCurrentTab }) {
             top: `${fabPosition.y}px`,
             touchAction: 'none'
           } : {
-            bottom: '24px',
-            right: '24px',
             touchAction: 'none'
           }}
-          className={`fixed z-[9990] select-none group flex items-center gap-2 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 text-white shadow-2xl shadow-indigo-900/60 border border-indigo-400/30 ${
+          className={`fixed z-[9990] select-none group flex items-center gap-1.5 sm:gap-2 px-3 py-2 sm:px-4 sm:py-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 text-white shadow-2xl shadow-indigo-900/60 border border-indigo-400/30 ${
+            !fabPosition ? 'bottom-20 sm:bottom-6 right-3 sm:right-6' : ''
+          } ${
             isDragging 
               ? 'cursor-grabbing scale-105 shadow-indigo-500/50 ring-2 ring-indigo-400' 
               : 'cursor-grab hover:scale-105 transition-transform duration-200'
@@ -316,15 +316,15 @@ export default function SchoolAiAssistant({ setCurrentTab }) {
           title="Zoxs AI (Hnuk sawn kual theih a ni / Drag anywhere to reposition)"
         >
           {/* Visual Grip Handle */}
-          <GripVertical className="w-3.5 h-3.5 text-indigo-200/70 group-hover:text-white transition shrink-0" />
+          <GripVertical className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-200/70 group-hover:text-white transition shrink-0" />
 
           <div className="relative shrink-0">
-            <Bot className="w-5 h-5" />
+            <Bot className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           </div>
-          <span className="text-sm font-bold tracking-wide">Zoxs AI</span>
+          <span className="text-xs sm:text-sm font-bold tracking-wide">Zoxs AI</span>
           {alertCount > 0 && (
-            <span className="min-w-[18px] h-4.5 px-1 rounded-full bg-rose-500 text-[10px] font-bold text-white flex items-center justify-center shadow-md shadow-rose-900/50">
+            <span className="min-w-[16px] sm:min-w-[18px] h-4 sm:h-4.5 px-1 rounded-full bg-rose-500 text-[9px] sm:text-[10px] font-bold text-white flex items-center justify-center shadow-md shadow-rose-900/50">
               {alertCount}
             </span>
           )}
@@ -333,7 +333,7 @@ export default function SchoolAiAssistant({ setCurrentTab }) {
 
       {/* Panel */}
       {isOpen && (
-        <div className={`fixed bottom-6 right-6 z-[9990] flex flex-col bg-[#0c1220] border border-slate-800 rounded-3xl shadow-2xl shadow-black/70 transition-all duration-300 ${isMinimized ? 'w-72 h-14' : 'w-[380px] sm:w-[420px] max-w-[calc(100vw-2rem)] h-[600px] max-h-[85vh]'}`}>
+        <div className={`fixed bottom-20 sm:bottom-6 right-2 sm:right-6 left-2 sm:left-auto z-[9990] flex flex-col bg-[#0c1220] border border-slate-800 rounded-3xl shadow-2xl shadow-black/70 transition-all duration-300 ${isMinimized ? 'w-auto sm:w-72 h-14' : 'w-auto sm:w-[420px] max-w-[calc(100vw-1rem)] h-[540px] sm:h-[600px] max-h-[75vh] sm:max-h-[85vh]'}`}>
 
           {/* Header */}
           <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-indigo-950/80 to-violet-950/80 rounded-t-3xl border-b border-slate-800/60 shrink-0">
