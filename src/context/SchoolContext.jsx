@@ -21,6 +21,7 @@ import {
   INITIAL_SYSTEM_PLUGINS,
   INITIAL_CUSTOM_SCRIPTS,
   INITIAL_SYSTEM_CONFIG,
+  INITIAL_ONLINE_ADMISSION_CONFIG,
   INITIAL_PAYMENT_CONFIG,
   INITIAL_ADMISSION_REQUIREMENTS,
   INITIAL_ISSUED_CERTIFICATES,
@@ -167,6 +168,7 @@ export function SchoolProvider({ children }) {
   const [plugins, setPlugins] = useState(() => loadInitial('system_plugins', INITIAL_SYSTEM_PLUGINS));
   const [systemConfig, setSystemConfig] = useState(() => loadInitial('system_config', INITIAL_SYSTEM_CONFIG));
   const [paymentConfig, setPaymentConfig] = useState(() => loadInitial('payment_config', INITIAL_PAYMENT_CONFIG));
+  const [onlineAdmissionConfig, setOnlineAdmissionConfig] = useState(() => loadInitial('online_admission_config', INITIAL_ONLINE_ADMISSION_CONFIG));
   const [admissionRequirements, setAdmissionRequirements] = useState(() => loadInitial('admission_requirements', INITIAL_ADMISSION_REQUIREMENTS));
   const [issuedCertificates, setIssuedCertificates] = useState(() => loadInitial('issued_certificates', INITIAL_ISSUED_CERTIFICATES));
   const [reportCardWithholds, setReportCardWithholds] = useState(() => loadInitial('report_card_withholds', INITIAL_REPORT_CARD_WITHHOLDS));
@@ -575,6 +577,7 @@ export function SchoolProvider({ children }) {
     saveTenantItem('plugins', plugins);
     saveTenantItem('system_config', systemConfig);
     saveTenantItem('payment_config', paymentConfig);
+    saveTenantItem('online_admission_config', onlineAdmissionConfig);
     saveTenantItem('leave_applications', leaveApplications);
     saveTenantItem('pay_scales', payScales);
     saveTenantItem('tasks', tasks);
@@ -605,7 +608,7 @@ export function SchoolProvider({ children }) {
     saveTenantItem('system_nomenclature', systemNomenclature);
     saveTenantItem('custom_student_fields', customStudentFields);
     setLastSyncTime(new Date().toLocaleTimeString());
-  }, [activeSchoolId, classes, students, grades, fees, attendance, staff, payroll, libraryBooks, notices, admissions, admissionRequirements, issuedCertificates, reportCardWithholds, transportRoutes, hostelRooms, timetables, hostelGatePasses, hostelRollCalls, hostelMessMenu, hostelRules, academicEvents, customScripts, plugins, systemConfig, paymentConfig, leaveApplications, payScales, tasks, vacations, clinicRecords, clinicConfig, visitors, visitorConfig, inventoryAssets, maintenanceTickets, inventoryConfig, ptmEvents, ptmConfig, alumni, transcriptRequests, alumniConfig, canteenMenu, canteenWallets, canteenTransactions, canteenConfig, studyMaterials, studyConfig, sealConfig, subjects, gradingScales, feeHeads, documentTemplates, systemNomenclature, customStudentFields]);
+  }, [activeSchoolId, classes, students, grades, fees, attendance, staff, payroll, libraryBooks, notices, admissions, admissionRequirements, onlineAdmissionConfig, issuedCertificates, reportCardWithholds, transportRoutes, hostelRooms, timetables, hostelGatePasses, hostelRollCalls, hostelMessMenu, hostelRules, academicEvents, customScripts, plugins, systemConfig, paymentConfig, leaveApplications, payScales, tasks, vacations, clinicRecords, clinicConfig, visitors, visitorConfig, inventoryAssets, maintenanceTickets, inventoryConfig, ptmEvents, ptmConfig, alumni, transcriptRequests, alumniConfig, canteenMenu, canteenWallets, canteenTransactions, canteenConfig, studyMaterials, studyConfig, sealConfig, subjects, gradingScales, feeHeads, documentTemplates, systemNomenclature, customStudentFields]);
 
   // Real-time In-App Stylesheet & Scripts Live Injection
   useEffect(() => {
@@ -1144,6 +1147,14 @@ export function SchoolProvider({ children }) {
   const updateAdmissionRequirement = (reqId, updatedData) => {
     setAdmissionRequirements(prev => prev.map(r => r.id === reqId ? { ...r, ...updatedData } : r));
     return { success: true };
+  };
+
+  const updateOnlineAdmissionConfig = (newConfig) => {
+    setOnlineAdmissionConfig(prev => {
+      const updated = { ...prev, ...newConfig };
+      saveTenantItem('online_admission_config', updated);
+      return updated;
+    });
   };
 
   const deleteAdmissionRequirement = (reqId) => {
@@ -3614,6 +3625,8 @@ export function SchoolProvider({ children }) {
       notices,
       admissions,
       admissionRequirements,
+      onlineAdmissionConfig,
+      updateOnlineAdmissionConfig,
       updateAdmissionRecord,
       requestAdmissionDocument,
       updateAdmissionDocumentStatus,

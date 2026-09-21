@@ -52,7 +52,14 @@ function SchoolAppContent() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [selectedStudentForReport, setSelectedStudentForReport] = useState(null);
   
-  const { activePrivateCall, endPrivateCall, admissions = [], submitOnlineAdmission } = useSchool();
+  const { 
+    activePrivateCall, 
+    endPrivateCall, 
+    admissions = [], 
+    submitOnlineAdmission,
+    classes = [],
+    onlineAdmissionConfig
+  } = useSchool();
 
   useEffect(() => {
     const handler = (e) => {
@@ -181,6 +188,8 @@ function SchoolAppContent() {
           isOpen={isPublicAdmissionModalOpen}
           onClose={() => setIsPublicAdmissionModalOpen(false)}
           applications={admissions || []}
+          admissionConfig={onlineAdmissionConfig}
+          schoolClasses={classes}
           onApplicationSubmitted={(newApp) => {
             if (submitOnlineAdmission) {
               submitOnlineAdmission(newApp);

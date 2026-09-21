@@ -46,6 +46,8 @@ export default function AdmissionsView({ setCurrentTab }) {
     admissions, 
     classes, 
     admissionRequirements = [], 
+    onlineAdmissionConfig,
+    updateOnlineAdmissionConfig,
     submitAdmission, 
     reviewAdmission, 
     updateAdmissionRecord,
@@ -383,7 +385,7 @@ export default function AdmissionsView({ setCurrentTab }) {
               }`}
             >
               <Settings className="w-3.5 h-3.5" />
-              <span>Doc Policy Setup</span>
+              <span>Portal Settings &amp; Open Classes</span>
             </button>
           )}
         </div>
@@ -1049,9 +1051,185 @@ export default function AdmissionsView({ setCurrentTab }) {
         </div>
       )}
 
-      {/* VIEW 4: ADMISSION REQUIREMENTS & POLICY SETUP (MANAGEMENT) */}
+      {/* VIEW 4: ADMISSION REQUIREMENTS & PORTAL SETUP (MANAGEMENT) */}
       {activeTab === 'requirements_setup' && (
-        <div className="space-y-5 max-w-4xl mx-auto">
+        <div className="space-y-6 max-w-5xl mx-auto">
+          {/* Section 1: Master Online Portal Controls */}
+          <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-2xl border ${
+                  onlineAdmissionConfig?.isOpen !== false 
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' 
+                    : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                }`}>
+                  <Settings className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-white font-['Outfit']">
+                      Online Admission Portal &amp; Open Classes Setup
+                    </h3>
+                    <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase font-mono border ${
+                      onlineAdmissionConfig?.isOpen !== false 
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
+                        : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                    }`}>
+                      {onlineAdmissionConfig?.isOpen !== false ? '● Portal Active (Open)' : '○ Portal Paused (Closed)'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Control which classes are open for application, set academic sessions, and manage public notices.
+                  </p>
+                </div>
+              </div>
+
+              {/* Master Switch Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const currentStatus = onlineAdmissionConfig?.isOpen !== false;
+                  updateOnlineAdmissionConfig({ isOpen: !currentStatus });
+                }}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow cursor-pointer ${
+                  onlineAdmissionConfig?.isOpen !== false
+                    ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30'
+                    : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30'
+                }`}
+              >
+                <span>{onlineAdmissionConfig?.isOpen !== false ? 'Pause / Close Online Admissions' : 'Open / Activate Admissions'}</span>
+              </button>
+            </div>
+
+            {/* Config Fields Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">Academic Session / Year</label>
+                <input
+                  type="text"
+                  value={onlineAdmissionConfig?.academicSession || '2026 - 2027'}
+                  onChange={(e) => updateOnlineAdmissionConfig({ academicSession: e.target.value })}
+                  placeholder="e.g. 2026 - 2027"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:outline-none focus:border-cyan-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">Application Deadline</label>
+                <input
+                  type="date"
+                  value={onlineAdmissionConfig?.applicationDeadline || '2026-05-31'}
+                  onChange={(e) => updateOnlineAdmissionConfig({ applicationDeadline: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">Helpline Phone Number</label>
+                <input
+                  type="text"
+                  value={onlineAdmissionConfig?.contactPhone || '+91 372 2322104'}
+                  onChange={(e) => updateOnlineAdmissionConfig({ contactPhone: e.target.value })}
+                  placeholder="+91 xxx xxx xxxx"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:outline-none focus:border-cyan-400"
+                />
+              </div>
+
+              <div className="sm:col-span-3">
+                <label className="block text-slate-400 font-semibold mb-1">Public Portal Announcement / Banner Notice</label>
+                <input
+                  type="text"
+                  value={onlineAdmissionConfig?.noticeMessage || 'Official Online Student Admission & Status Verification Portal • MBSE Affiliated'}
+                  onChange={(e) => updateOnlineAdmissionConfig({ noticeMessage: e.target.value })}
+                  placeholder="Banner announcement displayed on top of public form"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-400"
+                />
+              </div>
+            </div>
+
+            {/* Section 2: Interactive Open Classes Selection */}
+            <div className="pt-4 border-t border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-white font-['Outfit'] flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-cyan-400" />
+                    <span>Classes Open for Public Online Application</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Tick the classes accepting new admissions. Unticked classes will be hidden from applicants.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allNames = classes.map(c => c.name);
+                      updateOnlineAdmissionConfig({ openClassNames: allNames });
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 font-semibold transition"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateOnlineAdmissionConfig({ openClassNames: [] })}
+                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 transition"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+
+              {/* Grid of School Classes */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-72 overflow-y-auto pr-1">
+                {classes.map((cls) => {
+                  const currentOpenList = onlineAdmissionConfig?.openClassNames || classes.map(c => c.name);
+                  const isClassOpen = currentOpenList.includes(cls.name);
+
+                  return (
+                    <button
+                      key={cls.id}
+                      type="button"
+                      onClick={() => {
+                        let updated;
+                        if (isClassOpen) {
+                          updated = currentOpenList.filter(name => name !== cls.name);
+                        } else {
+                          updated = [...currentOpenList, cls.name];
+                        }
+                        updateOnlineAdmissionConfig({ openClassNames: updated });
+                      }}
+                      className={`p-3 rounded-xl border text-left transition flex items-center justify-between gap-2 cursor-pointer ${
+                        isClassOpen
+                          ? 'bg-cyan-500/10 border-cyan-500/40 text-white'
+                          : 'bg-slate-950/60 border-slate-800 text-slate-500 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="truncate">
+                        <span className="text-xs font-bold block truncate">{cls.name}</span>
+                        <span className="text-[10px] text-slate-400 font-mono block">Sec {cls.section || 'A'} • Rm {cls.roomNumber || '-'}</span>
+                      </div>
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${
+                        isClassOpen ? 'bg-cyan-400 shadow-sm shadow-cyan-400/50' : 'bg-slate-700'
+                      }`} />
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                <span>
+                  Active Open Classes: <strong className="text-cyan-300 font-mono">{onlineAdmissionConfig?.openClassNames?.length ?? classes.length}</strong> of {classes.length} classes
+                </span>
+                <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Auto-saved in Cloud
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Document Policy Checklist */}
           <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
             <div>
               <h3 className="text-base font-bold text-white font-['Outfit'] flex items-center gap-2">

@@ -27,6 +27,8 @@ interface PublicAdmissionPortalModalProps {
   isOpen: boolean;
   onClose: () => void;
   applications: AdmissionApplication[];
+  admissionConfig?: any;
+  schoolClasses?: any[];
   onApplicationSubmitted?: (newApp: AdmissionApplication) => void;
 }
 
@@ -97,17 +99,39 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
   isOpen,
   onClose,
   applications,
+  admissionConfig,
+  schoolClasses = [],
   onApplicationSubmitted,
 }) => {
   const [activeTab, setActiveTab] = useState<'register' | 'track'>('register');
+
+  const isAdmissionOpen = admissionConfig ? admissionConfig.isOpen !== false : true;
+  const activeAcademicYear = admissionConfig?.academicSession || '2026-2027';
+
+  // Dynamic open classes configured by admin
+  const openClasses: string[] = React.useMemo(() => {
+    if (admissionConfig?.openClassNames && Array.isArray(admissionConfig.openClassNames) && admissionConfig.openClassNames.length > 0) {
+      return admissionConfig.openClassNames;
+    }
+    if (schoolClasses && schoolClasses.length > 0) {
+      return schoolClasses.map((c: any) => c.name);
+    }
+    return [
+      'Nursery', 'Kindergarten (KG)',
+      'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+      'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10 (Board)',
+      'Class 11 - Science', 'Class 11 - Arts', 'Class 11 - Commerce',
+      'Class 12 - Science', 'Class 12 - Arts', 'Class 12 - Commerce'
+    ];
+  }, [admissionConfig, schoolClasses]);
 
   // Form State
   const [applicantName, setApplicantName] = useState('');
   const [dob, setDob] = useState('2012-05-15');
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other'>('Male');
   const [bloodGroup, setBloodGroup] = useState('O+');
-  const [targetClass, setTargetClass] = useState('Class 10');
-  const [academicYear, setAcademicYear] = useState('2026-2027');
+  const [targetClass, setTargetClass] = useState(() => openClasses[0] || 'Class 10');
+  const [academicYear, setAcademicYear] = useState(activeAcademicYear);
   const [parentName, setParentName] = useState('');
   const [parentRelation, setParentRelation] = useState<'Father' | 'Mother' | 'Guardian'>('Father');
   const [parentPhone, setParentPhone] = useState('');
@@ -301,12 +325,16 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
                 <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
                   Mizoram School System (zoxs-sms)
                 </h2>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 font-mono border border-emerald-500/30">
-                  Admissions 2026-2027 Open
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono border ${
+                  isAdmissionOpen
+                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                    : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                }`}>
+                  {isAdmissionOpen ? `Admissions ${activeAcademicYear} Open` : 'Admissions Closed'}
                 </span>
               </div>
               <p className="text-xs text-gray-400">
-                Official Online Student Admission & Status Verification Portal • MBSE Affiliated
+                {admissionConfig?.noticeMessage || 'Official Online Student Admission & Status Verification Portal • MBSE Affiliated'}
               </p>
             </div>
           </div>
@@ -352,7 +380,27 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
           {/* TAB 1: REGISTRATION FORM */}
           {activeTab === 'register' && (
             <div>
-              {submittedApp ? (
+              {!isAdmissionOpen ? (
+                <div className="p-8 text-center space-y-4 max-w-lg mx-auto my-6 bg-gray-800/60 border border-gray-700/80 rounded-2xl">
+                  <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+                    <Clock className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-bold text-white">Online Admissions Currently Closed</h3>
+                    <p className="text-xs text-gray-300 leading-relaxed">
+                      {admissionConfig?.closedMessage || 'Online student admission registration for this session is currently paused or closed by the school administration.'}
+                    </p>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-gray-900/80 border border-gray-800 text-xs text-gray-300 space-y-1 text-left">
+                    <span className="text-[10px] text-gray-400 uppercase font-semibold block">Office Admission Helpline:</span>
+                    <p className="font-mono text-indigo-300 font-bold">{admissionConfig?.contactPhone || '+91 372 2322104 / +91 94361 40552'}</p>
+                    <p className="text-gray-400 text-[11px]">{admissionConfig?.contactEmail || 'admissions@mizoramschool.edu.in'}</p>
+                  </div>
+                  <p className="text-[11px] text-gray-400 pt-1">
+                    Already applied? Click on <strong className="text-indigo-400">Track Application Status</strong> above to view your dossier and print admission slips.
+                  </p>
+                </div>
+              ) : submittedApp ? (
                 /* Success Confirmation State */
                 <div className="p-8 text-center space-y-6 max-w-xl mx-auto">
                   <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/30">
@@ -435,26 +483,13 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
                         <select
                           value={targetClass}
                           onChange={(e) => setTargetClass(e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                          className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none font-semibold"
                         >
-                          <option value="Nursery">Nursery / Pre-School</option>
-                          <option value="Kindergarten (KG)">Kindergarten (KG)</option>
-                          <option value="Class 1">Class 1</option>
-                          <option value="Class 2">Class 2</option>
-                          <option value="Class 3">Class 3</option>
-                          <option value="Class 4">Class 4</option>
-                          <option value="Class 5">Class 5</option>
-                          <option value="Class 6">Class 6 (Middle School)</option>
-                          <option value="Class 7">Class 7</option>
-                          <option value="Class 8">Class 8</option>
-                          <option value="Class 9">Class 9 (Secondary)</option>
-                          <option value="Class 10">Class 10 (MBSE HSLC Board)</option>
-                          <option value="Class 11 - Science">Class 11 - Science (MBSE HSSLC)</option>
-                          <option value="Class 11 - Arts">Class 11 - Arts (MBSE HSSLC)</option>
-                          <option value="Class 11 - Commerce">Class 11 - Commerce (MBSE HSSLC)</option>
-                          <option value="Class 12 - Science">Class 12 - Science (MBSE HSSLC)</option>
-                          <option value="Class 12 - Arts">Class 12 - Arts (MBSE HSSLC)</option>
-                          <option value="Class 12 - Commerce">Class 12 - Commerce (MBSE HSSLC)</option>
+                          {openClasses.map((clsName) => (
+                            <option key={clsName} value={clsName}>
+                              {clsName}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       <div>

@@ -2963,6 +2963,26 @@ export const INITIAL_SYSTEM_CONFIG = {
   enableTransportModule: true
 };
 
+export const INITIAL_ONLINE_ADMISSION_CONFIG = {
+  isOpen: true,
+  academicSession: '2026 - 2027',
+  applicationDeadline: '2026-05-31',
+  noticeTitle: 'Admissions 2026-2027 Open',
+  noticeMessage: 'Official Online Student Admission & Status Verification Portal • MBSE Affiliated',
+  closedMessage: 'Online admissions for the current academic session are temporarily closed by the School Administration. Please contact the administrative desk for inquiry.',
+  openClassNames: [
+    'Nursery', 'LKG', 'UKG',
+    'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+    'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10 (Board)',
+    'Class 11 - Science', 'Class 11 - Arts', 'Class 11 - Commerce',
+    'Class 12 - Science', 'Class 12 - Arts', 'Class 12 - Commerce'
+  ],
+  requireAadhaar: true,
+  minimumPercentage: 40,
+  contactPhone: '+91 372 2322104 / +91 94361 40552',
+  contactEmail: 'admissions@mizoramschool.edu.in'
+};
+
 export const INITIAL_PAYMENT_CONFIG = {
   activeGateway: 'direct_upi', // 'direct_upi' | 'razorpay' | 'cashfree' | 'phonepe'
   gateways: {
