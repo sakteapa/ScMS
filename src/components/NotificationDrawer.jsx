@@ -25,7 +25,8 @@ import {
   Flame,
   User,
   Users,
-  ChevronRight
+  ChevronRight,
+  Eye
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
@@ -78,6 +79,8 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
   });
 
   const [markedReadFeedback, setMarkedReadFeedback] = useState(false);
+  const [selectedNotice, setSelectedNotice] = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);
 
   // Close drawer on Escape key
   useEffect(() => {
@@ -256,12 +259,17 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
         {/* Top Header */}
         <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/70">
           <div className="flex items-center gap-3">
-            {/* Interactive Bell Icon & Badge */}
+            {/* Interactive Bell Icon & Badge - Click to open Notice Board */}
             <button
               type="button"
-              onClick={handleMarkAllRead}
+              onClick={() => {
+                if (setCurrentTab) {
+                  setCurrentTab('notices');
+                  onClose();
+                }
+              }}
               className="relative p-2.5 rounded-2xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 shadow-inner transition cursor-pointer group"
-              title="Click to mark all directives & alerts as read"
+              title="Click to open Notice Board & View All Directives"
             >
               <Bell className="w-5 h-5 group-hover:scale-110 transition-transform" />
               {(unreadNoticesCount > 0 || pendingTasks.length > 0) && (
@@ -270,16 +278,26 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
                 </span>
               )}
             </button>
-            <div>
+            <div 
+              onClick={() => {
+                if (setCurrentTab) {
+                  setCurrentTab('notices');
+                  onClose();
+                }
+              }}
+              className="cursor-pointer group/header"
+              title="Click to open full Notice Board & Directives"
+            >
               <div className="flex items-center gap-2">
-                <h3 className="text-sm sm:text-base font-bold text-white font-['Outfit']">
-                  Directives &amp; Alerts
+                <h3 className="text-sm sm:text-base font-bold text-white font-['Outfit'] group-hover/header:text-cyan-300 transition flex items-center gap-1.5">
+                  <span>Directives &amp; Alerts</span>
+                  <ExternalLink className="w-3 h-3 text-cyan-400 opacity-60 group-hover/header:opacity-100 transition" />
                 </h3>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-cyan-300 font-mono capitalize border border-slate-700">
                   {currentUser?.role || 'Guest'}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+              <p className="text-[11px] text-slate-400 mt-0.5 group-hover/header:text-slate-300 transition">
                 Role-tailored tasks, direct private notices &amp; broadcasts.
               </p>
             </div>
@@ -487,7 +505,8 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
                   return (
                     <div
                       key={t.id}
-                      className={`p-4 rounded-2xl border transition relative group flex flex-col gap-2.5 ${
+                      onClick={() => setSelectedTask(t)}
+                      className={`p-4 rounded-2xl border transition relative group flex flex-col gap-2.5 cursor-pointer hover:border-cyan-500/50 hover:shadow-lg ${
                         isDone 
                           ? 'bg-slate-950/50 border-slate-800/60 opacity-75' 
                           : t.priority === 'urgent'
@@ -499,8 +518,11 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
                         {/* Custom Completion Checkbox */}
                         <button
                           type="button"
-                          onClick={() => handleToggleTaskStatus(t)}
-                          className={`mt-0.5 w-5 h-5 rounded-lg flex items-center justify-center transition shrink-0 ${
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleTaskStatus(t);
+                          }}
+                          className={`mt-0.5 w-5 h-5 rounded-lg flex items-center justify-center transition shrink-0 cursor-pointer ${
                             isDone 
                               ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30' 
                               : 'border-2 border-slate-700 hover:border-cyan-400 bg-slate-950'
@@ -539,11 +561,11 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
                             </span>
                           </div>
 
-                          <h4 className={`text-xs font-bold text-white leading-snug ${isDone ? 'line-through text-slate-400' : ''}`}>
+                          <h4 className={`text-xs font-bold text-white leading-snug group-hover:text-cyan-300 transition ${isDone ? 'line-through text-slate-400' : ''}`}>
                             {t.title}
                           </h4>
 
-                          <p className="text-[11px] text-slate-300 leading-relaxed">
+                          <p className="text-[11px] text-slate-300 leading-relaxed line-clamp-2">
                             {t.description}
                           </p>
                         </div>
@@ -551,22 +573,38 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
 
                       {/* Bottom Directive Footer & Action Button */}
                       <div className="pt-2 border-t border-slate-800/70 flex items-center justify-between text-[10px] text-slate-400">
-                        <span className="truncate max-w-[200px]">
+                        <span className="truncate max-w-[170px]">
                           Directive by: <strong className="text-slate-300">{t.assignedBy}</strong>
                         </span>
 
-                        {t.actionLinkTab && (
+                        <div className="flex items-center gap-1.5">
                           <button
-                            onClick={() => {
-                              if (setCurrentTab) setCurrentTab(t.actionLinkTab);
-                              onClose();
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTask(t);
                             }}
-                            className="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500 text-cyan-300 hover:text-slate-950 font-bold transition flex items-center gap-1 shrink-0"
+                            className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold transition flex items-center gap-1 text-[11px] cursor-pointer"
                           >
-                            <span>{t.actionLabel || 'Go to Action'}</span>
-                            <ChevronRight className="w-3 h-3" />
+                            <Eye className="w-3 h-3" />
+                            <span>Details</span>
                           </button>
-                        )}
+
+                          {t.actionLinkTab && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (setCurrentTab) setCurrentTab(t.actionLinkTab);
+                                onClose();
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500 text-cyan-300 hover:text-slate-950 font-bold transition flex items-center gap-1 shrink-0 cursor-pointer"
+                            >
+                              <span>{t.actionLabel || 'Go to Action'}</span>
+                              <ChevronRight className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -591,8 +629,11 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
                   return (
                     <div
                       key={n.id}
-                      onClick={() => markNotificationAsRead(n.id, currentUserId)}
-                      className={`p-4 rounded-2xl border transition relative cursor-pointer group ${
+                      onClick={() => {
+                        markNotificationAsRead(n.id, currentUserId);
+                        setSelectedNotice(n);
+                      }}
+                      className={`p-4 rounded-2xl border transition relative cursor-pointer group hover:border-cyan-500/50 hover:shadow-lg ${
                         !isRead 
                           ? 'bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border-rose-500/40 shadow-md' 
                           : 'bg-slate-900/50 border-slate-800/80 hover:border-slate-700'
@@ -624,15 +665,17 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
                           {n.title}
                         </h4>
 
-                        <p className="text-xs text-slate-300 leading-relaxed">
+                        <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
                           {n.content}
                         </p>
 
                         <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
                           <span>From: <strong className="text-slate-200">{n.publishedBy}</strong></span>
-                          {n.targetUserName && (
-                            <span>To: <strong className="text-cyan-300">{n.targetUserName}</strong></span>
-                          )}
+                          <span className="text-cyan-400 font-bold flex items-center gap-1 group-hover:underline">
+                            <Eye className="w-3 h-3" />
+                            <span>View Details</span>
+                            <ChevronRight className="w-3 h-3" />
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -657,8 +700,11 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
                   return (
                     <div
                       key={n.id}
-                      onClick={() => markNotificationAsRead(n.id, currentUserId)}
-                      className={`p-4 rounded-2xl border transition relative cursor-pointer group ${
+                      onClick={() => {
+                        markNotificationAsRead(n.id, currentUserId);
+                        setSelectedNotice(n);
+                      }}
+                      className={`p-4 rounded-2xl border transition relative cursor-pointer group hover:border-cyan-500/50 hover:shadow-lg ${
                         !isRead 
                           ? 'bg-slate-900 border-cyan-500/40 shadow-md' 
                           : 'bg-slate-900/50 border-slate-800/80 hover:border-slate-700'
@@ -687,15 +733,17 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
                           {n.title}
                         </h4>
 
-                        <p className="text-xs text-slate-300 line-clamp-3 leading-relaxed">
+                        <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
                           {n.content}
                         </p>
 
                         <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
                           <span>By: {n.publishedBy}</span>
-                          {n.channels?.whatsapp && (
-                            <span className="text-emerald-400 font-medium">WhatsApp Synced</span>
-                          )}
+                          <span className="text-cyan-400 font-bold flex items-center gap-1 group-hover:underline">
+                            <Eye className="w-3 h-3" />
+                            <span>View Details</span>
+                            <ChevronRight className="w-3 h-3" />
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -845,6 +893,263 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1: NOTICE & DIRECT ALERT DETAIL VIEW */}
+      {selectedNotice && (
+        <div 
+          className="fixed inset-0 z-[60] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setSelectedNotice(null)}
+        >
+          <div 
+            className="relative w-full max-w-lg bg-[#0c1322] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-800 bg-slate-900/80 flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-2xl shrink-0 ${
+                  selectedNotice.scope === 'private' 
+                    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' 
+                    : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                }`}>
+                  {selectedNotice.scope === 'private' ? <Lock className="w-5 h-5" /> : <Radio className="w-5 h-5" />}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase font-mono ${
+                      selectedNotice.priority === 'urgent'
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                        : selectedNotice.priority === 'high'
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                        : 'bg-slate-800 text-slate-300 border border-slate-700'
+                    }`}>
+                      {selectedNotice.priority || 'Normal'} Priority
+                    </span>
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 uppercase font-mono font-semibold">
+                      {selectedNotice.category || 'General'}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 uppercase font-mono">
+                      {selectedNotice.scope === 'private' ? 'Confidential Private' : 'Campus Broadcast'}
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-white mt-1.5 leading-snug font-['Outfit']">
+                    {selectedNotice.title}
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedNotice(null)}
+                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition shrink-0 cursor-pointer"
+                title="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Info Strip */}
+            <div className="px-5 py-3 bg-slate-950/60 border-b border-slate-800/80 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">Published By</span>
+                <span className="font-semibold text-slate-200 truncate block">{selectedNotice.publishedBy || 'School Office'}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">Audience / Recipient</span>
+                <span className="font-semibold text-slate-200 truncate block">
+                  {selectedNotice.targetUserName || selectedNotice.targetAudience || selectedNotice.recipientRole || 'All School'}
+                </span>
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">Date & Time</span>
+                <span className="font-mono text-slate-300 block">
+                  {new Date(selectedNotice.publishedAt || Date.now()).toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                  })} {new Date(selectedNotice.publishedAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-5 overflow-y-auto space-y-4 flex-1">
+              <div>
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-2">Notice Message:</span>
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800/80 text-sm text-slate-200 leading-relaxed whitespace-pre-line font-sans shadow-inner">
+                  {selectedNotice.content}
+                </div>
+              </div>
+
+              {/* Delivery Channels Tags */}
+              {selectedNotice.channels && (
+                <div className="flex items-center gap-2 flex-wrap text-[11px] text-slate-400 pt-1">
+                  <span className="font-bold text-slate-500 text-[10px] uppercase">Delivery Channels:</span>
+                  {Object.entries(selectedNotice.channels).filter(([_, v]) => v).map(([channel]) => (
+                    <span key={channel} className="px-2 py-0.5 rounded-md bg-slate-800/90 text-cyan-300 border border-slate-700 uppercase font-mono text-[10px]">
+                      ✓ {channel}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-4 bg-slate-950/90 border-t border-slate-800 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  if (setCurrentTab) setCurrentTab('notices');
+                  setSelectedNotice(null);
+                  onClose();
+                }}
+                className="px-4 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Open Notice Board</span>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setSelectedNotice(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition cursor-pointer"
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: TASK DIRECTIVE DETAIL VIEW */}
+      {selectedTask && (
+        <div 
+          className="fixed inset-0 z-[60] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setSelectedTask(null)}
+        >
+          <div 
+            className="relative w-full max-w-lg bg-[#0c1322] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-800 bg-slate-900/80 flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-2xl shrink-0 ${
+                  selectedTask.priority === 'urgent'
+                    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                    : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                }`}>
+                  <ListTodo className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase font-mono ${
+                      selectedTask.priority === 'urgent'
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                        : selectedTask.priority === 'high'
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                        : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                    }`}>
+                      {selectedTask.priority} Priority
+                    </span>
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 uppercase font-mono font-semibold">
+                      {selectedTask.category || 'General'}
+                    </span>
+                    <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-mono font-bold uppercase ${
+                      selectedTask.status === 'completed'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    }`}>
+                      Status: {selectedTask.status}
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-white mt-1.5 leading-snug font-['Outfit']">
+                    {selectedTask.title}
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedTask(null)}
+                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition shrink-0 cursor-pointer"
+                title="Close"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Info Strip */}
+            <div className="px-5 py-3 bg-slate-950/60 border-b border-slate-800/80 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">Directive By</span>
+                <span className="font-semibold text-slate-200 truncate block">{selectedTask.assignedBy || 'Administration'}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">Assigned To Role</span>
+                <span className="font-semibold text-cyan-300 truncate block uppercase">{selectedTask.assignedToRole}</span>
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">Due Date</span>
+                <span className="font-mono text-amber-300 font-bold block">{selectedTask.dueDate}</span>
+              </div>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-5 overflow-y-auto space-y-4 flex-1">
+              <div>
+                <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Instructions &amp; Objective:</h5>
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800/80 text-sm text-slate-200 leading-relaxed whitespace-pre-line font-sans shadow-inner">
+                  {selectedTask.description}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-4 bg-slate-950/90 border-t border-slate-800 flex items-center justify-between flex-wrap gap-2">
+              {/* Status Toggle Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleToggleTaskStatus(selectedTask);
+                  setSelectedTask(prev => prev ? ({ ...prev, status: prev.status === 'completed' ? 'pending' : 'completed' }) : null);
+                }}
+                className={`px-3.5 py-2 rounded-xl font-bold text-xs transition flex items-center gap-1.5 cursor-pointer ${
+                  selectedTask.status === 'completed'
+                    ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40'
+                    : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20'
+                }`}
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{selectedTask.status === 'completed' ? 'Mark as Pending' : 'Mark as Completed'}</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                {selectedTask.actionLinkTab && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (setCurrentTab) setCurrentTab(selectedTask.actionLinkTab);
+                      setSelectedTask(null);
+                      onClose();
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-cyan-500/20"
+                  >
+                    <span>{selectedTask.actionLabel || 'Go to Action Module'}</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                
+                <button
+                  type="button"
+                  onClick={() => setSelectedTask(null)}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
