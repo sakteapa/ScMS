@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Bell, 
   X, 
@@ -7,6 +7,7 @@ import {
   Lock, 
   Sparkles, 
   Volume2, 
+  VolumeX,
   AlertTriangle, 
   ExternalLink, 
   MessageSquare, 
@@ -136,33 +137,88 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
   const privateNotices = userNotices.filter(n => n.scope === 'private');
   const broadcastNotices = userNotices.filter(n => n.scope !== 'private');
 
+  // Sound Mute / Active State with persistence
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    try {
+      return localStorage.getItem('zoxs_sound_enabled') !== 'false';
+    } catch {
+      return true;
+    }
+  });
+
+  const [markedReadFeedback, setMarkedReadFeedback] = useState(false);
+
+  // Close drawer on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   // Counts
   const unreadNoticesCount = userNotices.filter(n => !(n.readBy || []).includes(currentUserId)).length;
   const privateUnreadCount = privateNotices.filter(n => !(n.readBy || []).includes(currentUserId)).length;
 
   const handlePlayChime = () => {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.6);
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      
+      const playTone = () => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.35, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+      };
+
+      if (ctx.state === 'suspended') {
+        ctx.resume().then(playTone).catch(() => {});
+      } else {
+        playTone();
+      }
     } catch (e) {
       console.warn('Audio chime error:', e);
     }
   };
 
+  const toggleSound = () => {
+    const nextState = !soundEnabled;
+    setSoundEnabled(nextState);
+    try {
+      localStorage.setItem('zoxs_sound_enabled', String(nextState));
+    } catch (e) {}
+    if (nextState) {
+      handlePlayChime();
+    }
+  };
+
+  const handleMarkAllRead = () => {
+    if (markAllNotificationsAsRead) {
+      markAllNotificationsAsRead(currentUserId);
+    }
+    setMarkedReadFeedback(true);
+    if (soundEnabled) {
+      handlePlayChime();
+    }
+    setTimeout(() => setMarkedReadFeedback(false), 3000);
+  };
+
   const handleToggleTaskStatus = (t) => {
     const nextStatus = t.status === 'completed' ? 'pending' : 'completed';
     updateTaskStatus(t.id, nextStatus, currentUser?.displayName || 'Active User');
-    handlePlayChime();
+    if (soundEnabled) handlePlayChime();
   };
 
   const handleAssignSubmit = (e) => {
@@ -182,7 +238,7 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
       category: 'academic',
       actionLinkTab: 'academics'
     });
-    handlePlayChime();
+    if (soundEnabled) handlePlayChime();
   };
 
   const canAssignTasks = isPrincipal || isVicePrincipal || isTeacher || isWarden || isSuperAdmin;
@@ -200,14 +256,20 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
         {/* Top Header */}
         <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/70">
           <div className="flex items-center gap-3">
-            <div className="relative p-2.5 rounded-2xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 shadow-inner">
-              <Bell className="w-5 h-5" />
+            {/* Interactive Bell Icon & Badge */}
+            <button
+              type="button"
+              onClick={handleMarkAllRead}
+              className="relative p-2.5 rounded-2xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 shadow-inner transition cursor-pointer group"
+              title="Click to mark all directives & alerts as read"
+            >
+              <Bell className="w-5 h-5 group-hover:scale-110 transition-transform" />
               {(unreadNoticesCount > 0 || pendingTasks.length > 0) && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 text-[10px] font-bold text-white flex items-center justify-center font-mono animate-pulse shadow-lg">
+                <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-[10px] font-bold text-white flex items-center justify-center font-mono animate-pulse shadow-lg">
                   {unreadNoticesCount + pendingTasks.length}
                 </span>
               )}
-            </div>
+            </button>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm sm:text-base font-bold text-white font-['Outfit']">
@@ -224,21 +286,67 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
           </div>
 
           <div className="flex items-center gap-1.5">
+            {/* Mark All Read Button */}
+            {unreadNoticesCount > 0 && (
+              <button
+                type="button"
+                onClick={handleMarkAllRead}
+                className="px-2.5 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-[11px] font-bold transition flex items-center gap-1 cursor-pointer"
+                title="Mark all notifications as read"
+              >
+                <CheckCheck className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Mark Read</span>
+              </button>
+            )}
+
+            {/* Sound Toggle (Mute / Active) with Chime Feedback */}
             <button
-              onClick={handlePlayChime}
-              className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-cyan-300 transition"
-              title="Test Bell Chime"
+              type="button"
+              onClick={toggleSound}
+              className={`p-2 rounded-xl border transition cursor-pointer ${
+                soundEnabled 
+                  ? 'bg-slate-800/90 hover:bg-slate-700 text-cyan-400 border-slate-700 shadow-sm' 
+                  : 'bg-slate-900 hover:bg-slate-800 text-slate-500 border-slate-800'
+              }`}
+              title={soundEnabled ? 'Notification chime active (Click to mute)' : 'Notification chime muted (Click to unmute)'}
+              aria-label={soundEnabled ? 'Mute notification sound' : 'Unmute notification sound'}
             >
-              <Volume2 className="w-4 h-4" />
+              {soundEnabled ? (
+                <Volume2 className="w-4 h-4" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-slate-500" />
+              )}
             </button>
+
+            {/* Close Button */}
             <button
+              type="button"
               onClick={onClose}
-              className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition"
+              className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition cursor-pointer"
+              title="Close Drawer"
+              aria-label="Close Drawer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
+
+        {/* Feedback Toast Banner when marked read */}
+        {markedReadFeedback && (
+          <div className="px-4 py-2 bg-emerald-950/90 border-b border-emerald-800/60 text-emerald-300 text-xs font-semibold flex items-center justify-between gap-2 animate-in fade-in">
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>All notifications marked as read!</span>
+            </span>
+            <button 
+              type="button" 
+              onClick={() => setMarkedReadFeedback(false)} 
+              className="text-emerald-400 hover:text-white text-xs font-bold cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Role Quick Filter Chips */}
         <div className="px-4 py-2 border-b border-slate-800/60 bg-slate-950/60 flex items-center gap-1.5 overflow-x-auto scrollbar-none text-[11px]">
