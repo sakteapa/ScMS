@@ -30,7 +30,7 @@ import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
 
 export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onOpenEditor, onOpenMobileApp }) {
-  const { websiteConfig, notices = [] } = useSchool();
+  const { websiteConfig, notices = [], activeSchoolInfo } = useSchool();
   const { currentUser, isPrincipal } = useAuth();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
@@ -41,6 +41,13 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
   const facilities = cfg.facilities || [];
   const contact = cfg.contact || {};
   const social = cfg.socialLinks || {};
+
+  const schoolDisplayName = cfg.schoolName || activeSchoolInfo?.name || 'Oxford Higher Academy';
+  const affiliationDisplayName = cfg.affiliationBadge || activeSchoolInfo?.affiliationBadge || 'MBSE Affiliated • Lunglawn, Lunglei';
+  const schoolMotto = cfg.motto || activeSchoolInfo?.motto || 'Excellence in Truth & Service';
+  const contactAddress = contact.address || activeSchoolInfo?.address || 'Lunglawn, Lunglei, Mizoram - 796701';
+  const contactPhone = contact.phone || activeSchoolInfo?.contactPhone || '+91 98623 45678';
+  const contactEmail = contact.email || activeSchoolInfo?.contactEmail || 'admissions@ohalunglawn.edu.in';
 
   const publicNotices = notices.slice(0, 4);
 
@@ -80,10 +87,10 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
             </div>
             <div>
               <h1 className="text-base sm:text-lg font-extrabold text-white tracking-tight leading-tight">
-                {cfg.schoolName || 'OHA (Oxford Higher Academy)'}
+                {schoolDisplayName}
               </h1>
               <p className="text-[11px] font-medium text-slate-400 font-mono flex items-center gap-1.5">
-                <span>{cfg.affiliationBadge || 'MBSE Affiliated • Lunglawn, Lunglei'}</span>
+                <span>{affiliationDisplayName}</span>
               </p>
             </div>
           </div>
@@ -162,7 +169,7 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/25 text-purple-300 text-xs font-semibold">
                 <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                <span>{cfg.motto || 'Virtute et Labore (Huaisenna leh Thawhrimna)'}</span>
+                <span>{schoolMotto}</span>
               </div>
 
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.15]">
@@ -489,26 +496,26 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
               <div className="space-y-2.5">
                 <div className="flex items-start gap-2">
                   <MapPin className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
-                  <span>{contact.address}</span>
+                  <span>{contactAddress}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="w-4 h-4 text-purple-400 shrink-0" />
-                  <span>{contact.phone}</span>
+                  <span>{contactPhone}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-purple-400 shrink-0" />
-                  <span>{contact.email}</span>
+                  <span>{contactEmail}</span>
                 </div>
                 <div className="flex items-center gap-2 text-slate-500">
                   <Clock className="w-4 h-4 text-slate-500 shrink-0" />
-                  <span>{contact.officeHours}</span>
+                  <span>{contact.officeHours || 'Mon - Fri: 8:30 AM - 3:30 PM'}</span>
                 </div>
               </div>
             </div>
           </div>
 
           <div className="pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
-            <p>© 2026 {cfg.schoolName}. All rights reserved.</p>
+            <p>© 2026 {schoolDisplayName}. All rights reserved.</p>
             <p className="flex items-center gap-2">
               <span>Powered by ZOXS School Management Platform</span>
               <span>•</span>

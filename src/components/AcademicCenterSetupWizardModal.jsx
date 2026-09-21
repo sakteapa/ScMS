@@ -50,7 +50,8 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
     updateGatewayDetails,
     configureSiblingDiscountPolicy,
     websiteConfig,
-    updateWebsiteConfig
+    updateWebsiteConfig,
+    registerSchoolTenant
   } = useSchool();
 
   // Active step in the wizard: 1 to 7
@@ -308,6 +309,20 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
         motto: formData.motto,
         establishedYear: formData.establishedYear,
         affiliationBadge: `${formData.affiliationBoard} Affiliated Institution`
+      });
+    }
+
+    // 6. Register as new school tenant in registry
+    if (registerSchoolTenant) {
+      registerSchoolTenant({
+        name: formData.schoolName,
+        shortName: formData.schoolName.length > 20 ? formData.schoolName.slice(0, 18) + '...' : formData.schoolName,
+        motto: formData.motto,
+        address: formData.address,
+        contactPhone: formData.contactPhone,
+        contactEmail: formData.contactEmail,
+        affiliationBadge: `${formData.affiliationBoard}`,
+        establishedYear: Number(formData.establishedYear) || 2026
       });
     }
 
