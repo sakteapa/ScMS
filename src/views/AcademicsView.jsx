@@ -211,11 +211,11 @@ export default function AcademicsView({ setCurrentTab, setSelectedStudentForRepo
 
         <div className="flex flex-wrap items-center gap-2.5">
           <button
-            onClick={() => setIsLiveClassOpen(true)}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-rose-500/20 transition"
+            onClick={() => setCurrentTab ? setCurrentTab('class_admin_live') : setIsLiveClassOpen(true)}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-rose-500/20 transition cursor-pointer"
           >
             <Radio className="w-4 h-4 animate-pulse" />
-            <span>Launch Live Streaming Class</span>
+            <span>Class Admin &amp; Live Approval Suite</span>
           </button>
 
           <button

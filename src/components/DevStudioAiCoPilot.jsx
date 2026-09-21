@@ -42,8 +42,15 @@ export default function DevStudioAiCoPilot() {
     updateSystemConfig,
     websiteConfig = {},
     updateWebsiteConfig,
-    executeTerminalCommand
+    executeTerminalCommand,
+    activeSchoolInfo = {},
+    initializeCleanSchool,
+    initializeCleanOhaAcademy
   } = schoolContext;
+
+  // Resolve the clean-launch function (supports both new and legacy name)
+  const doCleanLaunch = initializeCleanSchool || initializeCleanOhaAcademy;
+  const schoolName = activeSchoolInfo?.name || systemConfig?.schoolName || 'This School';
 
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
@@ -100,9 +107,9 @@ export default function DevStudioAiCoPilot() {
     } else if (issue.autoFixType === 'SET_DEFAULT_SCHOOL_NAME') {
       updateWebsiteConfig({
         ...websiteConfig,
-        schoolName: 'OHA (One Heart Academy)',
-        tagline: 'Excellence in Mind, Character in Heart',
-        motto: 'Knowledge • Integrity • Service'
+        schoolName: schoolName,
+        tagline: activeSchoolInfo?.affiliationBadge || 'MBSE Affiliated',
+        motto: activeSchoolInfo?.motto || 'Excellence in Education'
       });
     }
 
@@ -127,13 +134,13 @@ export default function DevStudioAiCoPilot() {
       } else if (p.includes('print') || p.includes('chhuah')) {
         snippet = `/* AI Generated: Print Clean Layout */\n@media print {\n  header, nav, aside, .no-print, button {\n    display: none !important;\n  }\n  body {\n    background: white !important;\n    color: black !important;\n  }\n}`;
       } else {
-        snippet = `/* AI Generated Custom CSS for "${codePrompt}" */\n.oha-custom-styled {\n  border-radius: 1rem;\n  transition: all 0.3s ease;\n  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);\n}`;
+        snippet = `/* AI Generated Custom CSS for "${codePrompt}" */\n.school-custom-styled {\n  border-radius: 1rem;\n  transition: all 0.3s ease;\n  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);\n}`;
       }
     } else {
       if (p.includes('save') || p.includes('form') || p.includes('input')) {
         snippet = `// AI Generated: Auto-save form inputs draft\nwindow.addEventListener('input', (e) => {\n  if (e.target.name) {\n    localStorage.setItem('draft_' + e.target.name, e.target.value);\n  }\n});`;
       } else {
-        snippet = `// AI Generated Script for "${codePrompt}"\nconsole.log('[OHA AI Agent] Executing custom telemetry hooks...');\nwindow.ohaAiLoaded = true;`;
+        snippet = `// AI Generated Script for "${codePrompt}"\nconsole.log('[School AI Agent] Executing custom telemetry hooks...');\nwindow.schoolAiLoaded = true;`;
       }
     }
 
@@ -247,19 +254,19 @@ export default function DevStudioAiCoPilot() {
             <button
               type="button"
               onClick={() => {
-                if (window.confirm('One Heart Academy, Lunglawn, Lunglei atan mock data (fake student, fees, grades) zawng zawng thianfai a, fresh institutional portal hawn i duh chiang em? Principal leh Admin in an khawih chhunzawm thei nghal ang.')) {
-                  if (schoolContext.initializeCleanOhaAcademy) {
-                    schoolContext.initializeCleanOhaAcademy();
+                if (window.confirm(`${schoolName} atan mock data (fake student, fees, grades) zawng zawng thianfai a, fresh institutional portal hawn i duh chiang em? Principal leh Admin in an khawih chhunzawm thei nghal ang.`)) {
+                  if (doCleanLaunch) {
+                    doCleanLaunch();
                     handleRunDiagnosticScan();
-                    alert('One Heart Academy (OHA) portal chu tluang takin hawn a ni e! Mock data zawng zawng thianfai a ni tawh e.');
+                    alert(`${schoolName} portal chu tluang takin hawn a ni e! Mock data zawng zawng thianfai a ni tawh e.`);
                   }
                 }
               }}
               className="px-4 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm transition shadow-lg shadow-amber-500/20 flex items-center gap-2 cursor-pointer"
-              title="Purge all fake mock records and launch clean OHA portal"
+              title={`Purge all fake mock records and launch clean ${schoolName} portal`}
             >
               <Sparkles className="w-4 h-4" />
-              <span>Launch Clean OHA (Clear Mock Data)</span>
+              <span>Launch Clean {schoolName} (Clear Mock Data)</span>
             </button>
           </div>
         </div>

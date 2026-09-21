@@ -14,13 +14,15 @@ import {
   AlertCircle,
   Bell,
   Sparkles,
-  BookOpen
+  BookOpen,
+  Building2,
+  CalendarDays
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
 
 export default function DashboardView({ setCurrentTab, openRoleSwitcher }) {
-  const { currentUser, isPrincipal, isTeacher, isStudent, isParent } = useAuth();
+  const { currentUser, isPrincipal, isTeacher, isWarden, isSuperAdmin, isVicePrincipal } = useAuth();
   const { students, attendance, fees, grades, notices, admissions, classes, systemConfig } = useSchool();
 
   const today = new Date().toISOString().split('T')[0];
@@ -37,13 +39,6 @@ export default function DashboardView({ setCurrentTab, openRoleSwitcher }) {
 
   const pendingAdmissions = admissions.filter(a => a.status === 'pending');
   const pinnedNotices = notices.filter(n => n.isPinned);
-
-  // Student specific data if student or parent
-  const activeStudent = isStudent 
-    ? students.find(s => s.id === currentUser?.studentId) || students[0]
-    : isParent 
-    ? students.find(s => s.id === currentUser?.wardStudentId) || students[0]
-    : null;
 
   return (
     <div className="space-y-6 pb-12">
@@ -68,20 +63,33 @@ export default function DashboardView({ setCurrentTab, openRoleSwitcher }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setCurrentTab('attendance')}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-lg shadow-cyan-500/25 flex items-center gap-2"
-            >
-              <QrCode className="w-4 h-4" />
-              <span>QR Scanner</span>
-            </button>
-            <button
-              onClick={() => setCurrentTab('report_cards')}
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition border border-slate-700 flex items-center gap-2"
-            >
-              <FileText className="w-4 h-4 text-cyan-400" />
-              <span>Report Cards</span>
-            </button>
+            {(!isWarden) && (
+              <button
+                onClick={() => setCurrentTab('attendance')}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-lg shadow-cyan-500/25 flex items-center gap-2"
+              >
+                <QrCode className="w-4 h-4" />
+                <span>QR Scanner</span>
+              </button>
+            )}
+            {(!isWarden) && (
+              <button
+                onClick={() => setCurrentTab('report_cards')}
+                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition border border-slate-700 flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4 text-cyan-400" />
+                <span>Report Cards</span>
+              </button>
+            )}
+            {isWarden && (
+              <button
+                onClick={() => setCurrentTab('hostel')}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs transition shadow-lg shadow-purple-600/25 flex items-center gap-2"
+              >
+                <Building2 className="w-4 h-4" />
+                <span>Hostel Suite</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -122,49 +130,129 @@ export default function DashboardView({ setCurrentTab, openRoleSwitcher }) {
           </div>
         </div>
 
-        {/* Total Fee Collections */}
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Fees Collected</span>
-            <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
-              <CreditCard className="w-4.5 h-4.5" />
+        {/* Total Fee Collections (Admin/Principal only) or Academic/Hostel Overview for Staff */}
+        {(isPrincipal || isSuperAdmin) ? (
+          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400">Fees Collected</span>
+              <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
+                <CreditCard className="w-4.5 h-4.5" />
+              </div>
             </div>
+            <div className="mt-4 flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">
+                ₹{(totalFeesCollected / 1000).toFixed(1)}k
+              </span>
+              <span className="text-xs text-cyan-400 font-medium">{fees.length} Receipts</span>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500 flex items-center gap-1">
+              <span>UPI: ₹{(upiFees / 1000).toFixed(0)}k</span>
+              <span>•</span>
+              <span>Cash: ₹{(cashFees / 1000).toFixed(0)}k</span>
+            </p>
           </div>
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">
-              ₹{(totalFeesCollected / 1000).toFixed(1)}k
-            </span>
-            <span className="text-xs text-cyan-400 font-medium">{fees.length} Receipts</span>
+        ) : isWarden ? (
+          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400">Hostel Boarding</span>
+              <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
+                <Building2 className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">Residential</span>
+              <span className="text-xs text-purple-400 font-medium">Active</span>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500">
+              Boys &amp; Girls Boarding Quarters
+            </p>
           </div>
-          <p className="mt-1 text-[11px] text-slate-500 flex items-center gap-1">
-            <span>UPI: ₹{(upiFees / 1000).toFixed(0)}k</span>
-            <span>•</span>
-            <span>Cash: ₹{(cashFees / 1000).toFixed(0)}k</span>
-          </p>
-        </div>
+        ) : (
+          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400">Academic Schedule</span>
+              <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
+                <GraduationCap className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">{classes.length}</span>
+              <span className="text-xs text-purple-400 font-medium">Classes Active</span>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500">
+              MBSE Curriculum &amp; Routine
+            </p>
+          </div>
+        )}
 
-        {/* Pending Admissions */}
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-400">Online Admissions</span>
-            <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
-              <Sparkles className="w-4.5 h-4.5" />
+        {/* Pending Admissions (Principal/VP) or Faculty Desk */}
+        {(isPrincipal || isSuperAdmin || isVicePrincipal) ? (
+          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400">Online Admissions</span>
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                <Sparkles className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">{pendingAdmissions.length}</span>
+              <span className="text-xs text-amber-400 font-medium">Pending Review</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between text-[11px]">
+              <span className="text-slate-500">{admissions.length} total applications</span>
+              <button
+                onClick={() => setCurrentTab('admissions')}
+                className="text-cyan-400 hover:underline font-medium"
+              >
+                Review →
+              </button>
             </div>
           </div>
-          <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">{pendingAdmissions.length}</span>
-            <span className="text-xs text-amber-400 font-medium">Pending Review</span>
+        ) : isWarden ? (
+          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400">Hostel Pass Desk</span>
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                <Sparkles className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">Gate Log</span>
+              <span className="text-xs text-amber-400 font-medium">Ready</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between text-[11px]">
+              <span className="text-slate-500">Boarder Outing &amp; Night Roll</span>
+              <button
+                onClick={() => setCurrentTab('hostel')}
+                className="text-cyan-400 hover:underline font-medium"
+              >
+                Open →
+              </button>
+            </div>
           </div>
-          <div className="mt-1 flex items-center justify-between text-[11px]">
-            <span className="text-slate-500">{admissions.length} total applications</span>
-            <button
-              onClick={() => setCurrentTab('admissions')}
-              className="text-cyan-400 hover:underline font-medium"
-            >
-              Review →
-            </button>
+        ) : (
+          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 hover:border-slate-700 transition">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400">Faculty Desk</span>
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                <Sparkles className="w-4.5 h-4.5" />
+              </div>
+            </div>
+            <div className="mt-4 flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-bold text-white font-['Outfit']">Gradebook</span>
+              <span className="text-xs text-amber-400 font-medium">Active</span>
+            </div>
+            <div className="mt-1 flex items-center justify-between text-[11px]">
+              <span className="text-slate-500">Continuous Assessment &amp; Tests</span>
+              <button
+                onClick={() => setCurrentTab('academics')}
+                className="text-cyan-400 hover:underline font-medium"
+              >
+                Enter Marks →
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Main Row: Academic Stream Overview & Quick Operations */}
@@ -258,43 +346,83 @@ export default function DashboardView({ setCurrentTab, openRoleSwitcher }) {
             </div>
           </div>
 
-          {/* Quick Dual Payment & Attendance Trigger Banner */}
+          {/* Quick Action Banners */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div 
-              onClick={() => setCurrentTab('attendance')}
-              className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-cyan-950/30 border border-slate-800 hover:border-cyan-500/50 transition cursor-pointer group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30">
-                  <QrCode className="w-5 h-5" />
+            {isWarden ? (
+              <div 
+                onClick={() => setCurrentTab('hostel')}
+                className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-purple-950/30 border border-slate-800 hover:border-purple-500/50 transition cursor-pointer group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-purple-400 transition" />
                 </div>
-                <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition" />
+                <h4 className="mt-4 text-sm font-bold text-white group-hover:text-purple-300 transition">
+                  Hostel Night Roll Call & Dorms
+                </h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  Check student night attendance, approve weekend outing passes, and manage hostel room allocations.
+                </p>
               </div>
-              <h4 className="mt-4 text-sm font-bold text-white group-hover:text-cyan-300 transition">
-                Teacher QR Camera Scanner
-              </h4>
-              <p className="text-xs text-slate-400 mt-1">
-                Instantly scan student ID card QR codes using the device camera to mark attendance in real-time.
-              </p>
-            </div>
+            ) : (
+              <div 
+                onClick={() => setCurrentTab('attendance')}
+                className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-cyan-950/30 border border-slate-800 hover:border-cyan-500/50 transition cursor-pointer group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30">
+                    <QrCode className="w-5 h-5" />
+                  </div>
+                  <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition" />
+                </div>
+                <h4 className="mt-4 text-sm font-bold text-white group-hover:text-cyan-300 transition">
+                  Teacher QR Camera Scanner
+                </h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  Instantly scan student ID card QR codes using the device camera to mark attendance in real-time.
+                </p>
+              </div>
+            )}
 
-            <div 
-              onClick={() => setCurrentTab('financials')}
-              className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-indigo-950/30 border border-slate-800 hover:border-indigo-500/50 transition cursor-pointer group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
-                  <CreditCard className="w-5 h-5" />
+            {(isPrincipal || isSuperAdmin) ? (
+              <div 
+                onClick={() => setCurrentTab('financials')}
+                className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-indigo-950/30 border border-slate-800 hover:border-indigo-500/50 transition cursor-pointer group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+                    <CreditCard className="w-5 h-5" />
+                  </div>
+                  <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition" />
                 </div>
-                <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 transition" />
+                <h4 className="mt-4 text-sm font-bold text-white group-hover:text-indigo-300 transition">
+                  Dual Fee Payment Gateway
+                </h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  Record UPI/GPay payments with verified UTR numbers or Cash payments with auto-generated cashier receipts.
+                </p>
               </div>
-              <h4 className="mt-4 text-sm font-bold text-white group-hover:text-indigo-300 transition">
-                Dual Fee Payment Gateway
-              </h4>
-              <p className="text-xs text-slate-400 mt-1">
-                Record UPI/GPay payments with verified UTR numbers or Cash payments with auto-generated cashier receipts.
-              </p>
-            </div>
+            ) : (
+              <div 
+                onClick={() => setCurrentTab('routine')}
+                className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-cyan-950/30 border border-slate-800 hover:border-cyan-500/50 transition cursor-pointer group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30">
+                    <CalendarDays className="w-5 h-5" />
+                  </div>
+                  <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition" />
+                </div>
+                <h4 className="mt-4 text-sm font-bold text-white group-hover:text-cyan-300 transition">
+                  Class Routine & Timetable
+                </h4>
+                <p className="text-xs text-slate-400 mt-1">
+                  View daily subject schedules, faculty period assignments, and print official classroom wall routine PDFs.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -340,37 +468,64 @@ export default function DashboardView({ setCurrentTab, openRoleSwitcher }) {
           {/* Quick Shortcuts */}
           <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800/80 space-y-3">
             <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-              Administration Modules
+              {isPrincipal || isSuperAdmin || isVicePrincipal ? 'Administration Modules' : 'Staff Quick Links'}
             </h4>
             <div className="grid grid-cols-2 gap-2 text-xs">
+              {!isWarden && (
+                <button
+                  onClick={() => setCurrentTab('library')}
+                  className="p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 text-left text-slate-300 hover:text-white transition flex items-center gap-2"
+                >
+                  <BookOpen className="w-4 h-4 text-cyan-400" />
+                  <span>Library</span>
+                </button>
+              )}
+
+              {(isPrincipal || isVicePrincipal || isSuperAdmin) && (
+                <button
+                  onClick={() => setCurrentTab('staff_payroll')}
+                  className="p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 text-left text-slate-300 hover:text-white transition flex items-center gap-2"
+                >
+                  <DollarSign className="w-4 h-4 text-emerald-400" />
+                  <span>Payroll</span>
+                </button>
+              )}
+
+              {isWarden && (
+                <button
+                  onClick={() => setCurrentTab('hostel')}
+                  className="p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 text-left text-slate-300 hover:text-white transition flex items-center gap-2"
+                >
+                  <Building2 className="w-4 h-4 text-purple-400" />
+                  <span>Hostel Suite</span>
+                </button>
+              )}
+
               <button
-                onClick={() => setCurrentTab('library')}
-                className="p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 text-left text-slate-300 hover:text-white transition flex items-center gap-2"
-              >
-                <BookOpen className="w-4 h-4 text-cyan-400" />
-                <span>Library</span>
-              </button>
-              <button
-                onClick={() => setCurrentTab('staff_payroll')}
-                className="p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 text-left text-slate-300 hover:text-white transition flex items-center gap-2"
-              >
-                <DollarSign className="w-4 h-4 text-emerald-400" />
-                <span>Payroll</span>
-              </button>
-              <button
-                onClick={() => setCurrentTab('transport_hostel')}
+                onClick={() => setCurrentTab(isWarden ? 'visitors' : 'transport')}
                 className="p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 text-left text-slate-300 hover:text-white transition flex items-center gap-2"
               >
                 <Users className="w-4 h-4 text-purple-400" />
-                <span>Transport</span>
+                <span>{isWarden ? 'Gate Passes' : 'Transport'}</span>
               </button>
-              <button
-                onClick={() => setCurrentTab('admissions')}
-                className="p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 text-left text-slate-300 hover:text-white transition flex items-center gap-2"
-              >
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span>Admissions</span>
-              </button>
+
+              {(isPrincipal || isVicePrincipal || isSuperAdmin) ? (
+                <button
+                  onClick={() => setCurrentTab('admissions')}
+                  className="p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 text-left text-slate-300 hover:text-white transition flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <span>Admissions</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setCurrentTab('routine')}
+                  className="p-2.5 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 text-left text-slate-300 hover:text-white transition flex items-center gap-2"
+                >
+                  <CalendarDays className="w-4 h-4 text-amber-400" />
+                  <span>Timetable</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

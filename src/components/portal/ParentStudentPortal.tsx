@@ -43,7 +43,9 @@ import {
   Calendar,
   Layers,
   Award,
+  UserCog,
 } from 'lucide-react';
+import ProfileSettingsModal from '../ProfileSettingsModal';
 import {
   FirestoreStudent,
   SchoolClass,
@@ -118,6 +120,7 @@ export const ParentStudentPortal: React.FC<ParentStudentPortalProps> = ({
   const [selectedNoticeCategory, setSelectedNoticeCategory] = useState<string>('All');
 
   // Modals
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isReportCardModalOpen, setIsReportCardModalOpen] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [selectedReceiptForModal, setSelectedReceiptForModal] = useState<FeeRecord | null>(null);
@@ -409,6 +412,18 @@ export const ParentStudentPortal: React.FC<ParentStudentPortalProps> = ({
               ))}
             </select>
           </div>
+
+          {/* Edit Profile Button */}
+          <button
+            type="button"
+            onClick={() => setIsProfileModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 border border-violet-500/30 transition-colors cursor-pointer shadow-xs"
+            title="Edit Profile & Contact Details"
+          >
+            <UserCog className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">My Profile</span>
+            <span className="sm:hidden">Profile</span>
+          </button>
 
           {onExitToAdmin && (
             <button
@@ -1926,6 +1941,12 @@ export const ParentStudentPortal: React.FC<ParentStudentPortalProps> = ({
           </div>
         </div>
       )}
+
+      {/* Interactive Profile Settings Modal */}
+      <ProfileSettingsModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
     </div>
   );
 };

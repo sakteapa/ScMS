@@ -32,7 +32,8 @@ export default function AlumniView() {
     updateTranscriptStatus, 
     updateAlumniConfig 
   } = useSchool();
-  const { currentUser, isPrincipal, isSuperAdmin } = useAuth();
+  const { currentUser, isPrincipal, isVicePrincipal, isSuperAdmin, isTeacher, isStudent } = useAuth();
+  const canRegisterAlumni = isPrincipal || isVicePrincipal || isSuperAdmin || isTeacher || (!isStudent);
 
   const [activeTab, setActiveTab] = useState('directory'); // 'directory' | 'transcripts' | 'config'
   const [searchQuery, setSearchQuery] = useState('');
@@ -172,13 +173,20 @@ export default function AlumniView() {
             <span>Apply for Transcript</span>
           </button>
 
-          <button
-            onClick={() => setIsRegisterModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/20 transition flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Register Alumni Member</span>
-          </button>
+          {canRegisterAlumni ? (
+            <button
+              onClick={() => setIsRegisterModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/20 transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Register Alumni Member</span>
+            </button>
+          ) : (
+            <div className="px-3.5 py-1.5 rounded-xl bg-purple-950/40 border border-purple-500/30 text-purple-300 text-[11px] font-medium flex items-center gap-1.5">
+              <GraduationCap className="w-3.5 h-3.5 text-purple-400" />
+              <span>Graduation / Pass-out hnuah chauh register theih a ni</span>
+            </div>
+          )}
         </div>
       </div>
 

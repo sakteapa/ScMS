@@ -47,6 +47,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
 import ClassLeaderModal from '../components/ClassLeaderModal';
+import OfficeStaffTab from '../components/OfficeStaffTab';
 
 const STANDARD_COMMITTEES = [
   'Examination Cell & Assessment Board',
@@ -81,6 +82,7 @@ export default function StaffPayrollView() {
     addPayScale,
     adjustStaffSalary,
     assignClassMaster,
+    assignOfficeStaffDuties,
     systemConfig
   } = useSchool();
   const { currentUser, isPrincipal, isVicePrincipal } = useAuth();
@@ -519,6 +521,18 @@ export default function StaffPayrollView() {
               </span>
             </button>
             <button
+              onClick={() => setActiveTab('office_staff')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+                activeTab === 'office_staff' ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Office Staff &amp; Access</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-950/60 text-purple-200 font-mono">
+                {staff.filter(s => s.isOfficeStaff).length} Ruat
+              </span>
+            </button>
+            <button
               onClick={() => setActiveTab('id_cards')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
                 activeTab === 'id_cards' ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
@@ -530,6 +544,18 @@ export default function StaffPayrollView() {
           </div>
         </div>
       </div>
+
+      {/* ============================================================ */}
+      {/* TAB 0: OFFICE STAFF & MODULE ACCESS GOVERNANCE               */}
+      {/* ============================================================ */}
+      {activeTab === 'office_staff' && (
+        <OfficeStaffTab
+          staff={staff}
+          assignOfficeStaffDuties={assignOfficeStaffDuties}
+          canManage={isGovernanceUser}
+          assignerDesignation={assignerDesignation}
+        />
+      )}
 
       {/* ============================================================ */}
       {/* TAB 1: MAWHPHURHNA SEMZAINA / DUTY & PORTFOLIO ALLOCATION */}

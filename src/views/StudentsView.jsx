@@ -24,7 +24,9 @@ import {
   Lock,
   ShieldAlert,
   UserX,
-  UserCheck
+  UserCheck,
+  GraduationCap,
+  Layers
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSchool } from '../context/SchoolContext';
@@ -33,14 +35,16 @@ import ClassLeaderModal from '../components/ClassLeaderModal';
 import StudentConcessionSpecialModal from '../components/StudentConcessionSpecialModal';
 import StudentIdCardModal from '../components/StudentIdCardModal';
 import StudentSuspensionModal from '../components/StudentSuspensionModal';
+import AcademicSessionPromotionModal from '../components/AcademicSessionPromotionModal';
 
 export default function StudentsView({ setCurrentTab, setSelectedStudentForReport }) {
-  const { students, classes, staff, transportRoutes, hostelRooms, startPrivateCall } = useSchool();
+  const { students, classes, staff, transportRoutes, hostelRooms, startPrivateCall, systemConfig } = useSchool();
   const { currentUser, isPrincipal, isVicePrincipal, isSuperAdmin, isTeacher } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedClassId, setSelectedClassId] = useState('all');
   const [selectedFeeStatus, setSelectedFeeStatus] = useState('all');
+  const [selectedSessionStatus, setSelectedSessionStatus] = useState('all'); // 'all' | 'enrolled' | 'awaiting_rollover'
   const [activeModalStudent, setActiveModalStudent] = useState(null);
   const [leaderModalTarget, setLeaderModalTarget] = useState(null);
   const [concessionModalTarget, setConcessionModalTarget] = useState(null);
@@ -49,11 +53,15 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
   const [idCardTargetStudent, setIdCardTargetStudent] = useState(null);
   const [suspensionModalStudent, setSuspensionModalStudent] = useState(null);
   const [selectedConductStatus, setSelectedConductStatus] = useState('all');
+  const [isPromotionModalOpen, setIsPromotionModalOpen] = useState(false);
+  const [promotionTargetStudent, setPromotionTargetStudent] = useState(null);
 
   // Identify if logged-in teacher has a class they are Class Master of
   const teacherClass = isTeacher 
     ? classes.find(c => c.id === currentUser?.classId || staff.find(s => s.phone === currentUser?.phone)?.classTeacherOf === c.id)
     : null;
+
+  const activeSessionName = systemConfig?.academicSession || '2026 - 2027';
 
   const filteredStudents = students.filter(s => {
     const matchesClass = selectedClassId === 'all' || s.classId === selectedClassId;
@@ -64,13 +72,19 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
       : selectedConductStatus === 'suspended' 
       ? isSuspended 
       : !isSuspended;
+    const isEnrolledInActive = (s.enrolledSessions || [s.academicSession]).includes(activeSessionName);
+    const matchesSession = selectedSessionStatus === 'all'
+      ? true
+      : selectedSessionStatus === 'enrolled'
+      ? isEnrolledInActive
+      : !isEnrolledInActive;
     const fullName = `${s.firstName} ${s.lastName}`.toLowerCase();
     const matchesSearch = !searchQuery || 
       fullName.includes(searchQuery.toLowerCase()) ||
       s.admissionNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (s.guardianName && s.guardianName.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    return matchesClass && matchesFee && matchesStatus && matchesSearch;
+    return matchesClass && matchesFee && matchesStatus && matchesSession && matchesSearch;
   });
 
   return (
@@ -80,8 +94,11 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
         <div>
           <h2 className="text-xl font-bold text-white font-['Outfit'] flex items-center gap-2">
             <span>Student Master Directory</span>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-              {students.length} Enrolled
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold">
+              {students.length} Total
+            </span>
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono font-bold">
+              Session: {activeSessionName}
             </span>
           </h2>
           <p className="text-xs text-slate-400">
@@ -89,16 +106,31 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setIdCardTargetStudent(null);
-            setIsIdCardModalOpen(true);
-          }}
-          className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/25 flex items-center gap-2 transition shrink-0"
-        >
-          <CreditCard className="w-4 h-4" />
-          <span>Student ID Cards &amp; Admit Cards</span>
-        </button>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {(isPrincipal || isVicePrincipal || isSuperAdmin) && (
+            <button
+              onClick={() => {
+                setPromotionTargetStudent(null);
+                setIsPromotionModalOpen(true);
+              }}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-purple-600/25 flex items-center gap-2 transition shrink-0 cursor-pointer"
+            >
+              <GraduationCap className="w-4 h-4" />
+              <span>Academic Sessions &amp; Class Promotion</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              setIdCardTargetStudent(null);
+              setIsIdCardModalOpen(true);
+            }}
+            className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/25 flex items-center gap-2 transition shrink-0"
+          >
+            <CreditCard className="w-4 h-4" />
+            <span>Student ID Cards &amp; Admit Cards</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}
@@ -131,6 +163,20 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
               <option value="cleared">Cleared (Full Paid)</option>
               <option value="partial">Partial</option>
               <option value="overdue">Overdue / Unpaid</option>
+            </select>
+          </div>
+
+          {/* Session Enrollment Status Filter */}
+          <div>
+            <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Session Enrollment</label>
+            <select
+              value={selectedSessionStatus}
+              onChange={(e) => setSelectedSessionStatus(e.target.value)}
+              className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
+            >
+              <option value="all">All Student Records</option>
+              <option value="enrolled">Enrolled in Active ({activeSessionName})</option>
+              <option value="awaiting_rollover">Pending Promotion / Rollover</option>
             </select>
           </div>
 
@@ -398,15 +444,29 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
                   </div>
                 </div>
 
-                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono ${
-                  st.feeStatus === 'cleared'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                    : st.feeStatus === 'partial'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                    : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                }`}>
-                  {st.feeStatus}
-                </span>
+                <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                  {(() => {
+                    const isEnrolled = (st.enrolledSessions || [st.academicSession]).includes(activeSessionName);
+                    return (
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold font-mono border ${
+                        isEnrolled
+                          ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                          : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                      }`}>
+                        {isEnrolled ? `AY ${st.academicSession || activeSessionName}` : 'Pending Rollover'}
+                      </span>
+                    );
+                  })()}
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono ${
+                    st.feeStatus === 'cleared'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      : st.feeStatus === 'partial'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                      : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                  }`}>
+                    {st.feeStatus}
+                  </span>
+                </div>
               </div>
 
               {/* Class & Details */}
@@ -454,6 +514,19 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
                 </button>
 
                 <div className="flex items-center gap-2">
+                  {/* Promotion & Class Transfer Button */}
+                  {(isPrincipal || isVicePrincipal || isSuperAdmin) && (
+                    <button
+                      onClick={() => {
+                        setPromotionTargetStudent(st);
+                        setIsPromotionModalOpen(true);
+                      }}
+                      className="p-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 transition cursor-pointer"
+                      title="Promote / Transfer Class (Admin & VP)"
+                    >
+                      <GraduationCap className="w-4 h-4" />
+                    </button>
+                  )}
                   {(isPrincipal || isVicePrincipal || isSuperAdmin) && (
                     <button
                       onClick={() => {
@@ -710,6 +783,16 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
         isOpen={Boolean(suspensionModalStudent)}
         student={suspensionModalStudent}
         onClose={() => setSuspensionModalStudent(null)}
+      />
+
+      {/* Academic Session Turnover & Student Promotion Suite */}
+      <AcademicSessionPromotionModal
+        isOpen={isPromotionModalOpen}
+        onClose={() => {
+          setIsPromotionModalOpen(false);
+          setPromotionTargetStudent(null);
+        }}
+        initialStudent={promotionTargetStudent}
       />
     </div>
   );

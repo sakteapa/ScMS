@@ -37,17 +37,18 @@ import { useSchool } from '../context/SchoolContext';
 
 export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIsMobileOpen }) {
   const { currentUser, isPrincipal, isTeacher, isStudent, isParent, logout } = useAuth();
-  const { admissions, notices, leaveApplications = [], systemConfig, t } = useSchool();
+  const { admissions, notices, leaveApplications = [], systemConfig, t, liveSessionRequests = [], staff = [] } = useSchool();
 
   const pendingAdmissionsCount = admissions.filter(a => a.status === 'pending').length;
   const pendingLeavesCount = leaveApplications.filter(l => l.status === 'pending_class_master' || l.status === 'pending_principal').length;
+  const pendingLiveRequestsCount = liveSessionRequests.filter(r => r.status === 'pending').length;
 
   const navItems = [
     {
       id: 'public_website',
       label: 'School Public Website',
       icon: Globe,
-      roles: ['principal', 'vice_principal', 'warden', 'teacher', 'student', 'parent'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'warden', 'teacher', 'student', 'parent'],
       badge: 'Public Web',
       badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30'
     },
@@ -55,28 +56,43 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       id: 'dashboard',
       label: 'Dashboard',
       icon: LayoutDashboard,
-      roles: ['principal', 'vice_principal', 'warden', 'teacher', 'student', 'parent'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'warden', 'teacher'],
       badge: null
+    },
+    {
+      id: 'class_admin_live',
+      label: 'Class Admin & Live Suite',
+      icon: Radio,
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
+      badge: pendingLiveRequestsCount > 0 ? `${pendingLiveRequestsCount} Dilna` : 'Live Class',
+      badgeColor: pendingLiveRequestsCount > 0 ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+    },
+    {
+      id: 'portal',
+      label: isParent ? 'Ward Portal' : (isStudent ? 'My Student Portal' : 'Student & Parent Portal'),
+      icon: UserCheck,
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher', 'warden', 'student', 'parent'],
+      badge: isStudent || isParent ? 'My Hub' : 'Preview Desk'
     },
     {
       id: 'academics',
       label: 'Academics & Exams',
       icon: GraduationCap,
-      roles: ['principal', 'vice_principal', 'teacher'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
       badge: 'Strict Split'
     },
     {
       id: 'report_cards',
       label: 'Report Card Generator',
       icon: FileText,
-      roles: ['principal', 'vice_principal', 'teacher', 'student', 'parent'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
       badge: null
     },
     {
       id: 'certificates',
       label: 'Certificates & TC',
       icon: FileCheck,
-      roles: ['principal', 'vice_principal', 'teacher', 'student', 'parent'],
+      roles: ['superadmin', 'principal', 'vice_principal'],
       badge: 'MBSE TC',
       badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
     },
@@ -84,14 +100,14 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       id: 'routine',
       label: 'Class Routine & Time Table',
       icon: CalendarDays,
-      roles: ['principal', 'vice_principal', 'teacher', 'student', 'parent'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher', 'student', 'parent'],
       badge: 'Wall PDF'
     },
     {
       id: 'calendar',
       label: 'Calendar & Vacations',
       icon: Calendar,
-      roles: ['principal', 'vice_principal', 'warden', 'teacher', 'student', 'parent'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'warden', 'teacher', 'student', 'parent'],
       badge: 'Vacations Hub',
       badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
     },
@@ -99,14 +115,14 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       id: 'attendance',
       label: 'QR Scanner & Attendance',
       icon: QrCode,
-      roles: ['principal', 'vice_principal', 'teacher'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
       badge: 'Live Cam'
     },
     {
       id: 'leave_management',
       label: 'Leave Applications',
       icon: Clock,
-      roles: ['principal', 'vice_principal', 'teacher', 'student', 'parent'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'warden', 'teacher'],
       badge: pendingLeavesCount > 0 ? `${pendingLeavesCount} Pending` : null,
       badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/30'
     },
@@ -114,7 +130,7 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       id: 'hostel',
       label: 'Hostel Management Suite',
       icon: Building2,
-      roles: ['principal', 'vice_principal', 'warden', 'teacher', 'parent', 'student'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'warden'],
       badge: 'Dorm Suite',
       badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30'
     },
@@ -122,42 +138,35 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       id: 'financials',
       label: 'Financials & Fees',
       icon: CreditCard,
-      roles: ['principal'],
+      roles: ['superadmin', 'principal'],
       badge: 'UPI + Cash'
     },
     {
       id: 'students',
       label: 'Students Directory',
       icon: Users,
-      roles: ['principal', 'vice_principal', 'teacher', 'warden'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'warden', 'teacher'],
       badge: null
-    },
-    {
-      id: 'portal',
-      label: isParent ? 'Ward Portal' : 'Student Portal',
-      icon: UserCheck,
-      roles: ['student', 'parent', 'principal', 'vice_principal'],
-      badge: isStudent || isParent ? 'My Hub' : null
     },
     {
       id: 'library',
       label: 'Library Management',
       icon: BookOpen,
-      roles: ['principal', 'vice_principal', 'teacher', 'student'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
       badge: null
     },
     {
       id: 'staff_payroll',
       label: 'Staff & Governance',
       icon: DollarSign,
-      roles: ['principal', 'vice_principal'],
+      roles: ['superadmin', 'principal', 'vice_principal'],
       badge: 'Duties & Pay'
     },
     {
       id: 'admissions',
       label: 'Online Admissions',
       icon: UserPlus,
-      roles: ['principal', 'vice_principal', 'teacher'],
+      roles: ['superadmin', 'principal', 'vice_principal'],
       badge: pendingAdmissionsCount > 0 ? `${pendingAdmissionsCount} new` : null,
       badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30'
     },
@@ -165,21 +174,21 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       id: 'transport',
       label: 'Transport & Bus Fleet',
       icon: Bus,
-      roles: ['principal', 'vice_principal', 'teacher', 'parent', 'student'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
       badge: null
     },
     {
       id: 'notices',
       label: 'Notice Board',
       icon: Bell,
-      roles: ['principal', 'vice_principal', 'warden', 'teacher', 'student', 'parent'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'warden', 'teacher', 'student', 'parent'],
       badge: null
     },
     {
       id: 'clinic',
       label: 'Clinic & Sick Bay',
       icon: HeartPulse,
-      roles: ['principal', 'vice_principal', 'warden', 'teacher', 'student', 'parent'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'warden', 'teacher'],
       badge: 'Sick Bay',
       badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/30'
     },
@@ -187,21 +196,21 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       id: 'visitors',
       label: 'Gate Pass & Visitors',
       icon: ShieldCheck,
-      roles: ['principal', 'vice_principal', 'warden', 'teacher'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'warden', 'teacher'],
       badge: 'Gate Log'
     },
     {
       id: 'inventory',
       label: 'Inventory & Lab Assets',
       icon: Package,
-      roles: ['principal', 'vice_principal', 'teacher'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
       badge: 'Labs & Stocks'
     },
     {
       id: 'canteen',
       label: 'Canteen & Smart Meal',
       icon: UtensilsCrossed,
-      roles: ['principal', 'vice_principal', 'warden', 'teacher', 'student', 'parent'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'warden', 'teacher'],
       badge: 'Smart Card',
       badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30'
     },
@@ -209,14 +218,14 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       id: 'alumni',
       label: 'Alumni Network',
       icon: Award,
-      roles: ['principal', 'vice_principal', 'teacher', 'student', 'parent'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher', 'student', 'parent'],
       badge: 'Network'
     },
     {
       id: 'group_conference',
       label: 'Group Conference',
       icon: Video,
-      roles: ['principal', 'vice_principal', 'teacher'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
       badge: 'Video Rooms',
       badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
     },
@@ -224,7 +233,7 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       id: 'live_broadcast',
       label: 'Live Broadcast Studio',
       icon: Radio,
-      roles: ['principal', 'vice_principal', 'teacher'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
       badge: 'LIVE',
       badgeColor: 'bg-rose-500/20 text-rose-300 border-rose-500/30'
     },
@@ -232,7 +241,7 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       id: 'staff_chat',
       label: 'Staff Messaging Hub',
       icon: MessageSquare,
-      roles: ['principal', 'vice_principal', 'warden', 'teacher'],
+      roles: ['superadmin', 'principal', 'vice_principal', 'warden', 'teacher'],
       badge: 'Internal Chat',
       badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
     },
@@ -240,7 +249,7 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       id: 'analytics',
       label: 'Analytics Dashboard',
       icon: BarChart3,
-      roles: ['principal', 'vice_principal'],
+      roles: ['superadmin', 'principal', 'vice_principal'],
       badge: 'Insights',
       badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30'
     },
@@ -254,10 +263,18 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
     }
   ];
 
+  const currentStaffRecord = staff.find(s => 
+    s.id === currentUser?.staffId || 
+    s.email?.toLowerCase() === currentUser?.email?.toLowerCase() ||
+    s.name?.toLowerCase() === currentUser?.displayName?.toLowerCase()
+  );
+  const officeAssignedModules = currentStaffRecord?.isOfficeStaff ? (currentStaffRecord?.assignedModuleAccess || []) : [];
+
   const filteredNavItems = navItems.filter(item => {
     if (!item.roles) return true;
     const role = currentUser?.role || 'principal';
     if (role === 'superadmin') return true;
+    if (officeAssignedModules.includes(item.id)) return true;
     return item.roles.includes(role);
   });
 
@@ -332,11 +349,15 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
                   <Icon className={`w-4.5 h-4.5 transition-colors ${isActive ? 'text-cyan-400' : 'text-slate-400 group-hover:text-slate-200'}`} />
                   <span className="truncate">{t(item.id, item.label)}</span>
                 </div>
-                {item.badge && (
+                {officeAssignedModules.includes(item.id) && !item.roles?.includes(currentUser?.role || 'principal') ? (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-purple-500/20 text-purple-300 border-purple-500/30">
+                    Office Duty
+                  </span>
+                ) : item.badge ? (
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${item.badgeColor || 'bg-cyan-500/15 text-cyan-300 border-cyan-500/25'}`}>
                     {item.badge}
                   </span>
-                )}
+                ) : null}
               </button>
             );
           })}
@@ -355,10 +376,10 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
           <button
             onClick={async () => {
               if (logout) await logout();
-              if (setCurrentTab) setCurrentTab('public_website');
+              if (setCurrentTab) setCurrentTab('login');
             }}
             className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/25 flex items-center justify-center gap-2 text-xs font-bold transition shadow-sm"
-            title="Log out and return to Public Website"
+            title="Log out and return to Login Panel"
           >
             <LogOut className="w-3.5 h-3.5 text-rose-400" />
             <span>Logout / Exit ERP</span>

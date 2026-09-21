@@ -49,6 +49,8 @@ export default function AdmissionsView({ setCurrentTab }) {
     admissionRequirements = [], 
     onlineAdmissionConfig,
     updateOnlineAdmissionConfig,
+    offlineAdmissionConfig,
+    updateOfflineAdmissionConfig,
     submitAdmission, 
     reviewAdmission, 
     updateAdmissionRecord,
@@ -392,6 +394,78 @@ export default function AdmissionsView({ setCurrentTab }) {
         </div>
       </div>
 
+      {/* LEADERSHIP ADMISSION GATES BAR (ADMIN & VICE PRINCIPAL) */}
+      <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/20 to-slate-900 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-lg">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-white">Leadership Admissions Gate</span>
+              <span className="text-[10px] text-slate-400 font-mono">
+                Academic Session: <strong className="text-indigo-400">{systemConfig?.academicSession || '2026 - 2027'}</strong>
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Admin &amp; Vice Principal direct switches for Online portal and Offline walk-in counter admissions.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Online Admissions Gate */}
+          <div className="flex items-center gap-2 bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800">
+            <span className="text-[11px] text-slate-300 font-semibold">Online Portal:</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold border ${
+              onlineAdmissionConfig?.isOpen !== false
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+            }`}>
+              {onlineAdmissionConfig?.isOpen !== false ? '● OPEN' : '○ CLOSED'}
+            </span>
+            {canManagePolicy && (
+              <button
+                type="button"
+                onClick={() => updateOnlineAdmissionConfig({ isOpen: !(onlineAdmissionConfig?.isOpen !== false) })}
+                className={`text-[10px] px-2 py-1 rounded-lg font-bold transition cursor-pointer ${
+                  onlineAdmissionConfig?.isOpen !== false
+                    ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30'
+                    : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30'
+                }`}
+              >
+                {onlineAdmissionConfig?.isOpen !== false ? 'Close Portal' : 'Open Portal'}
+              </button>
+            )}
+          </div>
+
+          {/* Offline Admissions Gate */}
+          <div className="flex items-center gap-2 bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800">
+            <span className="text-[11px] text-slate-300 font-semibold">Offline Counter:</span>
+            <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold border ${
+              offlineAdmissionConfig?.isOpen !== false
+                ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+            }`}>
+              {offlineAdmissionConfig?.isOpen !== false ? '● OPEN' : '○ CLOSED'}
+            </span>
+            {canManagePolicy && (
+              <button
+                type="button"
+                onClick={() => updateOfflineAdmissionConfig({ isOpen: !(offlineAdmissionConfig?.isOpen !== false) })}
+                className={`text-[10px] px-2 py-1 rounded-lg font-bold transition cursor-pointer ${
+                  offlineAdmissionConfig?.isOpen !== false
+                    ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30'
+                    : 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30'
+                }`}
+              >
+                {offlineAdmissionConfig?.isOpen !== false ? 'Close Desk' : 'Open Desk'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* VIEW 1: ADMIN REVIEW WORKFLOW & AUDIT COUNCIL */}
       {activeTab === 'admin_review' && (
         <div className="space-y-5">
@@ -651,6 +725,38 @@ export default function AdmissionsView({ setCurrentTab }) {
               Staff Desk Mode
             </span>
           </div>
+
+          {/* OFFLINE DESK CLOSED NOTICE */}
+          {offlineAdmissionConfig?.isOpen === false && (
+            <div className="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-xl bg-rose-500/20 text-rose-300 shrink-0 mt-0.5">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-sm font-bold text-white">
+                    🔒 Offline Walk-In Admission Desk is Temporarily Closed
+                  </h4>
+                  <p className="text-xs text-rose-200/90 leading-relaxed">
+                    {offlineAdmissionConfig?.closedMessage || 'Walk-in admissions are temporarily paused or closed by the Principal & Vice Principal. Counter registrations are locked.'}
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    Counter Location: {offlineAdmissionConfig?.counterLocation || 'Administrative Block Room 102'} • Hours: {offlineAdmissionConfig?.counterHours || '09:30 AM - 02:30 PM'}
+                  </p>
+                </div>
+              </div>
+
+              {canManagePolicy && (
+                <button
+                  type="button"
+                  onClick={() => updateOfflineAdmissionConfig({ isOpen: true })}
+                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold shadow transition shrink-0 cursor-pointer"
+                >
+                  🔓 Re-Open Offline Desk
+                </button>
+              )}
+            </div>
+          )}
 
           {offlineSuccessId ? (
             <div className="p-6 rounded-2xl bg-emerald-950/30 border border-emerald-500/40 text-center space-y-3">
@@ -1317,6 +1423,96 @@ export default function AdmissionsView({ setCurrentTab }) {
                   <CheckCircle2 className="w-3 h-3" />
                   Auto-saved in Cloud
                 </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2B: Offline Walk-In Counter Desk Policies */}
+          <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-xl space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-2xl border ${
+                  offlineAdmissionConfig?.isOpen !== false 
+                    ? 'bg-purple-500/15 text-purple-400 border-purple-500/30' 
+                    : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                }`}>
+                  <Building className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-white font-['Outfit']">
+                      Offline Walk-In Admission Desk Policies
+                    </h3>
+                    <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase font-mono border ${
+                      offlineAdmissionConfig?.isOpen !== false 
+                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' 
+                        : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                    }`}>
+                      {offlineAdmissionConfig?.isOpen !== false ? '● Counter Open' : '○ Counter Closed'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Configure walk-in counter operations, operating hours, designated officer, and closure advisories.
+                  </p>
+                </div>
+              </div>
+
+              {/* Master Switch Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const currentStatus = offlineAdmissionConfig?.isOpen !== false;
+                  updateOfflineAdmissionConfig({ isOpen: !currentStatus });
+                }}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow cursor-pointer ${
+                  offlineAdmissionConfig?.isOpen !== false
+                    ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30'
+                    : 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30'
+                }`}
+              >
+                <span>{offlineAdmissionConfig?.isOpen !== false ? 'Pause / Close Offline Counter' : 'Open / Activate Offline Counter'}</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">Counter Location Room / Block</label>
+                <input
+                  type="text"
+                  value={offlineAdmissionConfig?.counterLocation || 'Administrative Block, Ground Floor Room 102'}
+                  onChange={(e) => updateOfflineAdmissionConfig({ counterLocation: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-purple-400 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">Counter Operating Hours</label>
+                <input
+                  type="text"
+                  value={offlineAdmissionConfig?.counterHours || '09:30 AM - 02:30 PM (Monday to Friday)'}
+                  onChange={(e) => updateOfflineAdmissionConfig({ counterHours: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-purple-400 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">Designated Desk In-Charge Officer</label>
+                <input
+                  type="text"
+                  value={offlineAdmissionConfig?.contactPerson || 'Chief Admissions Clerk / Superintendent'}
+                  onChange={(e) => updateOfflineAdmissionConfig({ contactPerson: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-purple-400 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">Closure Notice Message (When Counter is Paused)</label>
+                <input
+                  type="text"
+                  value={offlineAdmissionConfig?.closedMessage || 'Offline & Walk-in Admissions are temporarily paused or closed by the Principal & Vice Principal.'}
+                  onChange={(e) => updateOfflineAdmissionConfig({ closedMessage: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-purple-400 font-medium"
+                />
               </div>
             </div>
           </div>

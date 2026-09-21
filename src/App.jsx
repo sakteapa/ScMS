@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { SchoolProvider, useSchool } from './context/SchoolContext';
+import { ShieldAlert } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import RoleSwitcherModal from './components/RoleSwitcherModal';
@@ -9,8 +10,10 @@ import ExportModal from './components/ExportModal';
 import PrivateCallModal from './components/PrivateCallModal';
 import MobileAppDownloadModal from './components/MobileAppDownloadModal';
 import SuperAdminAiWidget from './components/SuperAdminAiWidget';
+import SchoolAiAssistant from './components/SchoolAiAssistant';
 
 import DashboardView from './views/DashboardView';
+import ClassAdminLiveView from './views/ClassAdminLiveView';
 import AcademicsView from './views/AcademicsView';
 import ReportCardView from './views/ReportCardView';
 import CertificatesView from './views/CertificatesView';
@@ -38,11 +41,79 @@ import LiveBroadcastView from './views/LiveBroadcastView';
 import StaffChatView from './views/StaffChatView';
 import AnalyticsDashboardView from './views/AnalyticsDashboardView';
 import PublicWebsiteView from './views/PublicWebsiteView';
+import LoginView from './views/LoginView';
 import WebsiteEditorModal from './components/WebsiteEditorModal';
 import { PublicAdmissionPortalModal } from './components/admissions/PublicAdmissionPortalModal';
 
 function SchoolAppContent() {
-  const [currentTab, setCurrentTab] = useState('dashboard');
+  const { currentUser, isPrincipal, isVicePrincipal, isTeacher, isWarden, isStudent, isParent, isSuperAdmin } = useAuth();
+  const { staff = [] } = useSchool();
+  const userRole = currentUser?.role || 'principal';
+
+  const isAllowedTab = (tab, role) => {
+    if (role === 'superadmin') return true;
+
+    // Check if staff member was granted designated Office Staff module access by Admin/VP
+    const staffRecord = staff.find(s => 
+      s.id === currentUser?.staffId || 
+      s.email?.toLowerCase() === currentUser?.email?.toLowerCase() ||
+      s.name?.toLowerCase() === currentUser?.displayName?.toLowerCase()
+    );
+    if (staffRecord?.isOfficeStaff && staffRecord?.assignedModuleAccess?.includes(tab)) {
+      return true;
+    }
+
+    switch (tab) {
+      case 'public_website':
+        return true;
+      case 'dashboard':
+        return ['principal', 'vice_principal', 'warden', 'teacher'].includes(role);
+      case 'portal':
+        return ['principal', 'vice_principal', 'student', 'parent'].includes(role);
+      case 'academics':
+      case 'class_admin_live':
+      case 'report_cards':
+      case 'attendance':
+      case 'inventory':
+      case 'group_conference':
+      case 'live_broadcast':
+        return ['principal', 'vice_principal', 'teacher'].includes(role);
+      case 'certificates':
+      case 'staff_payroll':
+      case 'admissions':
+      case 'analytics':
+        return ['principal', 'vice_principal'].includes(role);
+      case 'routine':
+      case 'calendar':
+      case 'notices':
+      case 'alumni':
+        return true;
+      case 'leave_management':
+      case 'leave':
+        return ['principal', 'vice_principal', 'warden', 'teacher'].includes(role);
+      case 'hostel':
+        return ['principal', 'vice_principal', 'warden'].includes(role);
+      case 'financials':
+        return ['principal'].includes(role);
+      case 'students':
+      case 'clinic':
+      case 'visitors':
+      case 'canteen':
+      case 'staff_chat':
+        return ['principal', 'vice_principal', 'warden', 'teacher'].includes(role);
+      case 'library':
+      case 'transport':
+      case 'transport_hostel':
+        return ['principal', 'vice_principal', 'teacher'].includes(role);
+      case 'dev_studio':
+        return role === 'superadmin';
+      default:
+        return false;
+    }
+  };
+
+  const defaultTab = currentUser ? ((userRole === 'student' || userRole === 'parent') ? 'portal' : 'dashboard') : 'login';
+  const [currentTab, setCurrentTab] = useState(defaultTab);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
@@ -62,6 +133,19 @@ function SchoolAppContent() {
     onlineAdmissionConfig
   } = useSchool();
 
+  // If user role changes (e.g. from role switcher or session switch), redirect if current tab is forbidden
+  useEffect(() => {
+    if (currentUser) {
+      if (currentTab === 'login' || !isAllowedTab(currentTab, userRole)) {
+        setCurrentTab((userRole === 'student' || userRole === 'parent') ? 'portal' : 'dashboard');
+      }
+    } else {
+      if (currentTab !== 'public_website' && currentTab !== 'login') {
+        setCurrentTab('login');
+      }
+    }
+  }, [currentUser, userRole]);
+
   useEffect(() => {
     const handler = (e) => {
       e.preventDefault();
@@ -79,6 +163,26 @@ function SchoolAppContent() {
   };
 
   const renderActiveView = () => {
+    if (!isAllowedTab(currentTab, userRole)) {
+      return (
+        <div className="p-8 rounded-3xl bg-slate-900/90 border border-rose-500/30 text-center space-y-4 max-w-lg mx-auto my-12 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto border border-rose-500/30">
+            <ShieldAlert className="w-7 h-7" />
+          </div>
+          <h3 className="text-xl font-bold text-white font-['Outfit']">Access Restricted / A Lut Thei Lo</h3>
+          <p className="text-sm text-slate-300 leading-relaxed">
+            He hmun ({currentTab}) hi i role ({currentUser?.displayName || 'User'} - {userRole.toUpperCase()}) tan en theih a ni lo. I pual bika siam ah let leh rawh le.
+          </p>
+          <button
+            onClick={() => setCurrentTab((isStudent || isParent) ? 'portal' : 'dashboard')}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-semibold text-xs shadow-lg shadow-cyan-500/20 transition cursor-pointer"
+          >
+            {(isStudent || isParent) ? 'Portal-ah Let Rawh' : 'Dashboard-ah Let Rawh'}
+          </button>
+        </div>
+      );
+    }
+
     switch (currentTab) {
       case 'dashboard':
         return (
@@ -87,6 +191,8 @@ function SchoolAppContent() {
             openRoleSwitcher={() => setIsRoleModalOpen(true)} 
           />
         );
+      case 'class_admin_live':
+        return <ClassAdminLiveView setCurrentTab={setCurrentTab} />;
       case 'academics':
         return (
           <AcademicsView 
@@ -174,11 +280,64 @@ function SchoolAppContent() {
     }
   };
 
+  // If not logged in, show Login Panel or Public Website
+  if (!currentUser) {
+    if (currentTab === 'public_website') {
+      return (
+        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
+          <PublicWebsiteView
+            onEnterPortal={() => setCurrentTab('login')}
+            onOpenAdmissions={() => setIsPublicAdmissionModalOpen(true)}
+            onOpenEditor={() => setIsWebsiteEditorOpen(true)}
+            onOpenMobileApp={() => setIsMobileAppModalOpen(true)}
+          />
+
+          {/* Dedicated Public Online Admission Application Portal */}
+          <PublicAdmissionPortalModal
+            isOpen={isPublicAdmissionModalOpen}
+            onClose={() => setIsPublicAdmissionModalOpen(false)}
+            applications={admissions || []}
+            admissionConfig={onlineAdmissionConfig}
+            schoolClasses={classes}
+            onApplicationSubmitted={(newApp) => {
+              if (submitOnlineAdmission) {
+                submitOnlineAdmission(newApp);
+              }
+            }}
+          />
+
+          <WebsiteEditorModal
+            isOpen={isWebsiteEditorOpen}
+            onClose={() => setIsWebsiteEditorOpen(false)}
+            onViewWebsite={() => setCurrentTab('public_website')}
+          />
+
+          <MobileAppDownloadModal
+            isOpen={isMobileAppModalOpen}
+            onClose={() => setIsMobileAppModalOpen(false)}
+            deferredPrompt={deferredPrompt}
+            onDirectInstall={handleDirectInstall}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <LoginView
+        onLoginSuccess={(loggedInUser) => {
+          const role = loggedInUser?.role || 'principal';
+          setCurrentTab((role === 'student' || role === 'parent') ? 'portal' : 'dashboard');
+        }}
+        onViewWebsite={() => setCurrentTab('public_website')}
+      />
+    );
+  }
+
   if (currentTab === 'public_website') {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
         <PublicWebsiteView
-          onEnterPortal={() => setCurrentTab('dashboard')}
+          onEnterPortal={() => setCurrentTab((isStudent || isParent) ? 'portal' : 'dashboard')}
           onOpenAdmissions={() => setIsPublicAdmissionModalOpen(true)}
           onOpenEditor={() => setIsWebsiteEditorOpen(true)}
           onOpenMobileApp={() => setIsMobileAppModalOpen(true)}
@@ -282,8 +441,15 @@ function SchoolAppContent() {
         />
       )}
 
-      {/* Global Super Admin AI Co-Pilot Widget */}
-      <SuperAdminAiWidget setCurrentTab={setCurrentTab} />
+      {/* Global Super Admin AI Co-Pilot Widget (Super Admin only) */}
+      {isSuperAdmin && (
+        <SuperAdminAiWidget setCurrentTab={setCurrentTab} />
+      )}
+
+      {/* School-Level AI Assistant for Principal / Vice Principal / Admin */}
+      {(isPrincipal || isVicePrincipal || isSuperAdmin) && (
+        <SchoolAiAssistant setCurrentTab={setCurrentTab} />
+      )}
     </div>
   );
 }

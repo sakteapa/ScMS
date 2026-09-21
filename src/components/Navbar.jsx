@@ -21,6 +21,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
 import NotificationDrawer from './NotificationDrawer';
+import ProfileSettingsModal from './ProfileSettingsModal';
 
 export default function Navbar({ 
   currentTab, 
@@ -33,7 +34,7 @@ export default function Navbar({
   openWebsiteEditor,
   onViewWebsite
 }) {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, isPrincipal, isVicePrincipal, isSuperAdmin } = useAuth();
   const { 
     isOfflinePersistenceActive, 
     lastSyncTime, 
@@ -49,6 +50,7 @@ export default function Navbar({
   } = useSchool();
   const [isSchoolMenuOpen, setIsSchoolMenuOpen] = useState(false);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isAlreadyInstalled, setIsAlreadyInstalled] = useState(() => {
@@ -107,7 +109,7 @@ export default function Navbar({
 
   const handleLogout = async () => {
     if (logout) await logout();
-    if (setCurrentTab) setCurrentTab('public_website');
+    if (setCurrentTab) setCurrentTab('login');
   };
 
   const getTabLabel = (id) => {
@@ -151,7 +153,7 @@ export default function Navbar({
       case 'hostel': return 'Hostel Boarding & Residential Suite';
       case 'transport': return 'Transport Fleet & Bus Routes';
       case 'transport_hostel': return 'Transport Fleet & Hostel Management';
-      case 'notices': return 'Circulars & Notice Broadcast Board';
+      case 'notices': return 'Notice Broadcast Board';
       case 'dev_studio': return 'In-App Developer Studio & IDE';
       default: return 'School Management System';
     }
@@ -174,7 +176,7 @@ export default function Navbar({
       case 'parent':
         return { label: 'Parent', color: 'bg-purple-500/20 text-purple-300 border-purple-500/30', icon: HeartHandshake };
       default:
-        return { label: 'User', color: 'bg-slate-500/20 text-slate-300 border-slate-500/30', icon: UserCircle2 };
+        return { label: 'Principal', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30', icon: ShieldCheck };
     }
   };
 
@@ -184,32 +186,32 @@ export default function Navbar({
   return (
     <header className="sticky top-0 z-30 h-20 bg-[#090d16]/85 backdrop-blur-xl border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
       {/* Left: Mobile hamburger & Active Page Title */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1 mr-2 sm:mr-4">
         <button
           onClick={() => setIsMobileOpen(true)}
-          className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+          className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition shrink-0"
         >
           <Menu className="w-6 h-6" />
         </button>
 
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg sm:text-xl font-bold text-white font-['Outfit'] tracking-tight">
+            <h1 className="text-base sm:text-lg lg:text-xl font-bold text-white font-['Outfit'] tracking-tight truncate whitespace-nowrap">
               {getTabLabel(currentTab)}
             </h1>
           </div>
-          <p className="text-xs text-slate-400 hidden sm:block">
+          <p className="text-xs text-slate-400 hidden sm:block truncate whitespace-nowrap">
             Mizoram School System • Academic Year 2026-2027
           </p>
         </div>
       </div>
 
       {/* Right: Actions, Sync Status, Role Switcher */}
-      <div className="flex items-center gap-2.5 sm:gap-3">
+      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
         {/* Offline / Firestore Persistence Status Pill */}
         <div 
           onClick={openFirebaseModal}
-          className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-cyan-500/40 cursor-pointer transition text-xs group"
+          className="hidden 2xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-cyan-500/40 cursor-pointer transition text-xs group shrink-0"
           title="Click to view Firebase v10.8.0 offline persistence & credentials"
         >
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -219,55 +221,57 @@ export default function Navbar({
           </span>
         </div>
 
-        {/* Multi-Tenant School Selector Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setIsSchoolMenuOpen(!isSchoolMenuOpen)}
-            className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-gradient-to-r from-slate-900 to-indigo-950/60 border border-indigo-500/40 hover:border-indigo-400 text-white transition flex items-center gap-2 text-xs font-bold shadow-md shadow-indigo-950/30"
-            title="Switch Active School Tenant (Subdomain)"
-          >
-            <School className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-            <span className="hidden md:inline max-w-[150px] truncate text-slate-200">
-              {activeSchoolInfo?.shortName || activeSchoolInfo?.name || 'School'}
-            </span>
-            <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-          </button>
+        {/* Multi-Tenant School Selector Dropdown (Principal / SuperAdmin only if multiple schools) */}
+        {(isPrincipal || isSuperAdmin) && registeredSchools.length > 1 && (
+          <div className="relative">
+            <button
+              onClick={() => setIsSchoolMenuOpen(!isSchoolMenuOpen)}
+              className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-gradient-to-r from-slate-900 to-indigo-950/60 border border-indigo-500/40 hover:border-indigo-400 text-white transition flex items-center gap-2 text-xs font-bold shadow-md shadow-indigo-950/30"
+              title="Switch Active School Tenant (Subdomain)"
+            >
+              <School className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <span className="hidden md:inline max-w-[150px] truncate text-slate-200">
+                {activeSchoolInfo?.shortName || activeSchoolInfo?.name || 'School'}
+              </span>
+              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+            </button>
 
-          {isSchoolMenuOpen && (
-            <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
-              <div className="px-3 py-2 border-b border-slate-800/80 mb-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active School Tenant</span>
-                <span className="text-xs text-indigo-300 font-semibold">{activeSchoolInfo?.name}</span>
+            {isSchoolMenuOpen && (
+              <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
+                <div className="px-3 py-2 border-b border-slate-800/80 mb-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active School Tenant</span>
+                  <span className="text-xs text-indigo-300 font-semibold">{activeSchoolInfo?.name}</span>
+                </div>
+                <div className="space-y-1">
+                  {registeredSchools.map((sch) => (
+                    <button
+                      key={sch.id}
+                      onClick={() => {
+                        setIsSchoolMenuOpen(false);
+                        switchSchool(sch.id);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition ${
+                        activeSchoolId === sch.id
+                          ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30'
+                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      }`}
+                    >
+                      <div>
+                        <p className="font-semibold">{sch.shortName || sch.name}</p>
+                        <p className={`text-[10px] ${activeSchoolId === sch.id ? 'text-indigo-200' : 'text-slate-400'}`}>
+                          {sch.subdomain}.zoxs.in
+                        </p>
+                      </div>
+                      {activeSchoolId === sch.id && (
+                        <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">Active</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-1">
-                {registeredSchools.map((sch) => (
-                  <button
-                    key={sch.id}
-                    onClick={() => {
-                      setIsSchoolMenuOpen(false);
-                      switchSchool(sch.id);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition ${
-                      activeSchoolId === sch.id
-                        ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30'
-                        : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                    }`}
-                  >
-                    <div>
-                      <p className="font-semibold">{sch.shortName || sch.name}</p>
-                      <p className={`text-[10px] ${activeSchoolId === sch.id ? 'text-indigo-200' : 'text-slate-400'}`}>
-                        {sch.subdomain}.zoxs.in
-                      </p>
-                    </div>
-                    {activeSchoolId === sch.id && (
-                      <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">Active</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* Global Language Localization Switcher Toggle */}
         <button
@@ -306,23 +310,28 @@ export default function Navbar({
           </button>
         )}
 
-        <button
-          onClick={openExportModal}
-          className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2 text-xs font-medium"
-          title="Export Excel / CSV Data Center"
-        >
-          <Download className="w-4 h-4 text-cyan-400" />
-          <span className="hidden sm:inline">Export Data</span>
-        </button>
+        {/* Export Data button (Principal / Vice Principal / SuperAdmin only) */}
+        {(isPrincipal || isVicePrincipal || isSuperAdmin) && (
+          <button
+            onClick={openExportModal}
+            className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-2 text-xs font-medium"
+            title="Export Excel / CSV Data Center"
+          >
+            <Download className="w-4 h-4 text-cyan-400" />
+            <span className="hidden sm:inline">Export Data</span>
+          </button>
+        )}
 
-        {/* Firebase Config Modal Trigger */}
-        <button
-          onClick={openFirebaseModal}
-          className="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition text-xs"
-          title="Firebase Web SDK v10.8.0 Settings"
-        >
-          <Database className="w-4 h-4 text-indigo-400" />
-        </button>
+        {/* Firebase Config Modal Trigger (Principal / SuperAdmin only) */}
+        {(isPrincipal || isSuperAdmin) && (
+          <button
+            onClick={openFirebaseModal}
+            className="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition text-xs"
+            title="Firebase Web SDK v10.8.0 Settings"
+          >
+            <Database className="w-4 h-4 text-indigo-400" />
+          </button>
+        )}
 
         {/* Notifications & Private Alerts Bell Trigger */}
         <button
@@ -370,28 +379,33 @@ export default function Navbar({
           })()}
         </button>
 
-        {/* User / Fast Role Switcher Dropdown Trigger */}
-        <div
-          onClick={openRoleSwitcher}
-          className="flex items-center gap-2.5 pl-2 sm:pl-3 pr-2.5 py-1.5 rounded-xl bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950/40 border border-slate-800 hover:border-cyan-500/50 cursor-pointer transition shadow-md group"
+        {/* Unified User Profile & Role Trigger — opens Profile Settings & Switcher */}
+        <button
+          type="button"
+          onClick={() => setIsProfileOpen(true)}
+          className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-gradient-to-r from-slate-900 to-[#0f172a] border border-slate-800 hover:border-violet-500/60 cursor-pointer transition shadow-sm group shrink-0"
+          title="Open Profile Settings & Switch Roles"
         >
-          <img
-            src={currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
-            alt="User avatar"
-            className="w-8 h-8 rounded-lg object-cover ring-1 ring-cyan-400/40"
-          />
-          <div className="hidden sm:flex flex-col text-left">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold text-white group-hover:text-cyan-300 transition truncate max-w-[130px]">
-                {currentUser?.displayName || 'Rev. Dr. Rohmingliana'}
-              </span>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition" />
-            </div>
-            <span className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.2 rounded border w-fit ${badge.color}`}>
+          <div className="relative shrink-0">
+            <img
+              src={currentUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+              alt={currentUser?.displayName || 'Principal'}
+              className="w-8 h-8 rounded-lg object-cover ring-1 ring-violet-400/40"
+            />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-900" />
+          </div>
+
+          <div className="hidden sm:flex flex-col text-left leading-tight shrink-0">
+            <span className="text-xs font-bold text-white group-hover:text-violet-300 transition truncate max-w-[130px]">
+              {currentUser?.displayName || 'Rev. Dr. L. H. Rohmingliana'}
+            </span>
+            <span className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border w-fit mt-0.5 ${badge.color}`}>
               {badge.label}
             </span>
           </div>
-        </div>
+
+          <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-violet-300 transition shrink-0 ml-0.5" />
+        </button>
 
         {/* Logout Action Button */}
         <button
@@ -409,6 +423,12 @@ export default function Navbar({
         isOpen={isNotificationDrawerOpen}
         onClose={() => setIsNotificationDrawerOpen(false)}
         setCurrentTab={setCurrentTab}
+      />
+
+      {/* Profile Settings Modal */}
+      <ProfileSettingsModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
       />
     </header>
   );

@@ -43,12 +43,12 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
   const contact = cfg.contact || {};
   const social = cfg.socialLinks || {};
 
-  const schoolDisplayName = cfg.schoolName || activeSchoolInfo?.name || 'One Heart Academy';
-  const affiliationDisplayName = cfg.affiliationBadge || activeSchoolInfo?.affiliationBadge || 'MBSE Affiliated • Lunglawn, Lunglei';
-  const schoolMotto = cfg.motto || activeSchoolInfo?.motto || 'Excellence in Truth & Service';
-  const contactAddress = contact.address || activeSchoolInfo?.address || 'Lunglawn, Lunglei, Mizoram - 796701';
-  const contactPhone = contact.phone || activeSchoolInfo?.contactPhone || '+91 98623 45678';
-  const contactEmail = contact.email || activeSchoolInfo?.contactEmail || 'admissions@ohalunglawn.edu.in';
+  const schoolDisplayName = cfg.schoolName || activeSchoolInfo?.name || 'Our School';
+  const affiliationDisplayName = cfg.affiliationBadge || cfg.tagline || activeSchoolInfo?.affiliationBadge || 'MBSE Affiliated';
+  const schoolMotto = cfg.motto || activeSchoolInfo?.motto || 'Excellence in Education';
+  const contactAddress = contact.address || activeSchoolInfo?.address || '';
+  const contactPhone = contact.phone || activeSchoolInfo?.contactPhone || '';
+  const contactEmail = contact.email || activeSchoolInfo?.contactEmail || '';
 
   const publicNotices = notices.slice(0, 4);
 

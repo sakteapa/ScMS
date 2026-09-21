@@ -23,8 +23,11 @@ import {
   Sparkles,
   Volume2,
   Trash2,
-  Printer
+  Printer,
+  Eye,
+  X
 } from 'lucide-react';
+import LeaveDocumentUploadCapture from '../components/LeaveDocumentUploadCapture';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -49,6 +52,7 @@ export default function LeaveManagementView() {
   // Selected leave for deep inspection & review
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [reviewRemarks, setReviewRemarks] = useState('');
+  const [viewingLeaveAttachment, setViewingLeaveAttachment] = useState(null);
 
   // Apply modal
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
@@ -195,7 +199,8 @@ export default function LeaveManagementView() {
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date().toISOString().split('T')[0],
       reason: '',
-      documentName: 'Medical_Prescription.pdf'
+      documentName: '',
+      documentUrl: ''
     });
   };
 
@@ -637,20 +642,45 @@ export default function LeaveManagementView() {
             </div>
 
             {/* Attachment preview if any */}
-            {selectedLeave.documentName && (
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs">
-                <span className="text-slate-300 flex items-center gap-1.5">
-                  <Paperclip className="w-3.5 h-3.5 text-cyan-400" />
-                  Attachment: <strong>{selectedLeave.documentName}</strong>
-                </span>
-                <a
-                  href={selectedLeave.documentUrl || '#'}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-cyan-400 hover:text-cyan-300 underline text-xs"
-                >
-                  View Scanned Copy
-                </a>
+            {(selectedLeave.documentName || selectedLeave.documentUrl) && (
+              <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-300 flex items-center gap-2 font-medium">
+                    <Paperclip className="w-4 h-4 text-cyan-400" />
+                    <span>Medical Document: <strong className="text-white">{selectedLeave.documentName || 'Scanned File'}</strong></span>
+                  </span>
+                  {selectedLeave.documentUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setViewingLeaveAttachment({ name: selectedLeave.documentName, url: selectedLeave.documentUrl })}
+                      className="px-3 py-1 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 font-bold flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>View Full Document</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* If image, display inline thumbnail preview */}
+                {selectedLeave.documentUrl && (selectedLeave.documentUrl.startsWith('data:image') || /\.(jpg|jpeg|png|webp)$/i.test(selectedLeave.documentName)) && (
+                  <div 
+                    onClick={() => setViewingLeaveAttachment({ name: selectedLeave.documentName, url: selectedLeave.documentUrl })}
+                    className="relative max-h-48 rounded-xl overflow-hidden bg-slate-950 border border-slate-800 cursor-pointer group flex items-center justify-center"
+                    title="Click to zoom in"
+                  >
+                    <img 
+                      src={selectedLeave.documentUrl} 
+                      alt="Doctor slip preview" 
+                      className="max-h-48 w-auto object-contain rounded-lg group-hover:scale-105 transition duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                      <span className="text-xs bg-slate-900/90 text-cyan-300 px-3 py-1 rounded-full border border-cyan-500/40 font-bold flex items-center gap-1.5">
+                        <Eye className="w-3.5 h-3.5" />
+                        Click to enlarge
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -836,13 +866,17 @@ export default function LeaveManagementView() {
               </div>
 
               <div>
-                <label className="block text-slate-300 font-bold mb-1">Document / Doctor Note (Optional)</label>
-                <input
-                  type="text"
-                  value={newLeaveData.documentName}
-                  onChange={(e) => setNewLeaveData({ ...newLeaveData, documentName: e.target.value })}
-                  placeholder="e.g. Doctor_Prescription.pdf"
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white"
+                <LeaveDocumentUploadCapture
+                  documentName={newLeaveData.documentName}
+                  documentUrl={newLeaveData.documentUrl}
+                  onChange={({ documentName, documentUrl }) => {
+                    setNewLeaveData(prev => ({
+                      ...prev,
+                      documentName,
+                      documentUrl
+                    }));
+                  }}
+                  label="Document / Doctor Prescription / Medical Slip"
                 />
               </div>
 
@@ -862,6 +896,72 @@ export default function LeaveManagementView() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Leave Document Lightbox Viewer Modal */}
+      {viewingLeaveAttachment && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fadeIn">
+          <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col bg-slate-900 border border-slate-700 rounded-3xl overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 bg-slate-950/80 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <Paperclip className="w-5 h-5 text-cyan-400" />
+                <div>
+                  <h4 className="text-sm font-bold text-white">
+                    {viewingLeaveAttachment.name || 'Medical Document / Doctor Slip'}
+                  </h4>
+                  <p className="text-[11px] text-slate-400">Supporting verification document</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {viewingLeaveAttachment.url && (
+                  <a
+                    href={viewingLeaveAttachment.url}
+                    download={viewingLeaveAttachment.name || 'leave_document'}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-cyan-300 border border-slate-700 transition"
+                  >
+                    Download File
+                  </a>
+                )}
+                <button
+                  onClick={() => setViewingLeaveAttachment(null)}
+                  className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-black/40">
+              {viewingLeaveAttachment.url && (viewingLeaveAttachment.url.startsWith('data:image') || /\.(jpg|jpeg|png|webp)$/i.test(viewingLeaveAttachment.name)) ? (
+                <img
+                  src={viewingLeaveAttachment.url}
+                  alt={viewingLeaveAttachment.name || 'Document'}
+                  className="max-h-[75vh] max-w-full object-contain rounded-xl shadow-lg border border-slate-800"
+                />
+              ) : viewingLeaveAttachment.url && (viewingLeaveAttachment.url.startsWith('data:application/pdf') || /\.pdf$/i.test(viewingLeaveAttachment.name)) ? (
+                <iframe
+                  src={viewingLeaveAttachment.url}
+                  title="PDF Viewer"
+                  className="w-full h-[75vh] rounded-xl border border-slate-800"
+                />
+              ) : (
+                <div className="text-center py-16 text-slate-400 space-y-3">
+                  <FileText className="w-16 h-16 mx-auto text-slate-600" />
+                  <p className="text-sm">Preview is not directly displayable inline.</p>
+                  {viewingLeaveAttachment.url && (
+                    <a
+                      href={viewingLeaveAttachment.url}
+                      download={viewingLeaveAttachment.name || 'document'}
+                      className="inline-block px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs"
+                    >
+                      Download / Open File
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -302,8 +302,12 @@ export function processSuperAdminAiCommand(query, {
   notices = [],
   setCurrentTab,
   onRunDiagnostics,
-  initializeCleanOhaAcademy
+  initializeCleanSchool,
+  initializeCleanOhaAcademy, // backward-compat alias
+  activeSchoolInfo = {}
 } = {}) {
+  const doCleanLaunch = initializeCleanSchool || initializeCleanOhaAcademy;
+  const schoolName = activeSchoolInfo?.name || 'School';
   const q = (query || '').trim().toLowerCase();
 
   if (!q) {
@@ -313,18 +317,18 @@ export function processSuperAdminAiCommand(query, {
     };
   }
 
-  // 0. Clean One Heart Academy, Lunglawn Setup & Mock Data Purge
+  // 0. Clean school data purge & fresh portal launch (works for any school)
   if (
-    (q.includes('oneheart') || q.includes('one heart') || q.includes('lunglawn') || q.includes('lunglei') || q.includes('mock data') || q.includes('academy thar')) &&
-    (q.includes('hawng') || q.includes('thian') || q.includes('wipe') || q.includes('clear') || q.includes('buatsaih') || q.includes('data') || q.includes('internet'))
+    (q.includes('mock data') || q.includes('academy thar') || q.includes('clean') || q.includes('wipe') || q.includes('thian') || q.includes('hawng') || q.includes('fresh') || q.includes('purge')) &&
+    (q.includes('school') || q.includes('data') || q.includes('portal') || q.includes('launch') || q.includes('buatsaih') || q.includes('thar'))
   ) {
-    if (initializeCleanOhaAcademy) {
-      initializeCleanOhaAcademy();
+    if (doCleanLaunch) {
+      doCleanLaunch();
     }
     return {
-      message: 'One Heart Academy (OHA), Lunglawn, Lunglei chu internet data zulzuiin tluang takin academy thar atan hawn a ni e! Dummy mock data (fake student, fees, grades) zawng zawng thianfai a ni a, zirlai thar admission lak leh Principal/Admin-in an khawih chhunzawm theih turin institutional portal hi a inpeih fel ta e.',
+      message: `${schoolName} portal chu tluang takin academy thar atan hawn a ni e! Dummy mock data (fake student, fees, grades) zawng zawng thianfai a ni a, zirlai thar admission lak leh Principal/Admin in an khawih chhunzawm theih turin portal hi a inpeih fel ta e.`,
       type: 'success',
-      suggestedAction: 'OHA_INITIALIZED'
+      suggestedAction: 'SCHOOL_INITIALIZED'
     };
   }
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Bell, 
   X, 
@@ -246,7 +247,9 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
 
   const canAssignTasks = isPrincipal || isVicePrincipal || isTeacher || isWarden || isSuperAdmin;
 
-  return (
+  if (!isOpen) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-50 overflow-hidden flex justify-end animate-fadeIn">
       {/* Backdrop */}
       <div 
@@ -1153,6 +1156,7 @@ export default function NotificationDrawer({ isOpen, onClose, setCurrentTab }) {
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }

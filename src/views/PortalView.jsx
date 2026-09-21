@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   UserCheck, 
   Calendar, 
@@ -23,7 +23,10 @@ import {
   Sun,
   UtensilsCrossed,
   Coffee,
-  CalendarCheck
+  CalendarCheck,
+  Users,
+  Search,
+  ChevronDown
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../context/AuthContext';
@@ -31,9 +34,22 @@ import { useSchool } from '../context/SchoolContext';
 import OnlineCheckoutModal from '../components/OnlineCheckoutModal';
 import LiveClassroomSuite from '../components/LiveClassroomSuite';
 import SpecialOnlineExamSuite from '../components/SpecialOnlineExamSuite';
+import LeaveDocumentUploadCapture from '../components/LeaveDocumentUploadCapture';
+import { Eye, CheckCheck } from 'lucide-react';
 
 export default function PortalView({ setCurrentTab, setSelectedStudentForReport }) {
-  const { currentUser, isParent } = useAuth();
+  const { 
+    currentUser, 
+    isParent, 
+    isStudent, 
+    isTeacher, 
+    isWarden, 
+    isPrincipal, 
+    isVicePrincipal, 
+    isSuperAdmin 
+  } = useAuth();
+  const canSwitchStudent = isPrincipal || isVicePrincipal || isSuperAdmin || isTeacher || isWarden;
+
   const { 
     students, 
     classes, 
@@ -55,12 +71,15 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
     bookPtmSlot,
     cancelPtmSlot,
     canteenWallets = {},
-    topupCanteenWallet
+    topupCanteenWallet,
+    liveSessionRequests = [],
+    systemConfig
   } = useSchool();
   const [isOnlineCheckoutOpen, setIsOnlineCheckoutOpen] = useState(false);
   const [isLiveClassOpen, setIsLiveClassOpen] = useState(false);
   const [isSpecialExamOpen, setIsSpecialExamOpen] = useState(false);
   const [isCanteenTopupOpen, setIsCanteenTopupOpen] = useState(false);
+  const [isCanteenCheckoutOpen, setIsCanteenCheckoutOpen] = useState(false);
   const [topupAmount, setTopupAmount] = useState('200');
   const [ptmBookingSuccess, setPtmBookingSuccess] = useState('');
 
@@ -71,13 +90,70 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
     reason: '',
-    documentName: ''
+    documentName: '',
+    documentUrl: ''
   });
+  const [viewingLeaveDoc, setViewingLeaveDoc] = useState(null);
+
+  // PTM Filter and Search
+  const [ptmCategoryFilter, setPtmCategoryFilter] = useState('all');
+  const [ptmSearchQuery, setPtmSearchQuery] = useState('');
+
+  // Scope default class based on role:
+  // Teacher -> their assigned class, Warden -> class with most hostelers, else first class
+  const teacherStaff = staff.find(s => 
+    s.id === currentUser?.staffId || 
+    s.name?.toLowerCase() === currentUser?.displayName?.toLowerCase() ||
+    s.email?.toLowerCase() === currentUser?.email?.toLowerCase()
+  );
+  const defaultClassForStaff = classes.find(c => 
+    c.classTeacherId === teacherStaff?.id || 
+    c.id === currentUser?.classId ||
+    c.teacherName?.toLowerCase() === currentUser?.displayName?.toLowerCase()
+  ) || classes[0];
+
+  const [filterClassId, setFilterClassId] = useState(
+    defaultClassForStaff?.id || 'all'
+  );
 
   // Active student being inspected in portal
-  const [activeStudentId, setActiveStudentId] = useState(
-    isParent ? (currentUser?.wardStudentId || students[0]?.id) : (currentUser?.studentId || students[0]?.id)
-  );
+  const resolveInitialStudentId = () => {
+    if (isStudent) {
+      // Find matching student record by studentId, email, or name
+      const matched = students.find(s => 
+        s.id === currentUser?.studentId || 
+        s.guardianEmail === currentUser?.email ||
+        `${s.firstName} ${s.lastName}`.toLowerCase() === currentUser?.displayName?.toLowerCase()
+      );
+      return matched?.id || currentUser?.studentId || students[0]?.id;
+    }
+    if (isParent) {
+      const ward = students.find(s => 
+        s.id === currentUser?.wardStudentId || 
+        s.guardianPhone === currentUser?.phone || 
+        s.guardianEmail === currentUser?.email
+      );
+      return ward?.id || students[0]?.id;
+    }
+    // For Teacher: default to first student of their assigned class
+    if (isTeacher && defaultClassForStaff) {
+      const classStudent = students.find(s => s.classId === defaultClassForStaff.id);
+      if (classStudent) return classStudent.id;
+    }
+    // For Warden: default to first hosteler
+    if (isWarden) {
+      const hosteler = students.find(s => s.hostelRoomId);
+      if (hosteler) return hosteler.id;
+    }
+    return students[0]?.id;
+  };
+
+  const [activeStudentId, setActiveStudentId] = useState(resolveInitialStudentId);
+
+  // Sync whenever currentUser changes (e.g. login/role switch)
+  useEffect(() => {
+    setActiveStudentId(resolveInitialStudentId());
+  }, [currentUser?.uid, currentUser?.role]);
 
   const student = students.find(s => s.id === activeStudentId) || students[0];
   const studentClass = classes.find(c => c.id === student?.classId);
@@ -98,6 +174,9 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
 
   const classTests = studentGrades.filter(g => g.type === 'class_test');
   const examinations = studentGrades.filter(g => g.type === 'examination');
+  const studentApprovedSessions = liveSessionRequests.filter(
+    s => (s.classId === student?.classId || s.classId === 'all') && (s.status === 'approved' || s.status === 'live')
+  );
 
   return (
     <div className="space-y-6 pb-16">
@@ -112,9 +191,11 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold uppercase tracking-wider border border-cyan-500/30">
-                {isParent ? "Parent & Guardian Access" : "Student Personal Hub"}
+                {isParent ? "Parent & Guardian Access" : isStudent ? "My Student Personal Hub" : `Student Portal • ${currentUser?.role?.toUpperCase() || 'ADMIN'} PREVIEW`}
               </span>
-              <span className="text-xs text-slate-400">AY 2026-2027</span>
+              <span className="text-xs text-slate-400 font-mono font-bold">
+                Session: {student?.academicSession || systemConfig?.academicSession || '2026 - 2027'}
+              </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-white font-['Outfit']">
               {student?.firstName} {student?.lastName}
@@ -130,29 +211,87 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          {/* PARENT WARD SELECTOR (If parent has multiple children) */}
           {isParent && (
-            <select
-              value={activeStudentId}
-              onChange={(e) => setActiveStudentId(e.target.value)}
-              className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
-            >
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  Ward: {s.firstName} {s.lastName} ({s.admissionNo})
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2 bg-slate-800/90 border border-slate-700 px-3 py-1.5 rounded-xl">
+              <Users className="w-4 h-4 text-cyan-400 shrink-0" />
+              <div className="text-[11px] text-slate-400">Ward:</div>
+              <select
+                value={activeStudentId}
+                onChange={(e) => setActiveStudentId(e.target.value)}
+                className="bg-transparent text-white text-xs font-bold focus:outline-none cursor-pointer"
+              >
+                {students.filter(s => s.guardianPhone === currentUser?.phone || s.guardianEmail === currentUser?.email || s.id === currentUser?.wardStudentId).map(s => (
+                  <option key={s.id} value={s.id} className="bg-slate-900 text-white">
+                    {s.firstName} {s.lastName} (Roll #{s.rollNo} • {classes.find(c => c.id === s.classId)?.name})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* ADMIN / TEACHER / WARDEN STUDENT SWITCHER */}
+          {canSwitchStudent && (
+            <div className="flex flex-wrap items-center gap-2 bg-slate-900/90 border border-cyan-500/30 p-1.5 rounded-2xl shadow-lg">
+              {/* Class Filter */}
+              <div className="flex items-center gap-1.5 px-2">
+                <span className="text-[10px] uppercase font-bold text-cyan-400">Class:</span>
+                <select
+                  value={filterClassId}
+                  onChange={(e) => {
+                    const newClassId = e.target.value;
+                    setFilterClassId(newClassId);
+                    const matching = students.filter(s => newClassId === 'all' ? true : s.classId === newClassId);
+                    if (matching.length > 0) {
+                      setActiveStudentId(matching[0].id);
+                    }
+                  }}
+                  className="bg-slate-800 border border-slate-700 text-white text-xs font-semibold rounded-lg px-2 py-1 focus:outline-none focus:border-cyan-400 cursor-pointer"
+                >
+                  <option value="all">All Classes ({students.length})</option>
+                  {classes.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({students.filter(s => s.classId === c.id).length})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Student Dropdown */}
+              <div className="flex items-center gap-1.5 px-2 border-l border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-cyan-400">Student:</span>
+                <select
+                  value={activeStudentId}
+                  onChange={(e) => setActiveStudentId(e.target.value)}
+                  className="bg-slate-800 border border-slate-700 text-white text-xs font-bold rounded-lg px-2 py-1 focus:outline-none focus:border-cyan-400 cursor-pointer max-w-[200px] truncate"
+                >
+                  {students
+                    .filter(s => filterClassId === 'all' ? true : s.classId === filterClassId)
+                    .map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.firstName} {s.lastName} (Roll #{s.rollNo})
+                      </option>
+                    ))}
+                </select>
+              </div>
+            </div>
           )}
 
           <button
             onClick={() => {
-              if (setSelectedStudentForReport) setSelectedStudentForReport(student);
+              if (access.isWithheld) {
+                alert(`Official Notice: ${access.reason || 'Report card withheld due to pending fee dues.'}`);
+                return;
+              }
+              if (setSelectedStudentForReport) {
+                setSelectedStudentForReport(student);
+              }
               setCurrentTab('report_cards');
             }}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs transition shadow-lg flex items-center gap-2 ${
-              access.isWithheld
-                ? 'bg-rose-600/30 hover:bg-rose-600/40 text-rose-300 border border-rose-500/50 shadow-rose-500/10'
-                : 'bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white shadow-cyan-500/20'
+            className={`px-3.5 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 shadow ${
+              access.isWithheld 
+                ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 cursor-pointer' 
+                : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950'
             }`}
           >
             {access.isWithheld ? <Lock className="w-4 h-4 text-rose-400" /> : <FileText className="w-4 h-4" />}
@@ -179,6 +318,64 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
           </button>
         </div>
       </div>
+
+      {/* Academic Promotion & Session Turnover Status */}
+      {(() => {
+        const currentActiveSess = systemConfig?.academicSession || '2026 - 2027';
+        const isEnrolledInActive = (student?.enrolledSessions || [student?.academicSession]).includes(currentActiveSess);
+        const latestPromotion = student?.promotionHistory?.[0];
+
+        if (!isEnrolledInActive) {
+          return (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-300 shrink-0">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div className="space-y-0.5 text-xs">
+                  <span className="font-bold text-white block">
+                    Academic Session {currentActiveSess} Transition in Progress
+                  </span>
+                  <p className="text-slate-300">
+                    Returning students require explicit class promotion or re-enrollment approval from School Administration to finalize registration for this academic session.
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold uppercase font-mono shrink-0">
+                Awaiting Rollover
+              </span>
+            </div>
+          );
+        }
+
+        if (latestPromotion) {
+          return (
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-950/40 via-purple-950/30 to-slate-900 border border-indigo-500/30 flex items-center justify-between gap-4 shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-300 shrink-0">
+                  <GraduationCap className="w-5 h-5" />
+                </div>
+                <div className="space-y-0.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white">Official Class Promotion Endorsed</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold">
+                      Order #{latestPromotion.orderNumber || 'PROMO-ORDER'}
+                    </span>
+                  </div>
+                  <p className="text-slate-300">
+                    Promoted from <strong>{latestPromotion.fromClassName}</strong> to <strong>{latestPromotion.toClassName}</strong> for Session {latestPromotion.toSession}. Effective: {latestPromotion.promotedAt}.
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold uppercase font-mono shrink-0">
+                ● Enrolled
+              </span>
+            </div>
+          );
+        }
+
+        return null;
+      })()}
 
       {/* Live Classroom & Special Exam Active Banners */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -362,6 +559,58 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
         </button>
       </div>
 
+      {/* Approved Live Video Classes & Online Tuitions for Student */}
+      {studentApprovedSessions.length > 0 && (
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-rose-950/40 via-slate-900 to-slate-900 border border-rose-500/30 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30">
+                <Radio className="w-4 h-4 animate-pulse" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white font-['Outfit'] flex items-center gap-2">
+                  <span>Approved Live Class &amp; Online Tuition</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                    VP &amp; Principal Sanctioned
+                  </span>
+                </h4>
+                <p className="text-[11px] text-slate-400">Class Teacher live interaction &amp; coaching sessions</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsLiveClassOpen(true)}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-400 hover:to-pink-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-rose-500/20 transition cursor-pointer w-fit"
+            >
+              <Video className="w-3.5 h-3.5" />
+              <span>Join Live Classroom</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            {studentApprovedSessions.map(session => (
+              <div key={session.id} className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between gap-3 text-xs">
+                <div className="space-y-0.5">
+                  <div className="font-bold text-white">{session.title}</div>
+                  <div className="text-[11px] text-slate-400">
+                    {session.subject} • {session.teacherName} • {session.scheduledDate} ({session.scheduledTime})
+                  </div>
+                </div>
+                {session.status === 'live' ? (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-600 text-white font-bold animate-pulse shrink-0">
+                    LIVE NOW
+                  </span>
+                ) : (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold shrink-0">
+                    Scheduled
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Upcoming Vacation & Holiday Notice for Student & Parent */}
       {vacations.length > 0 && (
         <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -480,33 +729,120 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
 
           {/* Teacher Consultation Slots */}
           <div className="space-y-3">
-            <h5 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-              Select Subject Master / Class Teacher to Reserve 15-Minute Consultation Slot
-            </h5>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {ptmEvents[0]?.teachersAvailable?.map((teacher) => {
-                const bookedByMe = teacher.slots?.find(
-                  s => s.studentName?.toLowerCase().includes(student?.firstName?.toLowerCase()) || s.rollNo === student?.rollNo
-                );
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h5 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  Select Subject Master / Class Teacher to Reserve 15-Minute Consultation Slot
+                </h5>
+                <p className="text-[11px] text-slate-400">
+                  {ptmEvents[0]?.teachersAvailable?.length || 12} Subject Masters &amp; Leaders available for consultation
+                </p>
+              </div>
 
-                return (
-                  <div key={teacher.teacherId} className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h6 className="text-sm font-bold text-white">{teacher.teacherName}</h6>
-                        <p className="text-xs text-cyan-400">{teacher.subject} &bull; {teacher.room}</p>
+              {/* Search Bar */}
+              <div className="relative w-full sm:w-64">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Search teacher or subject..."
+                  value={ptmSearchQuery}
+                  onChange={(e) => setPtmSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-cyan-400"
+                />
+              </div>
+            </div>
+
+            {/* Category Filter Tabs */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {[
+                { id: 'all', label: `All Faculty (${ptmEvents[0]?.teachersAvailable?.length || 12})` },
+                { id: 'my_class', label: `My Class Master (${studentClass?.name || 'Class 12'})` },
+                { id: 'Science', label: 'Science & Math' },
+                { id: 'Languages', label: 'Languages & Arts' },
+                { id: 'Leadership', label: 'Principal & Warden' }
+              ].map(cat => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setPtmCategoryFilter(cat.id)}
+                  className={`px-3 py-1 rounded-xl text-xs font-semibold border transition ${
+                    ptmCategoryFilter === cat.id
+                      ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+              {(ptmEvents[0]?.teachersAvailable || [])
+                .filter(teacher => {
+                  // Category match
+                  if (ptmCategoryFilter === 'my_class') {
+                    const isMyMaster = 
+                      teacher.teacherName?.toLowerCase().includes(studentClass?.teacherName?.toLowerCase()) ||
+                      studentClass?.teacherName?.toLowerCase().includes(teacher.teacherName?.toLowerCase()) ||
+                      teacher.subject?.toLowerCase().includes(studentClass?.name?.toLowerCase());
+                    if (!isMyMaster) return false;
+                  } else if (ptmCategoryFilter === 'Science') {
+                    if (!['Science', 'Mathematics'].includes(teacher.department) && !teacher.subject?.toLowerCase().match(/physics|chemistry|bio|math|science/)) return false;
+                  } else if (ptmCategoryFilter === 'Languages') {
+                    if (!['Languages', 'Humanities'].includes(teacher.department) && !teacher.subject?.toLowerCase().match(/english|mizo|literature|arts|history/)) return false;
+                  } else if (ptmCategoryFilter === 'Leadership') {
+                    if (!['Leadership', 'Hostel & Sports', 'Commerce'].includes(teacher.department) && !teacher.subject?.toLowerCase().match(/principal|warden|accounts/)) return false;
+                  }
+
+                  // Search query match
+                  if (ptmSearchQuery.trim()) {
+                    const q = ptmSearchQuery.toLowerCase();
+                    return (
+                      teacher.teacherName?.toLowerCase().includes(q) ||
+                      teacher.subject?.toLowerCase().includes(q) ||
+                      teacher.room?.toLowerCase().includes(q)
+                    );
+                  }
+                  return true;
+                })
+                .map((teacher) => {
+                  const isMyClassMaster = 
+                    teacher.teacherName?.toLowerCase().includes(studentClass?.teacherName?.toLowerCase()) ||
+                    studentClass?.teacherName?.toLowerCase().includes(teacher.teacherName?.toLowerCase()) ||
+                    teacher.subject?.toLowerCase().includes(studentClass?.name?.toLowerCase());
+
+                  const bookedByMe = teacher.slots?.find(
+                    s => s.studentName?.toLowerCase().includes(student?.firstName?.toLowerCase()) || s.rollNo === student?.rollNo
+                  );
+
+                  return (
+                    <div key={teacher.teacherId} className={`p-4 rounded-2xl border space-y-3 transition ${
+                      isMyClassMaster 
+                        ? 'bg-gradient-to-b from-indigo-950/50 to-slate-950 border-indigo-500/50 shadow-lg shadow-indigo-500/10' 
+                        : 'bg-slate-950/70 border-slate-800'
+                    }`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h6 className="text-sm font-bold text-white">{teacher.teacherName}</h6>
+                            {isMyClassMaster && (
+                              <span className="text-[9px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold uppercase border border-cyan-500/30">
+                                🎓 Your Class Master
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-cyan-400 mt-0.5">{teacher.subject} &bull; {teacher.room}</p>
+                        </div>
+                        {bookedByMe ? (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">
+                            Slot Confirmed ({bookedByMe.time})
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 shrink-0 font-medium">
+                            {teacher.slots?.filter(s => s.status === 'available').length} slots open
+                          </span>
+                        )}
                       </div>
-                      {bookedByMe ? (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                          Slot Confirmed ({bookedByMe.time})
-                        </span>
-                      ) : (
-                        <span className="text-[11px] text-slate-400">
-                          {teacher.slots?.filter(s => s.status === 'available').length} slots open
-                        </span>
-                      )}
-                    </div>
 
                     {bookedByMe ? (
                       <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/40 space-y-2">
@@ -795,6 +1131,27 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
                     <strong>Chhan:</strong> {leave.reason}
                   </p>
 
+                  {/* Attached Document Preview if uploaded/scanned */}
+                  {(leave.documentUrl || leave.documentName) && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                        <Paperclip className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                        <span>Attached Medical Slip:</span>
+                        <strong className="text-slate-300">{leave.documentName || 'Scanned Document'}</strong>
+                      </span>
+                      {leave.documentUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setViewingLeaveDoc({ name: leave.documentName || 'Medical Document', url: leave.documentUrl })}
+                          className="px-2 py-0.5 rounded-md bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+                        >
+                          <Eye className="w-3 h-3" />
+                          <span>View Photo / Slip</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {/* Stepper feedback */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
                     <div className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400">
@@ -879,7 +1236,8 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
                   endDate: leaveFormData.endDate,
                   totalDays: Math.max(1, totalDays),
                   reason: leaveFormData.reason,
-                  documentName: leaveFormData.documentName || null
+                  documentName: leaveFormData.documentName || null,
+                  documentUrl: leaveFormData.documentUrl || null
                 });
 
                 setIsLeaveModalOpen(false);
@@ -888,9 +1246,10 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
                   startDate: new Date().toISOString().split('T')[0],
                   endDate: new Date().toISOString().split('T')[0],
                   reason: '',
-                  documentName: ''
+                  documentName: '',
+                  documentUrl: ''
                 });
-                alert('Chawlh dilna chu hlawhtling taka thehluh a ni e! Class Master, VP leh Principal ten an endik dawn e.');
+                alert('Chawlh dilna chu lehkha/photo thil telin hlawhtling taka thehluh a ni e! Class Master, VP leh Principal ten an endik dawn e.');
               }}
               className="space-y-4 text-xs"
             >
@@ -946,13 +1305,17 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
               </div>
 
               <div>
-                <label className="block text-slate-300 font-bold mb-1">Doctor Lehkha / Document (Optional)</label>
-                <input
-                  type="text"
-                  value={leaveFormData.documentName}
-                  onChange={(e) => setLeaveFormData({ ...leaveFormData, documentName: e.target.value })}
-                  placeholder="e.g. CivilHospital_Prescription.pdf"
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-cyan-400"
+                <LeaveDocumentUploadCapture
+                  documentName={leaveFormData.documentName}
+                  documentUrl={leaveFormData.documentUrl}
+                  onChange={({ documentName, documentUrl }) => {
+                    setLeaveFormData(prev => ({
+                      ...prev,
+                      documentName,
+                      documentUrl
+                    }));
+                  }}
+                  label="Doctor Lehkha / Prescription / Medical Certificate"
                 />
               </div>
 
@@ -1068,25 +1431,92 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
               />
             </div>
 
+            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2.5 text-xs text-amber-300">
+              <ShieldCheck className="w-4 h-4 shrink-0 text-amber-400" />
+              <span>
+                Payment Gateway: <strong className="text-white">{paymentConfig?.activeGateway === 'razorpay' ? 'Razorpay PG' : paymentConfig?.activeGateway === 'cashfree' ? 'Cashfree Payments' : 'Direct UPI / QR'}</strong> (256-bit Encrypted)
+              </span>
+            </div>
+
             <div className="pt-2 flex justify-end gap-2">
               <button
+                type="button"
                 onClick={() => setIsCanteenTopupOpen(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 font-semibold text-xs"
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={() => {
                   const val = Number(topupAmount);
                   if (val > 0) {
-                    topupCanteenWallet(student?.id, val, 'Parent Online Top-Up');
                     setIsCanteenTopupOpen(false);
+                    setIsCanteenCheckoutOpen(true);
                   }
                 }}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition flex items-center gap-1.5 cursor-pointer"
               >
-                Instant UPI Top-Up (₹{topupAmount})
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Proceed to Payment Gateway (₹{topupAmount || 0})</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Online Payment Gateway Checkout Modal for Canteen Meal Card Recharge */}
+      <OnlineCheckoutModal
+        isOpen={isCanteenCheckoutOpen}
+        onClose={() => setIsCanteenCheckoutOpen(false)}
+        student={student}
+        feeAmount={Number(topupAmount) || 200}
+        feeType="Smart Lunch Card Canteen Wallet Recharge"
+        onPaymentSuccess={(rec) => {
+          const val = Number(topupAmount) || 200;
+          topupCanteenWallet(
+            student?.id,
+            val,
+            `Online Gateway - ${rec?.gatewayProvider || 'UPI'} (${rec?.transactionUtr || 'Verified'})`
+          );
+        }}
+      />
+      {/* Full-Screen Document Lightbox Modal */}
+      {viewingLeaveDoc && (
+        <div 
+          onClick={() => setViewingLeaveDoc(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fadeIn cursor-pointer"
+        >
+          <div className="relative max-w-2xl max-h-[90vh] p-3" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setViewingLeaveDoc(null)}
+              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center border border-slate-700 shadow-xl"
+            >
+              ✕
+            </button>
+            {viewingLeaveDoc.url?.startsWith('data:image') || /\.(jpg|jpeg|png|webp)$/i.test(viewingLeaveDoc.name) ? (
+              <img 
+                src={viewingLeaveDoc.url} 
+                alt="Medical Document" 
+                className="max-h-[85vh] w-auto max-w-full rounded-2xl object-contain border border-slate-700 shadow-2xl"
+              />
+            ) : (
+              <div className="p-8 rounded-2xl bg-slate-900 border border-slate-800 text-center space-y-4">
+                <FileText className="w-16 h-16 text-cyan-400 mx-auto" />
+                <h4 className="text-base font-bold text-white">{viewingLeaveDoc.name}</h4>
+                <a 
+                  href={viewingLeaveDoc.url} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="inline-block px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs"
+                >
+                  Download / Open PDF Document
+                </a>
+              </div>
+            )}
+            <div className="text-center mt-2 text-xs text-slate-400">
+              {viewingLeaveDoc.name} &bull; Click anywhere outside to close
             </div>
           </div>
         </div>

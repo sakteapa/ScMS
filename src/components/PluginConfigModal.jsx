@@ -31,25 +31,23 @@ export default function PluginConfigModal({
   onDelete,
   onReset
 }) {
-  if (!isOpen || !plugin) return null;
-
   // Tabs: 'general' | 'params' | 'script' | 'diagnostics'
   const [activeTab, setActiveTab] = useState('params');
 
   // Form State
-  const [name, setName] = useState(plugin.name || '');
-  const [version, setVersion] = useState(plugin.version || '1.0.0');
-  const [category, setCategory] = useState(plugin.category || 'General');
-  const [description, setDescription] = useState(plugin.description || '');
-  const [cdnUrl, setCdnUrl] = useState(plugin.cdnUrl || '');
-  const [cdnCssUrl, setCdnCssUrl] = useState(plugin.cdnCssUrl || '');
-  const [loadTiming, setLoadTiming] = useState(plugin.loadTiming || 'async');
-  const [scope, setScope] = useState(plugin.scope || 'all');
-  const [script, setScript] = useState(plugin.script || '');
+  const [name, setName] = useState(plugin?.name || '');
+  const [version, setVersion] = useState(plugin?.version || '1.0.0');
+  const [category, setCategory] = useState(plugin?.category || 'General');
+  const [description, setDescription] = useState(plugin?.description || '');
+  const [cdnUrl, setCdnUrl] = useState(plugin?.cdnUrl || '');
+  const [cdnCssUrl, setCdnCssUrl] = useState(plugin?.cdnCssUrl || '');
+  const [loadTiming, setLoadTiming] = useState(plugin?.loadTiming || 'async');
+  const [scope, setScope] = useState(plugin?.scope || 'all');
+  const [script, setScript] = useState(plugin?.script || '');
 
   // Config parameters state
   const [configParams, setConfigParams] = useState(
-    plugin.config ? { ...plugin.config } : {}
+    plugin?.config ? { ...plugin.config } : {}
   );
   const [isJsonMode, setIsJsonMode] = useState(false);
   const [rawJsonText, setRawJsonText] = useState('');
@@ -83,6 +81,8 @@ export default function PluginConfigModal({
       setPingStatus(null);
     }
   }, [plugin]);
+
+  if (!isOpen || !plugin) return null;
 
   // Handle config param change
   const handleConfigChange = (key, value) => {

@@ -17,6 +17,8 @@ import {
   INITIAL_HOSTEL_MESS_MENU,
   INITIAL_HOSTEL_RULES,
   INITIAL_TIMETABLES,
+  INITIAL_EXAM_ROUTINES,
+  INITIAL_LIVE_SESSION_REQUESTS,
   INITIAL_ACADEMIC_EVENTS,
   INITIAL_SYSTEM_PLUGINS,
   INITIAL_CUSTOM_SCRIPTS,
@@ -57,7 +59,9 @@ import {
   INITIAL_GRADING_SCALES,
   INITIAL_FEE_HEADS,
   INITIAL_DOCUMENT_TEMPLATES,
-  INITIAL_NOMENCLATURE
+  INITIAL_NOMENCLATURE,
+  INITIAL_ACADEMIC_SESSIONS,
+  INITIAL_OFFLINE_ADMISSION_CONFIG
 } from '../data/mockData';
 import { TRANSLATIONS } from '../data/translations';
 import { db, collection, getDocs, setDoc, addDoc, doc, query, orderBy, onSnapshot, isOfflinePersistenceActive } from '../services/firebase';
@@ -101,44 +105,45 @@ export function SchoolProvider({ children }) {
 
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Seamlessly migrate legacy generic school mock data to OHA Lunglawn, Lunglei
-        if (key === 'system_config' && (parsed?.schoolName?.includes('Mizoram Higher Secondary') || parsed?.schoolName?.includes('Aizawl Model'))) {
-          const updated = { ...parsed, schoolName: fallback.schoolName, address: fallback.address, contactPhone: fallback.contactPhone, contactEmail: fallback.contactEmail, motto: fallback.motto };
+        // Seamlessly migrate legacy generic school mock data to the active school name
+        const activeSchoolName = activeSchoolInfo?.name || fallback?.schoolName;
+        if (key === 'system_config' && activeSchoolName && (parsed?.schoolName?.includes('Mizoram Higher Secondary') || parsed?.schoolName?.includes('Aizawl Model'))) {
+          const updated = { ...parsed, schoolName: activeSchoolName, address: activeSchoolInfo?.address || fallback.address, contactPhone: activeSchoolInfo?.contactPhone || fallback.contactPhone, contactEmail: activeSchoolInfo?.contactEmail || fallback.contactEmail, motto: activeSchoolInfo?.motto || fallback.motto };
           localStorage.setItem(`zoxs_${activeSchoolId}_system_config`, JSON.stringify(updated));
           return updated;
         }
-        if (key === 'website_config' && (parsed?.schoolName?.includes('Mizoram Higher Secondary') || parsed?.schoolName?.includes('Aizawl Model'))) {
+        if (key === 'website_config' && activeSchoolName && (parsed?.schoolName?.includes('Mizoram Higher Secondary') || parsed?.schoolName?.includes('Aizawl Model'))) {
           const updated = { 
             ...parsed, 
-            schoolName: fallback.schoolName, 
-            tagline: fallback.tagline, 
-            motto: fallback.motto, 
+            schoolName: activeSchoolName, 
+            tagline: activeSchoolInfo?.affiliationBadge || fallback.tagline, 
+            motto: activeSchoolInfo?.motto || fallback.motto, 
             contact: fallback.contact, 
-            hero: { ...parsed.hero, headline: fallback.hero.headline, subheadline: fallback.hero.subheadline }, 
+            hero: { ...parsed.hero, headline: `Welcome to ${activeSchoolName}`, subheadline: `${activeSchoolInfo?.affiliationBadge || 'MBSE Affiliated'} \u2014 ${activeSchoolInfo?.address || fallback.contact?.address || ''}` }, 
             principalMessage: fallback.principalMessage 
           };
           localStorage.setItem(`zoxs_${activeSchoolId}_website_config`, JSON.stringify(updated));
           return updated;
         }
         if (key === 'system_config' && (parsed?.schoolName?.includes('Oxford') || parsed?.schoolName?.includes('MIZORAM HIGHER SECONDARY'))) {
-          const updated = { ...parsed, schoolName: 'OHA (One Heart Academy)' };
+          const updated = { ...parsed, schoolName: activeSchoolName || 'OHA (One Heart Academy)' };
           localStorage.setItem(`zoxs_${activeSchoolId}_system_config`, JSON.stringify(updated));
           return updated;
         }
         if (key === 'website_config' && (parsed?.schoolName?.includes('Oxford') || parsed?.principalMessage?.fullMessage?.includes('Oxford'))) {
           const updated = {
             ...parsed,
-            schoolName: 'OHA (One Heart Academy)',
+            schoolName: activeSchoolName || 'OHA (One Heart Academy)',
             principalMessage: {
               ...(parsed.principalMessage || {}),
-              fullMessage: fallback.principalMessage?.fullMessage || 'At OHA (One Heart Academy), Lunglawn, Lunglei, we believe that true education enlightens the mind and strengthens character.'
+              fullMessage: fallback.principalMessage?.fullMessage || `Welcome to ${activeSchoolName}'s official digital portal.`
             }
           };
           localStorage.setItem(`zoxs_${activeSchoolId}_website_config`, JSON.stringify(updated));
           return updated;
         }
-        if (key === 'seal_config' && (parsed?.schoolCrestText?.includes('OXFORD') || parsed?.schoolCrestText?.includes('MIZORAM HIGHER SECONDARY') || !parsed?.schoolCrestText?.includes('LUNGLAWN'))) {
-          const updated = { ...parsed, schoolCrestText: 'OHA • ONE HEART ACADEMY • LUNGLAWN, LUNGLEI', principalSignatoryName: fallback.principalSignatoryName, mottoText: fallback.mottoText };
+        if (key === 'seal_config' && (parsed?.schoolCrestText?.includes('OXFORD') || parsed?.schoolCrestText?.includes('MIZORAM HIGHER SECONDARY'))) {
+          const updated = { ...parsed, schoolCrestText: (activeSchoolInfo?.shortName || activeSchoolInfo?.name || 'OHA').toUpperCase() + ' \u2022 ' + (activeSchoolInfo?.address || 'LUNGLAWN, LUNGLEI').toUpperCase(), principalSignatoryName: fallback.principalSignatoryName, mottoText: fallback.mottoText };
           localStorage.setItem(`zoxs_${activeSchoolId}_seal_config`, JSON.stringify(updated));
           return updated;
         }
@@ -157,6 +162,51 @@ export function SchoolProvider({ children }) {
     return fallback;
   };
 
+  /**
+   * Generates a school-specific website config from activeSchoolInfo.
+   * Used as the default for any school that has no saved website_config.
+   */
+  const buildSchoolWebsiteDefault = (baseConfig) => {
+    const info = activeSchoolInfo || {};
+    if (!info.name || info.id === 'oha') {
+      // For OHA or unknown schools, return the base config as-is
+      return baseConfig;
+    }
+    return {
+      ...baseConfig,
+      schoolName: info.name,
+      tagline: info.affiliationBadge || 'MBSE Affiliated',
+      motto: info.motto || 'Excellence in Education',
+      affiliationBadge: info.affiliationBadge || 'MBSE Affiliated',
+      contact: {
+        ...(baseConfig.contact || {}),
+        address: info.address || '',
+        phone: info.contactPhone || '',
+        email: info.contactEmail || '',
+        officeHours: 'Monday - Friday: 8:30 AM - 4:00 PM'
+      },
+      hero: {
+        ...(baseConfig.hero || {}),
+        headline: `Welcome to ${info.name}`,
+        subheadline: `${info.affiliationBadge || 'MBSE Affiliated'} \u2014 ${info.address || 'Mizoram, India'}. Providing holistic education with dedicated faculty and vibrant campus life.`,
+        badge: `\uD83C\uDF93 Admissions Open for Academic Session ${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`,
+        ctaPrimaryText: 'Apply for Admission Online',
+        ctaSecondaryText: 'Explore Campus & Facilities',
+      },
+      principalMessage: {
+        ...(baseConfig.principalMessage || {}),
+        designation: `Principal, ${info.name}`,
+        principalDesignation: `Principal, ${info.name}`,
+        fullMessage: `Welcome to ${info.name}'s official digital management portal. We are committed to academic excellence, moral integrity, and holistic student development. We warmly invite every student and parent to explore our campus.`
+      },
+      announcementBanner: {
+        ...(baseConfig.announcementBanner || {}),
+        enabled: true,
+        text: `\uD83C\uDF89 Online Admissions for Academic Session ${new Date().getFullYear()} - ${new Date().getFullYear() + 1} are officially open at ${info.name}! Limited seats available. Apply online before June 30.`
+      }
+    };
+  };
+
   const [classes, setClasses] = useState(() => loadInitial('classes', INITIAL_CLASSES));
   const [students, setStudents] = useState(() => loadInitial('students', INITIAL_STUDENTS));
   const [grades, setGrades] = useState(() => loadInitial('grades', INITIAL_GRADES));
@@ -170,6 +220,8 @@ export function SchoolProvider({ children }) {
   const [transportRoutes, setTransportRoutes] = useState(() => loadInitial('transport_routes', INITIAL_TRANSPORT_ROUTES));
   const [hostelRooms, setHostelRooms] = useState(() => loadInitial('hostel_rooms', INITIAL_HOSTEL_ROOMS));
   const [timetables, setTimetables] = useState(() => loadInitial('timetables', INITIAL_TIMETABLES));
+  const [examRoutines, setExamRoutines] = useState(() => loadInitial('exam_routines', INITIAL_EXAM_ROUTINES));
+  const [liveSessionRequests, setLiveSessionRequests] = useState(() => loadInitial('live_session_requests', INITIAL_LIVE_SESSION_REQUESTS));
 
   // Comprehensive Residential Hostel Suite States
   const [hostelGatePasses, setHostelGatePasses] = useState(() => loadInitial('hostel_gate_passes', INITIAL_HOSTEL_GATE_PASSES));
@@ -186,6 +238,8 @@ export function SchoolProvider({ children }) {
   const [systemConfig, setSystemConfig] = useState(() => loadInitial('system_config', INITIAL_SYSTEM_CONFIG));
   const [paymentConfig, setPaymentConfig] = useState(() => loadInitial('payment_config', INITIAL_PAYMENT_CONFIG));
   const [onlineAdmissionConfig, setOnlineAdmissionConfig] = useState(() => loadInitial('online_admission_config', INITIAL_ONLINE_ADMISSION_CONFIG));
+  const [offlineAdmissionConfig, setOfflineAdmissionConfig] = useState(() => loadInitial('offline_admission_config', INITIAL_OFFLINE_ADMISSION_CONFIG));
+  const [academicSessions, setAcademicSessions] = useState(() => loadInitial('academic_sessions', INITIAL_ACADEMIC_SESSIONS));
   const [admissionRequirements, setAdmissionRequirements] = useState(() => loadInitial('admission_requirements', INITIAL_ADMISSION_REQUIREMENTS));
   const [issuedCertificates, setIssuedCertificates] = useState(() => loadInitial('issued_certificates', INITIAL_ISSUED_CERTIFICATES));
   const [reportCardWithholds, setReportCardWithholds] = useState(() => loadInitial('report_card_withholds', INITIAL_REPORT_CARD_WITHHOLDS));
@@ -209,7 +263,13 @@ export function SchoolProvider({ children }) {
   const [inventoryConfig, setInventoryConfig] = useState(() => loadInitial('inventory_config', INITIAL_INVENTORY_CONFIG));
 
   // 4. Parent-Teacher Meeting (PTM) States
-  const [ptmEvents, setPtmEvents] = useState(() => loadInitial('ptm_events', INITIAL_PTM_EVENTS));
+  const [ptmEvents, setPtmEvents] = useState(() => {
+    const loaded = loadInitial('ptm_events', INITIAL_PTM_EVENTS);
+    if (loaded && loaded[0]?.teachersAvailable && loaded[0]?.teachersAvailable?.length < 8) {
+      return INITIAL_PTM_EVENTS;
+    }
+    return loaded;
+  });
   const [ptmConfig, setPtmConfig] = useState(() => loadInitial('ptm_config', INITIAL_PTM_CONFIG));
 
   // 5. Alumni & Former Students Network States
@@ -231,7 +291,60 @@ export function SchoolProvider({ children }) {
   const [sealConfig, setSealConfig] = useState(() => loadInitial('seal_config', INITIAL_SEAL_CONFIG));
 
   // 9. Public School Website & CMS Config
-  const [websiteConfig, setWebsiteConfig] = useState(() => loadInitial('website_config', INITIAL_WEBSITE_CONFIG));
+  // For non-OHA schools with no saved config, build a school-specific default
+  const [websiteConfig, setWebsiteConfig] = useState(() => {
+    const base = loadInitial('website_config', INITIAL_WEBSITE_CONFIG);
+    // If the loaded config still has OHA data but we're a different school, override with school-specific defaults
+    if (
+      activeSchoolId !== 'oha' &&
+      activeSchoolId !== 'default' &&
+      activeSchoolInfo?.name &&
+      (base?.schoolName?.includes('One Heart') || base?.schoolName?.includes('OHA') || !base?.schoolName)
+    ) {
+      // Build and cache a school-specific config
+      const schoolSpecific = {
+        ...INITIAL_WEBSITE_CONFIG,
+        schoolName: activeSchoolInfo.name,
+        tagline: activeSchoolInfo.affiliationBadge || 'MBSE Affiliated',
+        motto: activeSchoolInfo.motto || 'Excellence in Education',
+        affiliationBadge: activeSchoolInfo.affiliationBadge || 'MBSE Affiliated',
+        contact: {
+          ...(INITIAL_WEBSITE_CONFIG.contact || {}),
+          address: activeSchoolInfo.address || '',
+          phone: activeSchoolInfo.contactPhone || '',
+          email: activeSchoolInfo.contactEmail || '',
+          officeHours: 'Monday - Friday: 8:30 AM - 4:00 PM'
+        },
+        hero: {
+          ...(INITIAL_WEBSITE_CONFIG.hero || {}),
+          headline: `Welcome to ${activeSchoolInfo.name}`,
+          subheadline: `${activeSchoolInfo.affiliationBadge || 'MBSE Affiliated'} \u2014 ${activeSchoolInfo.address || 'Mizoram, India'}. Providing holistic education with dedicated faculty and vibrant campus life.`,
+          badge: `\uD83C\uDF93 Admissions Open for Academic Session ${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`,
+          ctaPrimaryText: 'Apply for Admission Online',
+          ctaSecondaryText: 'Explore Campus & Facilities',
+        },
+        principalMessage: {
+          ...(INITIAL_WEBSITE_CONFIG.principalMessage || {}),
+          designation: `Principal, ${activeSchoolInfo.name}`,
+          principalDesignation: `Principal, ${activeSchoolInfo.name}`,
+          name: '',
+          photoUrl: '',
+          quote: `At ${activeSchoolInfo.name}, we are dedicated to academic excellence and the holistic development of every student.`,
+          fullMessage: `Welcome to ${activeSchoolInfo.name}'s official digital management portal. We are committed to academic excellence, moral integrity, and holistic student development. We warmly invite every student and parent to explore our campus.`
+        },
+        announcementBanner: {
+          ...(INITIAL_WEBSITE_CONFIG.announcementBanner || {}),
+          enabled: true,
+          text: `\uD83C\uDF89 Online Admissions for Academic Session ${new Date().getFullYear()} - ${new Date().getFullYear() + 1} are officially open at ${activeSchoolInfo.name}! Limited seats available. Apply before June 30.`
+        }
+      };
+      try {
+        localStorage.setItem(`zoxs_${activeSchoolId}_website_config`, JSON.stringify(schoolSpecific));
+      } catch(e) {}
+      return schoolSpecific;
+    }
+    return base;
+  });
 
   // 10. Student Disciplinary Records & Suspension Suite
   const [disciplinaryRecords, setDisciplinaryRecords] = useState(() => loadInitial('disciplinary_records', INITIAL_DISCIPLINARY_RECORDS));
@@ -595,6 +708,8 @@ export function SchoolProvider({ children }) {
     saveTenantItem('system_config', systemConfig);
     saveTenantItem('payment_config', paymentConfig);
     saveTenantItem('online_admission_config', onlineAdmissionConfig);
+    saveTenantItem('offline_admission_config', offlineAdmissionConfig);
+    saveTenantItem('academic_sessions', academicSessions);
     saveTenantItem('leave_applications', leaveApplications);
     saveTenantItem('pay_scales', payScales);
     saveTenantItem('tasks', tasks);
@@ -1170,6 +1285,212 @@ export function SchoolProvider({ children }) {
     setOnlineAdmissionConfig(prev => {
       const updated = { ...prev, ...newConfig };
       saveTenantItem('online_admission_config', updated);
+      return updated;
+    });
+  };
+
+  const updateOfflineAdmissionConfig = (newConfig) => {
+    setOfflineAdmissionConfig(prev => {
+      const updated = { ...prev, ...newConfig };
+      saveTenantItem('offline_admission_config', updated);
+      return updated;
+    });
+  };
+
+  // Start New Academic Session & Session Turnover
+  const startNewAcademicSession = ({ sessionName, startDate, endDate, notes = '' }) => {
+    if (!sessionName) return null;
+    const cleanSession = sessionName.trim();
+
+    // 1. Mark existing active session as completed
+    const updatedSessions = (academicSessions || []).map(s => {
+      if (s.status === 'active') {
+        return { ...s, status: 'completed', completedAt: new Date().toISOString() };
+      }
+      return s;
+    });
+
+    const newSessionId = `sess-${cleanSession.replace(/\s+/g, '').replace(/-/g, '_')}_${Date.now()}`;
+    const newSessionObj = {
+      id: newSessionId,
+      sessionName: cleanSession,
+      status: 'active',
+      startDate: startDate || `${new Date().getFullYear()}-04-01`,
+      endDate: endDate || `${new Date().getFullYear() + 1}-03-31`,
+      totalEnrolled: 0,
+      notes: notes || `Academic Session ${cleanSession} officially inaugurated by Administration.`,
+      createdAt: new Date().toISOString()
+    };
+
+    const finalSessions = [...updatedSessions, newSessionObj];
+    setAcademicSessions(finalSessions);
+    saveTenantItem('academic_sessions', finalSessions);
+
+    // 2. Synchronize systemConfig and admission configs
+    updateSystemConfig({ academicSession: cleanSession });
+    updateOnlineAdmissionConfig({ academicSession: cleanSession });
+    updateOfflineAdmissionConfig({ academicSession: cleanSession });
+
+    // 3. STRICT RULE: Past students and parents are NOT automatically enrolled in the new session!
+    // They are marked with enrollmentStatus: 'awaiting_promotion' to prevent automatic rollover.
+    setStudents(prev => {
+      const updated = prev.map(s => {
+        const enrolled = s.enrolledSessions || [s.academicSession || '2026 - 2027'];
+        if (!enrolled.includes(cleanSession)) {
+          return {
+            ...s,
+            enrollmentStatus: 'awaiting_promotion'
+          };
+        }
+        return s;
+      });
+      saveTenantItem('students', updated);
+      return updated;
+    });
+
+    // 4. Dispatch institutional notification
+    addNotice({
+      title: `🎉 Official Notice: Academic Session ${cleanSession} Commenced`,
+      content: `School Administration has officially opened Academic Session ${cleanSession}. Class promotions and admission verifications are active. All returning students require explicit promotion or re-enrollment approval.`,
+      targetRole: 'all',
+      priority: 'high',
+      category: 'academic',
+      audience: 'all'
+    });
+
+    return newSessionObj;
+  };
+
+  // Switch Active Academic Session
+  const switchActiveAcademicSession = (sessionId) => {
+    const target = (academicSessions || []).find(s => s.id === sessionId);
+    if (!target) return;
+
+    const updated = (academicSessions || []).map(s => ({
+      ...s,
+      status: s.id === sessionId ? 'active' : (s.status === 'active' ? 'completed' : s.status)
+    }));
+    setAcademicSessions(updated);
+    saveTenantItem('academic_sessions', updated);
+
+    updateSystemConfig({ academicSession: target.sessionName });
+    updateOnlineAdmissionConfig({ academicSession: target.sessionName });
+    updateOfflineAdmissionConfig({ academicSession: target.sessionName });
+  };
+
+  // Detailed Student Promotion (Both Session Turnover & Mid-Stream Advancement)
+  const promoteStudent = (studentId, promotionData) => {
+    const {
+      toClassId,
+      newRollNo,
+      type = 'session_advancement', // 'session_advancement' | 'mid_term_accelerated' | 'stream_transfer' | 'section_shift'
+      targetSession,
+      reason,
+      remarks,
+      promotedBy = 'Principal / Vice Principal',
+      effectiveDate = new Date().toISOString().split('T')[0]
+    } = promotionData;
+
+    const student = students.find(s => s.id === studentId);
+    if (!student) return false;
+
+    const sourceClass = classes.find(c => c.id === student.classId);
+    const targetClass = classes.find(c => c.id === toClassId);
+    const sessionToEnroll = targetSession || systemConfig?.academicSession || '2026 - 2027';
+
+    const orderNumber = `PROMO-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const newPromotionRecord = {
+      id: `promo-${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+      orderNumber,
+      studentId: student.id,
+      studentName: `${student.firstName} ${student.lastName}`,
+      admissionNo: student.admissionNo,
+      fromClassId: student.classId,
+      fromClassName: sourceClass?.name || student.classId,
+      fromStream: student.stream || sourceClass?.stream || null,
+      fromRollNo: student.rollNo,
+      toClassId: toClassId,
+      toClassName: targetClass?.name || toClassId,
+      toStream: targetClass?.stream || student.stream || null,
+      newRollNo: newRollNo || student.rollNo,
+      fromSession: student.academicSession || '2026 - 2027',
+      toSession: sessionToEnroll,
+      type,
+      reason: reason || 'Academic performance, screening marks, and council clearance.',
+      remarks: remarks || 'Officially endorsed by Institutional Promotion & Evaluation Council.',
+      promotedBy,
+      promotedAt: effectiveDate,
+      timestamp: new Date().toISOString()
+    };
+
+    setStudents(prev => {
+      const updated = prev.map(s => {
+        if (s.id === studentId) {
+          const prevEnrolled = s.enrolledSessions || [s.academicSession || '2026 - 2027'];
+          const newEnrolledSessions = Array.from(new Set([...prevEnrolled, sessionToEnroll]));
+          const prevHistory = s.promotionHistory || [];
+
+          return {
+            ...s,
+            classId: toClassId,
+            stream: targetClass?.stream || s.stream || null,
+            rollNo: newRollNo || s.rollNo,
+            academicSession: sessionToEnroll,
+            enrolledSessions: newEnrolledSessions,
+            enrollmentStatus: 'enrolled',
+            promotionHistory: [newPromotionRecord, ...prevHistory]
+          };
+        }
+        return s;
+      });
+      saveTenantItem('students', updated);
+      return updated;
+    });
+
+    // Send targeted in-app notification to student and parent
+    addNotice({
+      title: `🎓 Official Promotion Order: ${targetClass?.name || 'Class Advancement'}`,
+      content: `Official Promotion Order #${orderNumber}: ${student.firstName} ${student.lastName} is officially promoted from ${sourceClass?.name || student.classId} to ${targetClass?.name} for Academic Session ${sessionToEnroll}. Assigned Roll No: ${newRollNo || student.rollNo}. Details: ${remarks || reason || 'Regular academic advancement.'}`,
+      targetRole: 'parent',
+      recipientId: student.id,
+      recipientName: `${student.firstName} ${student.lastName}`,
+      priority: 'high',
+      category: 'academic',
+      audience: 'private'
+    });
+
+    return newPromotionRecord;
+  };
+
+  // Batch Class Promotion
+  const batchPromoteStudents = (studentIds, promotionData) => {
+    if (!Array.isArray(studentIds) || studentIds.length === 0) return [];
+    const results = [];
+    studentIds.forEach(id => {
+      const res = promoteStudent(id, promotionData);
+      if (res) results.push(res);
+    });
+    return results;
+  };
+
+  // Re-Enroll Returning Student into Active Session
+  const reEnrollStudent = (studentId, targetSession) => {
+    const session = targetSession || systemConfig?.academicSession || '2026 - 2027';
+    setStudents(prev => {
+      const updated = prev.map(s => {
+        if (s.id === studentId) {
+          const prevEnrolled = s.enrolledSessions || [];
+          return {
+            ...s,
+            academicSession: session,
+            enrolledSessions: Array.from(new Set([...prevEnrolled, session])),
+            enrollmentStatus: 'enrolled'
+          };
+        }
+        return s;
+      });
+      saveTenantItem('students', updated);
       return updated;
     });
   };
@@ -1860,6 +2181,84 @@ export function SchoolProvider({ children }) {
     });
   };
 
+  // 10b. Exam Routine & Date-Sheet Management (Principal & Vice Principal Executive Authority)
+  const addExamRoutineSlot = (classId, examData) => {
+    const newSlot = {
+      id: `ex-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      classId,
+      status: 'scheduled',
+      ...examData
+    };
+    setExamRoutines(prev => {
+      const classExams = prev[classId] || [];
+      const updated = {
+        ...prev,
+        [classId]: [...classExams, newSlot]
+      };
+      try { localStorage.setItem('zoxs_exam_routines', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+    return newSlot;
+  };
+
+  const updateExamRoutineSlot = (classId, examId, updatedData) => {
+    setExamRoutines(prev => {
+      const classExams = prev[classId] || [];
+      const updatedList = classExams.map(item => item.id === examId ? { ...item, ...updatedData } : item);
+      const updated = {
+        ...prev,
+        [classId]: updatedList
+      };
+      try { localStorage.setItem('zoxs_exam_routines', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+
+  const deleteExamRoutineSlot = (classId, examId) => {
+    setExamRoutines(prev => {
+      const classExams = prev[classId] || [];
+      const updatedList = classExams.filter(item => item.id !== examId);
+      const updated = {
+        ...prev,
+        [classId]: updatedList
+      };
+      try { localStorage.setItem('zoxs_exam_routines', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+
+  const publishExamRoutineNotice = (classId, term, publisherName = 'Principal & Vice Principal Council') => {
+    const targetCls = classes.find(c => c.id === classId);
+    const clsName = targetCls?.name || 'All Classes';
+    const classExams = (examRoutines[classId] || []).filter(e => !term || e.term === term);
+
+    if (classExams.length === 0) {
+      return { success: false, error: 'He class tan hian exam routine ziah a la awm rih lo.' };
+    }
+
+    const examDatesStr = classExams
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map(e => `• ${e.date} (${e.day}): ${e.subject} [${e.time}] - Room ${e.room} (Invigilator: ${e.invigilator || 'Faculty In-Charge'})`)
+      .join('\n');
+
+    const newNotice = {
+      id: `ntc-exam-${Date.now()}`,
+      title: `MBSE Official Exam Routine: ${clsName} (${term || 'Session 2026-2027'})`,
+      content: `Hriattirna: ${clsName} zirlai leh nu/pa zawng zawngte hriat atan ${term || 'Examination'} routine official a chhuak ta e.\n\n${examDatesStr}\n\nCandidate zawng zawng ten admit card leh ID card kengin exam ṭan hma minute 15 ah room thlen fel vek tur a ni e.\n— ${publisherName}`,
+      date: new Date().toISOString().split('T')[0],
+      priority: 'high',
+      category: 'Exam',
+      targetAudience: 'all',
+      targetClassId: classId,
+      publishedBy: publisherName,
+      readBy: [],
+      scope: 'public'
+    };
+
+    setNotices(prev => [newNotice, ...prev]);
+    return { success: true, notice: newNotice };
+  };
+
   // 11. In-App Developer Studio & Extension Management Actions
   const saveCustomScripts = (newScripts) => {
     setCustomScripts(prev => ({ ...prev, ...newScripts }));
@@ -1970,6 +2369,198 @@ export function SchoolProvider({ children }) {
     setLiveMediaConfig(INITIAL_LIVE_MEDIA_CONFIG);
     localStorage.setItem('zoxs_live_media_config', JSON.stringify(INITIAL_LIVE_MEDIA_CONFIG));
     return { success: true, message: 'Live media configuration reset to defaults.' };
+  };
+
+  // 15. Class Teacher Live Video, Streaming & Online Tuition Governance Suite
+  // (Vice Principal & Principal Gatekeeping & Approval Architecture)
+  const requestLiveSession = (sessionData) => {
+    const newSession = {
+      id: `ls-${Date.now().toString().slice(-6)}`,
+      title: sessionData.title || 'Online Live Academic Class',
+      classId: sessionData.classId || 'cls-12-sci',
+      className: sessionData.className || 'Class 12 Science',
+      subject: sessionData.subject || 'General Studies',
+      teacherId: sessionData.teacherId || 'stf-001',
+      teacherName: sessionData.teacherName || 'Faculty Member',
+      sessionType: sessionData.sessionType || 'live_class', // 'live_class' | 'live_stream' | 'live_tuition'
+      mediaMode: sessionData.mediaMode || 'video_interactive', // 'video_interactive' | 'broadcast_stream' | 'voice_tuition'
+      scheduledDate: sessionData.scheduledDate || new Date().toISOString().split('T')[0],
+      scheduledTime: sessionData.scheduledTime || '06:00 PM - 07:00 PM',
+      durationMinutes: Number(sessionData.durationMinutes) || 60,
+      targetGroup: sessionData.targetGroup || 'All Class Students',
+      agenda: sessionData.agenda || '',
+      status: 'pending', // 'pending' | 'approved' | 'rejected' | 'live' | 'completed'
+      approvedBy: null,
+      approvedAt: null,
+      approvalRemarks: null,
+      requestedAt: new Date().toLocaleString(),
+      ...sessionData
+    };
+
+    setLiveSessionRequests(prev => {
+      const updated = [newSession, ...prev];
+      try {
+        localStorage.setItem('zoxs_live_session_requests', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to persist live session requests', e);
+      }
+      return updated;
+    });
+
+    // Notify Vice Principal and Principal immediately
+    sendPrivateNotification({
+      title: `Live Session Dilna Thar: ${newSession.teacherName} (${newSession.className})`,
+      content: `${newSession.teacherName}-in ${newSession.className} tan ${newSession.sessionType === 'live_tuition' ? 'Online Tuition' : newSession.sessionType === 'live_stream' ? 'Live Streaming' : 'Live Video Class'} (${newSession.subject}) buatsaih dilna a thehlut e. Hun: ${newSession.scheduledDate} ${newSession.scheduledTime}. Vice Principal leh Principal approve veleh chauh a kaltlangpui theih ang.`,
+      category: 'general',
+      priority: 'urgent',
+      targetAudience: 'role',
+      recipientRole: 'principal',
+      senderId: newSession.teacherId,
+      publishedBy: newSession.teacherName,
+      channels: { inApp: true, whatsapp: false, push: true, sms: false }
+    });
+
+    return { success: true, session: newSession };
+  };
+
+  const approveLiveSession = (sessionId, approverName = 'Principal / Vice Principal', remarks = '') => {
+    let approvedSession = null;
+    setLiveSessionRequests(prev => {
+      const updated = prev.map(s => {
+        if (s.id === sessionId) {
+          approvedSession = {
+            ...s,
+            status: 'approved',
+            approvedBy: approverName,
+            approvedAt: new Date().toLocaleString(),
+            approvalRemarks: remarks || 'Approved by Administration for academic execution.'
+          };
+          return approvedSession;
+        }
+        return s;
+      });
+      try {
+        localStorage.setItem('zoxs_live_session_requests', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to persist live session requests', e);
+      }
+      return updated;
+    });
+
+    if (approvedSession) {
+      // 1. Notify the Class Teacher
+      sendPrivateNotification({
+        title: `Live Session Dilna Pawm A Ni: ${approvedSession.title}`,
+        content: `Chibai ${approvedSession.teacherName}, ${approvedSession.className} tana i ${approvedSession.sessionType === 'live_tuition' ? 'Tuition' : 'Live Class'} dilna kha ${approverName}-in a pawmpui (approve) ta e. I start thei ta e. Remarks: "${remarks || 'All clear'}".`,
+        category: 'general',
+        priority: 'high',
+        targetAudience: 'individual',
+        targetUserId: approvedSession.teacherId,
+        targetUserName: approvedSession.teacherName,
+        recipientRole: 'teacher',
+        publishedBy: approverName,
+        channels: { inApp: true, whatsapp: true, push: true, sms: false }
+      });
+
+      // 2. Publish Official Notice to Students & Parents of that Class
+      publishNotice({
+        title: `🔴 Sanctioned Live Session: ${approvedSession.title}`,
+        content: `${approvedSession.className} zirlai leh nu&pa zawng zawng te hriattir in ni e. Vice Principal & Principal phalsakna in ${approvedSession.subject} ${approvedSession.sessionType === 'live_tuition' ? 'Online Video/Voice Tuition' : 'Online Live Video Class'} a awm dawn e.\n\n📅 Tarik: ${approvedSession.scheduledDate}\n⏰ Hun: ${approvedSession.scheduledTime}\n👨‍🏫 Zirtirtu: ${approvedSession.teacherName}\n🎯 Target: ${approvedSession.targetGroup || 'All Class Students'}\n📋 Topic: ${approvedSession.agenda || 'Syllabus coverage & doubts'}\n\nStudent Portal atangin direct-in join theih a ni ang.`,
+        category: 'academic',
+        priority: 'high',
+        targetAudience: 'class',
+        targetClassId: approvedSession.classId,
+        publishedBy: `${approverName} / ${approvedSession.teacherName}`
+      });
+
+      // 3. If specific students are selected (e.g. Remedial / Tuition batch), notify each selected student directly
+      if (Array.isArray(approvedSession.selectedStudentIds) && approvedSession.selectedStudentIds.length > 0) {
+        approvedSession.selectedStudentIds.forEach(stuId => {
+          sendPrivateNotification({
+            title: `🎯 Live Class/Tuition Thlan Bik: ${approvedSession.title}`,
+            content: `I zirtirtu ${approvedSession.teacherName}-in ${approvedSession.subject} ${approvedSession.sessionType === 'live_tuition' ? 'Tuition / Coaching' : 'Live Class'} atan a thlang che a, Vice Principal/Principal-in an pawm e. Hun: ${approvedSession.scheduledDate} ${approvedSession.scheduledTime}. Khawngaihin join ngei ang che.`,
+            category: 'academic',
+            priority: 'urgent',
+            targetAudience: 'individual',
+            targetUserId: stuId,
+            recipientRole: 'student',
+            publishedBy: approvedSession.teacherName,
+            channels: { inApp: true, whatsapp: true, push: true, sms: true }
+          });
+        });
+      }
+    }
+
+    return { success: true };
+  };
+
+  const rejectLiveSession = (sessionId, rejecterName = 'Principal / Vice Principal', reason = '') => {
+    let rejectedSession = null;
+    setLiveSessionRequests(prev => {
+      const updated = prev.map(s => {
+        if (s.id === sessionId) {
+          rejectedSession = {
+            ...s,
+            status: 'rejected',
+            rejectedBy: rejecterName,
+            rejectedAt: new Date().toLocaleString(),
+            rejectionReason: reason || 'Kindly reschedule or modify timings.'
+          };
+          return rejectedSession;
+        }
+        return s;
+      });
+      try {
+        localStorage.setItem('zoxs_live_session_requests', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to persist live session requests', e);
+      }
+      return updated;
+    });
+
+    if (rejectedSession) {
+      sendPrivateNotification({
+        title: `Live Session Dilna Hnawl / Sawn A Ni: ${rejectedSession.title}`,
+        content: `Dear ${rejectedSession.teacherName}, i ${rejectedSession.className} live class/tuition dilna kha ${rejecterName}-in a pawm rih lo / hun sawn a ngen e. Chhan: "${reason || 'Schedule collision or timing adjustment needed'}". I edit a i re-submit leh thei e.`,
+        category: 'general',
+        priority: 'urgent',
+        targetAudience: 'individual',
+        targetUserId: rejectedSession.teacherId,
+        targetUserName: rejectedSession.teacherName,
+        recipientRole: 'teacher',
+        publishedBy: rejecterName,
+        channels: { inApp: true, whatsapp: false, push: true, sms: false }
+      });
+    }
+
+    return { success: true };
+  };
+
+  const startLiveSession = (sessionId) => {
+    setLiveSessionRequests(prev => {
+      const updated = prev.map(s => s.id === sessionId ? { ...s, status: 'live', startedAt: new Date().toLocaleString() } : s);
+      try { localStorage.setItem('zoxs_live_session_requests', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
+    return { success: true };
+  };
+
+  const endLiveSession = (sessionId) => {
+    setLiveSessionRequests(prev => {
+      const updated = prev.map(s => s.id === sessionId ? { ...s, status: 'completed', endedAt: new Date().toLocaleString() } : s);
+      try { localStorage.setItem('zoxs_live_session_requests', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
+    return { success: true };
+  };
+
+  const deleteLiveSession = (sessionId) => {
+    setLiveSessionRequests(prev => {
+      const updated = prev.filter(s => s.id !== sessionId);
+      try { localStorage.setItem('zoxs_live_session_requests', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
+    return { success: true };
   };
 
   // Universal In-App Database / Collection CRUD
@@ -2102,81 +2693,87 @@ export function SchoolProvider({ children }) {
   };
 
   /**
-   * Initializes One Heart Academy, Lunglawn, Lunglei as a clean, real institutional portal
-   * Clears out all dummy mock data (students, grades, fees, dummy admissions) so Principal and Admin can start clean
+   * Initializes the active school as a clean, real institutional portal.
+   * Clears all dummy mock data (students, grades, fees, admissions) so the
+   * Principal and Admin can start fresh with real records.
+   * Works for ANY registered school — reads from activeSchoolInfo dynamically.
    */
-  const initializeCleanOhaAcademy = () => {
+  const initializeCleanSchool = () => {
     const activePrefix = `zoxs_${activeSchoolId}_`;
-    
+    const info = activeSchoolInfo || {};
+    const schoolName = info.name || 'School';
+    const address = info.address || 'Mizoram, India';
+    const phone = info.contactPhone || '';
+    const email = info.contactEmail || '';
+    const motto = info.motto || 'Excellence in Education';
+
     // Clear out dummy mock records
     setStudents([]);
     localStorage.setItem(`${activePrefix}students`, JSON.stringify([]));
-    
+
     setFees([]);
     localStorage.setItem(`${activePrefix}fees`, JSON.stringify([]));
-    
+
     setGrades([]);
     localStorage.setItem(`${activePrefix}grades`, JSON.stringify([]));
-    
+
     setAdmissions([]);
     localStorage.setItem(`${activePrefix}admissions`, JSON.stringify([]));
-    
+
     setAttendance([]);
     localStorage.setItem(`${activePrefix}attendance`, JSON.stringify([]));
-    
+
     setLeaveApplications([]);
     localStorage.setItem(`${activePrefix}leave_applications`, JSON.stringify([]));
-    
-    // Set clean official One Heart Academy institutional system config
-    const ohaSystemConfig = {
+
+    // Apply clean institutional system config using this school's registered metadata
+    const cleanSystemConfig = {
       ...systemConfig,
-      schoolName: 'OHA (One Heart Academy)',
-      motto: 'Knowledge is Light (Hriatna chu Eng a ni)',
-      establishedYear: '2023',
-      affiliationNo: 'MBSE-HSS-LGL-0421',
-      address: 'Lunglawn, Lunglei, Mizoram - 796701',
-      contactPhone: '+91 372 2322104 / +91 94361 40552',
-      contactEmail: 'oha.lunglawn@gmail.com',
-      academicSession: '2026 - 2027',
+      schoolName,
+      motto,
+      address,
+      contactPhone: phone,
+      contactEmail: email,
+      academicSession: `${new Date().getFullYear()} - ${new Date().getFullYear() + 1}`,
       enableOnlineAdmissions: true,
       enableUpiPayments: true,
       enableSmsNotifications: true,
       enableHostelModule: true,
       enableTransportModule: true
     };
-    setSystemConfig(ohaSystemConfig);
-    localStorage.setItem(`${activePrefix}system_config`, JSON.stringify(ohaSystemConfig));
+    setSystemConfig(cleanSystemConfig);
+    localStorage.setItem(`${activePrefix}system_config`, JSON.stringify(cleanSystemConfig));
 
-    // Set official website config
-    const ohaWebsiteConfig = {
+    // Apply clean website config
+    const cleanWebsiteConfig = {
       ...websiteConfig,
-      schoolName: 'OHA (One Heart Academy)',
-      tagline: 'Mizoram Premier Day & Residential Academy',
-      motto: 'Knowledge • Character • Excellence',
-      address: 'Lunglawn, Lunglei, Mizoram - 796701',
-      phone: '+91 372 2322104 / +91 94361 40552',
-      email: 'oha.lunglawn@gmail.com',
+      schoolName,
+      tagline: info.affiliationBadge || 'MBSE Affiliated',
+      motto,
+      address,
+      phone,
+      email,
       hero: {
         ...(websiteConfig.hero || {}),
-        headline: 'Welcome to One Heart Academy, Lunglawn, Lunglei',
-        subheadline: 'MBSE Affiliated institution offering holistic education from Elementary to Higher Secondary.'
+        headline: `Welcome to ${schoolName}`,
+        subheadline: `${info.affiliationBadge || 'MBSE Affiliated'} — ${address}`
       },
       principalMessage: {
-        principalName: 'Lalthlamuana Sailo',
-        principalDesignation: 'Principal, One Heart Academy',
-        fullMessage: 'At One Heart Academy (OHA), Lunglawn, Lunglei, we are dedicated to providing a nurturing environment where students excel in academics, sports, and moral character. Welcome to our official digital portal.'
+        ...(websiteConfig.principalMessage || {}),
+        principalDesignation: `Principal, ${schoolName}`,
+        fullMessage: websiteConfig.principalMessage?.fullMessage || `Welcome to ${schoolName}'s official digital portal. We are committed to academic excellence and holistic student development.`
       }
     };
-    setWebsiteConfig(ohaWebsiteConfig);
-    localStorage.setItem(`${activePrefix}website_config`, JSON.stringify(ohaWebsiteConfig));
+    setWebsiteConfig(cleanWebsiteConfig);
+    localStorage.setItem(`${activePrefix}website_config`, JSON.stringify(cleanWebsiteConfig));
 
-    // Initial welcome directive for Principal & Admin
+    // Post a system welcome notice
     const cleanNotice = [
       {
-        id: 'not-oha-welcome',
+        id: `not-${activeSchoolId}-welcome`,
         scope: 'campus',
-        title: 'One Heart Academy (OHA) System Live & Operational',
-        content: 'One Heart Academy, Lunglawn, Lunglei digital portal has been initialized cleanly with zero dummy mock records. The administration and faculty may now proceed to enroll students, configure fee structures, and receive online admissions.',
+        title: `${schoolName} Portal — Live & Operational`,
+        content: `${schoolName} digital management portal has been initialized cleanly with zero mock records. The administration and faculty may now enroll students, configure fee structures, and receive online admissions.`,
         category: 'general',
         priority: 'high',
         targetAudience: 'all',
@@ -2189,8 +2786,11 @@ export function SchoolProvider({ children }) {
     setNotices(cleanNotice);
     localStorage.setItem(`${activePrefix}notices`, JSON.stringify(cleanNotice));
 
-    return { success: true, message: 'One Heart Academy cleanly initialized with zero mock data!' };
+    return { success: true, message: `${schoolName} cleanly initialized with zero mock data!` };
   };
+
+  // Backward-compatible alias for any existing references
+  const initializeCleanOhaAcademy = initializeCleanSchool;
 
   // In-App REPL / Terminal Sandbox Execution
   const executeTerminalCommand = (codeString) => {
@@ -2636,6 +3236,64 @@ export function SchoolProvider({ children }) {
     }
 
     return { success: true, targetClass, targetTeacher };
+  };
+
+  // 14e. Office Staff Appointment & Module Access Governance (Principal & Vice Principal Authority)
+  const assignOfficeStaffDuties = (staffId, officeData, assignerName = 'Principal / Vice Principal') => {
+    const targetTeacher = staff.find(s => s.id === staffId);
+    if (!targetTeacher) return { success: false, error: 'Staff member not found' };
+
+    let updatedStaffObj = null;
+    setStaff(prev => {
+      const updated = prev.map(s => {
+        if (s.id === staffId) {
+          updatedStaffObj = {
+            ...s,
+            isOfficeStaff: Boolean(officeData.isOfficeStaff),
+            officeDesignation: officeData.officeDesignation || (officeData.isOfficeStaff ? 'Designated Office Staff' : ''),
+            officeDuties: officeData.officeDuties || [],
+            assignedModuleAccess: officeData.assignedModuleAccess || [],
+            appointedBy: officeData.isOfficeStaff ? assignerName : null,
+            appointedAt: officeData.isOfficeStaff ? (s.appointedAt || new Date().toLocaleString()) : null,
+            officeNotes: officeData.officeNotes || ''
+          };
+          return updatedStaffObj;
+        }
+        return s;
+      });
+      return updated;
+    });
+
+    // Notify teacher of the appointment or revocation
+    if (officeData.isOfficeStaff) {
+      sendPrivateNotification({
+        title: `Office Staff & Administrative Duty Pek Thar: ${targetTeacher.name}`,
+        content: `Dear ${targetTeacher.name}, Vice Principal & Principal thuneihna hnuaiah Office Staff mawhphurhna pek i ni e.\n\n📌 Designation: ${officeData.officeDesignation || 'Office Staff'}\n📋 Duties: ${(officeData.officeDuties || []).join(', ') || 'General Office Duties'}\n🔑 Module Access: ${(officeData.assignedModuleAccess || []).join(', ') || 'Designated Modules'}\n\nRuattu: ${assignerName}. System-ah heng module access te hi i pualin hawn a ni nghal e.`,
+        category: 'general',
+        priority: 'urgent',
+        targetAudience: 'individual',
+        targetUserId: targetTeacher.id,
+        targetUserName: targetTeacher.name,
+        recipientRole: 'teacher',
+        publishedBy: assignerName,
+        channels: { inApp: true, whatsapp: true, push: true, sms: false }
+      });
+    } else {
+      sendPrivateNotification({
+        title: `Office Duty Aṭanga Chawlhtirna: ${targetTeacher.name}`,
+        content: `Dear ${targetTeacher.name}, i Office Staff mawhphurhna leh module access te kha ${assignerName}-in a titawp ta e. Academic faculty mawhphurhna pangngai i chhunzawm ang.`,
+        category: 'general',
+        priority: 'high',
+        targetAudience: 'individual',
+        targetUserId: targetTeacher.id,
+        targetUserName: targetTeacher.name,
+        recipientRole: 'teacher',
+        publishedBy: assignerName,
+        channels: { inApp: true, whatsapp: false, push: true, sms: false }
+      });
+    }
+
+    return { success: true, staff: updatedStaffObj };
   };
 
   // 14d. Class Leader & Assistant Class Leader Governance (Class Master Authority)
@@ -3727,6 +4385,7 @@ export function SchoolProvider({ children }) {
       updateStaff,
       deleteStaff,
       assignClassMaster,
+      assignOfficeStaffDuties,
       assignClassLeaders,
       payroll,
       libraryBooks,
@@ -3735,6 +4394,14 @@ export function SchoolProvider({ children }) {
       admissionRequirements,
       onlineAdmissionConfig,
       updateOnlineAdmissionConfig,
+      offlineAdmissionConfig,
+      updateOfflineAdmissionConfig,
+      academicSessions,
+      startNewAcademicSession,
+      switchActiveAcademicSession,
+      promoteStudent,
+      batchPromoteStudents,
+      reEnrollStudent,
       updateAdmissionRecord,
       requestAdmissionDocument,
       updateAdmissionDocumentStatus,
@@ -3768,14 +4435,25 @@ export function SchoolProvider({ children }) {
       paymentConfig,
       updatePaymentConfig,
       setActivePaymentGateway,
-      updateGatewayDetails,
       timetables,
-      customScripts,
+      updateTimeTableSlot,
+      examRoutines,
+      addExamRoutineSlot,
+      updateExamRoutineSlot,
+      deleteExamRoutineSlot,
+      publishExamRoutineNotice,
       plugins,
       systemConfig,
       liveMediaConfig,
       updateLiveMediaConfig,
       resetLiveMediaConfig,
+      liveSessionRequests,
+      requestLiveSession,
+      approveLiveSession,
+      rejectLiveSession,
+      startLiveSession,
+      endLiveSession,
+      deleteLiveSession,
       activePrivateCall,
       startPrivateCall,
       endPrivateCall,
@@ -3795,9 +4473,9 @@ export function SchoolProvider({ children }) {
       deleteCollectionRecord,
       exportDatabaseSnapshot,
       restoreDatabaseSnapshot,
-      initializeCleanOhaAcademy,
+      initializeCleanSchool,
+      initializeCleanOhaAcademy: initializeCleanSchool, // backward-compatible alias
       executeTerminalCommand,
-      updateTimeTableSlot,
       recordAttendance,
       bulkMarkAttendance,
       autoAbsentNotificationEnabled,

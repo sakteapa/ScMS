@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Send, Copy, Check, MessageSquare, Phone, AlertCircle } from 'lucide-react';
 import { FirestoreStudent, FeeRecord } from '../types';
 import { generateParentReminderMessage } from '../lib/feeService';
@@ -18,13 +18,17 @@ export const FeeReminderModal: React.FC<FeeReminderModalProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [sentSuccess, setSentSuccess] = useState(false);
+  const [messageText, setMessageText] = useState('');
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (student) {
+      setMessageText(generateParentReminderMessage(student, feeRecord));
+    }
+  }, [student, feeRecord]);
 
-  const defaultMessage = generateParentReminderMessage(student, feeRecord);
-  const [messageText, setMessageText] = useState(defaultMessage);
+  if (!isOpen || !student) return null;
 
-  const cleanPhone = student.parentPhone.replace(/[^0-9]/g, '');
+  const cleanPhone = (student.parentPhone || '').replace(/[^0-9]/g, '');
 
   const handleCopy = () => {
     navigator.clipboard.writeText(messageText);

@@ -71,7 +71,7 @@ import InAppMasterConfigStudio from '../components/InAppMasterConfigStudio';
 import DevStudioAiCoPilot from '../components/DevStudioAiCoPilot';
 
 export default function DevStudioView() {
-  const { user } = useAuth();
+  const { currentUser, isSuperAdmin } = useAuth();
   const {
     customScripts,
     saveCustomScripts,
@@ -337,6 +337,20 @@ export default function DevStudioView() {
       ...prev
     ]);
   };
+
+  if (!isSuperAdmin && currentUser?.role !== 'superadmin') {
+    return (
+      <div className="py-24 text-center space-y-4 font-sans max-w-lg mx-auto">
+        <div className="w-16 h-16 rounded-3xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center mx-auto shadow-xl">
+          <ShieldCheck className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-white font-['Outfit']">Access Restricted: Super Admin Only</h2>
+        <p className="text-sm text-slate-400 leading-relaxed">
+          Developer Studio leh AI System Co-Pilot hi Super Admin (System Architect) chauhvin an khawih thei a ni. Principal, Staff, emaw Zirlai tan luh theih a ni lo.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

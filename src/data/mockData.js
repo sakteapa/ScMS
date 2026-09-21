@@ -55,7 +55,29 @@ export const INITIAL_STUDENTS = [
     hostelRoomId: null,
     attendanceRate: 94.5,
     isClassLeader: true,
-    leadershipRole: 'class_leader'
+    leadershipRole: 'class_leader',
+    academicSession: '2026 - 2027',
+    enrolledSessions: ['2025 - 2026', '2026 - 2027'],
+    enrollmentStatus: 'enrolled',
+    promotionHistory: [
+      {
+        id: 'promo-001',
+        fromClassId: 'cls-11-sci',
+        fromClassName: 'Class 11 - Science',
+        toClassId: 'cls-12-sci',
+        toClassName: 'Class 12 - Science',
+        fromSession: '2025 - 2026',
+        toSession: '2026 - 2027',
+        fromRollNo: '02',
+        newRollNo: '01',
+        type: 'session_advancement',
+        reason: 'MBSE Class 11 Annual Examination clearance with 92.4% marks distinction.',
+        remarks: 'Approved by Academic Council. Appointed Class 12 Science Class Leader.',
+        promotedBy: 'Dr. Lalthlamuana (Principal)',
+        promotedAt: '2026-04-05',
+        orderNumber: 'PROMO-2026-0012'
+      }
+    ]
   },
   {
     id: 'stu-102',
@@ -80,7 +102,29 @@ export const INITIAL_STUDENTS = [
     hostelRoomId: null,
     attendanceRate: 91.2,
     isAsstClassLeader: true,
-    leadershipRole: 'asst_class_leader'
+    leadershipRole: 'asst_class_leader',
+    academicSession: '2026 - 2027',
+    enrolledSessions: ['2025 - 2026', '2026 - 2027'],
+    enrollmentStatus: 'enrolled',
+    promotionHistory: [
+      {
+        id: 'promo-002',
+        fromClassId: 'cls-11-sci',
+        fromClassName: 'Class 11 - Science',
+        toClassId: 'cls-12-sci',
+        toClassName: 'Class 12 - Science',
+        fromSession: '2025 - 2026',
+        toSession: '2026 - 2027',
+        fromRollNo: '03',
+        newRollNo: '02',
+        type: 'session_advancement',
+        reason: 'Cleared Class 11 Annual Exam with 89.8% in PCB.',
+        remarks: 'Direct progression to Class 12 Science stream.',
+        promotedBy: 'Lalhmingliani (Vice Principal)',
+        promotedAt: '2026-04-05',
+        orderNumber: 'PROMO-2026-0013'
+      }
+    ]
   },
   {
     id: 'stu-107',
@@ -638,7 +682,17 @@ export const INITIAL_STAFF = [
     subjectsTaught: ['English', 'Alternative English'],
     committees: ['Discipline Committee', 'Literary & Debating Society Convener'],
     weeklyPeriods: 22,
-    specialDuty: 'School Magazine Editor & Cultural Events In-Charge'
+    specialDuty: 'School Magazine Editor & Cultural Events In-Charge',
+    isOfficeStaff: true,
+    officeDesignation: 'Admissions & Certification Officer',
+    officeDuties: [
+      'Online Admissions Scrutiny & Verification',
+      'MBSE Transfer Certificate (TC) Preparation'
+    ],
+    assignedModuleAccess: ['admissions', 'certificates'],
+    appointedBy: 'Dr. C. Lalremruata (Vice Principal)',
+    appointedAt: '2026-05-15',
+    officeNotes: 'Assisting academic registry with online admission documentation.'
   },
   {
     id: 'stf-007',
@@ -686,7 +740,18 @@ export const INITIAL_STAFF = [
     subjectsTaught: ['Accountancy & Commercial Studies'],
     committees: ['Purchase & Audit Committee', 'Fee Concession Review Council'],
     weeklyPeriods: 8,
-    specialDuty: 'Financial Ledger Keeper & Fee Counter Chief'
+    specialDuty: 'Financial Ledger Keeper & Fee Counter Chief',
+    isOfficeStaff: true,
+    officeDesignation: 'Chief Accounts & Fee Officer',
+    officeDuties: [
+      'Fee Collection & Receipts Invoicing',
+      'UPI & Cash Ledger Reconciliation',
+      'Student Fee Concession Verification'
+    ],
+    assignedModuleAccess: ['financials', 'admissions'],
+    appointedBy: 'Rev. Dr. L. H. Rohmingliana (Principal)',
+    appointedAt: '2026-04-10',
+    officeNotes: 'Primary cashier authority for fee billing and accounts.'
   },
   {
     id: 'stf-005',
@@ -2473,11 +2538,14 @@ export const DEFAULT_USERS = [
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80'
   },
   {
-    uid: 'user-dev-01',
-    email: 'developer@mizoramschool.edu',
-    displayName: 'Zoxs System Architect',
+    uid: 'user-dev-superadmin',
+    email: 'samuellalrinfela@gmail.com',
+    displayName: 'Samuel Lalrinfela Renthlei',
     role: 'superadmin',
-    phone: '+91 94361 99999',
+    phone: '+91 9378160106',
+    address: 'Pangkaiveng, Lunglawn, Lunglei, 796701',
+    designation: 'System Architect & Developer',
+    password: 'Srenthlei16#',
     avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80'
   },
   {
@@ -2496,6 +2564,266 @@ export const DEFAULT_USERS = [
     hostelBuilding: 'Lushai Boys Hostel',
     phone: '+91 98623 77112',
     avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&auto=format&fit=crop&q=80'
+  }
+];
+
+export const INITIAL_EXAM_ROUTINES = {
+  'cls-12-sci': [
+    {
+      id: 'ex-12s-01',
+      classId: 'cls-12-sci',
+      examName: 'MBSE Higher Secondary Half Yearly Examination 2026-2027',
+      term: 'Half Yearly',
+      date: '2026-10-12',
+      day: 'Monday',
+      time: '09:30 AM - 12:30 PM',
+      session: 'Morning',
+      subject: 'English Core',
+      paperCode: 'ENG-12',
+      room: 'Hall A-1',
+      maxMarks: 100,
+      passMarks: 33,
+      invigilator: 'Ruth Lalrinsangi',
+      status: 'scheduled'
+    },
+    {
+      id: 'ex-12s-02',
+      classId: 'cls-12-sci',
+      examName: 'MBSE Higher Secondary Half Yearly Examination 2026-2027',
+      term: 'Half Yearly',
+      date: '2026-10-14',
+      day: 'Wednesday',
+      time: '09:30 AM - 12:30 PM',
+      session: 'Morning',
+      subject: 'Physics (Theory)',
+      paperCode: 'PHY-12',
+      room: 'Hall A-1',
+      maxMarks: 70,
+      passMarks: 23,
+      invigilator: 'Lalthlamuana Sailo',
+      status: 'scheduled'
+    },
+    {
+      id: 'ex-12s-03',
+      classId: 'cls-12-sci',
+      examName: 'MBSE Higher Secondary Half Yearly Examination 2026-2027',
+      term: 'Half Yearly',
+      date: '2026-10-16',
+      day: 'Friday',
+      time: '09:30 AM - 12:30 PM',
+      session: 'Morning',
+      subject: 'Chemistry (Theory)',
+      paperCode: 'CHM-12',
+      room: 'Hall A-1',
+      maxMarks: 70,
+      passMarks: 23,
+      invigilator: 'Prof. J. Lalramenga',
+      status: 'scheduled'
+    },
+    {
+      id: 'ex-12s-04',
+      classId: 'cls-12-sci',
+      examName: 'MBSE Higher Secondary Half Yearly Examination 2026-2027',
+      term: 'Half Yearly',
+      date: '2026-10-19',
+      day: 'Monday',
+      time: '09:30 AM - 12:30 PM',
+      session: 'Morning',
+      subject: 'Mathematics',
+      paperCode: 'MTH-12',
+      room: 'Hall A-1',
+      maxMarks: 100,
+      passMarks: 33,
+      invigilator: 'V. Laltanpuia',
+      status: 'scheduled'
+    },
+    {
+      id: 'ex-12s-05',
+      classId: 'cls-12-sci',
+      examName: 'MBSE Higher Secondary Half Yearly Examination 2026-2027',
+      term: 'Half Yearly',
+      date: '2026-10-21',
+      day: 'Wednesday',
+      time: '09:30 AM - 12:30 PM',
+      session: 'Morning',
+      subject: 'Biology / Computer Science',
+      paperCode: 'BIO-12 / CSC-12',
+      room: 'Hall A-1',
+      maxMarks: 70,
+      passMarks: 23,
+      invigilator: 'Zothanpuii',
+      status: 'scheduled'
+    },
+    {
+      id: 'ex-12s-06',
+      classId: 'cls-12-sci',
+      examName: 'MBSE Higher Secondary Half Yearly Examination 2026-2027',
+      term: 'Half Yearly',
+      date: '2026-10-23',
+      day: 'Friday',
+      time: '09:30 AM - 12:30 PM',
+      session: 'Morning',
+      subject: 'Mizo (MIL) / Alt. English',
+      paperCode: 'MIZ-12',
+      room: 'Hall A-1',
+      maxMarks: 100,
+      passMarks: 33,
+      invigilator: 'David Lalnunmawia',
+      status: 'scheduled'
+    }
+  ],
+  'cls-10': [
+    {
+      id: 'ex-10-01',
+      classId: 'cls-10',
+      examName: 'MBSE High School Board Preparatory Exam 2026',
+      term: 'Half Yearly',
+      date: '2026-10-12',
+      day: 'Monday',
+      time: '09:30 AM - 12:30 PM',
+      session: 'Morning',
+      subject: 'English (First Language)',
+      paperCode: 'ENG-10',
+      room: 'Hall B-2',
+      maxMarks: 100,
+      passMarks: 33,
+      invigilator: 'Dr. C. Zoramthanga',
+      status: 'scheduled'
+    },
+    {
+      id: 'ex-10-02',
+      classId: 'cls-10',
+      examName: 'MBSE High School Board Preparatory Exam 2026',
+      term: 'Half Yearly',
+      date: '2026-10-14',
+      day: 'Wednesday',
+      time: '09:30 AM - 12:30 PM',
+      session: 'Morning',
+      subject: 'Mathematics',
+      paperCode: 'MTH-10',
+      room: 'Hall B-2',
+      maxMarks: 100,
+      passMarks: 33,
+      invigilator: 'Lalpekhlua Hmar',
+      status: 'scheduled'
+    },
+    {
+      id: 'ex-10-03',
+      classId: 'cls-10',
+      examName: 'MBSE High School Board Preparatory Exam 2026',
+      term: 'Half Yearly',
+      date: '2026-10-16',
+      day: 'Friday',
+      time: '09:30 AM - 12:30 PM',
+      session: 'Morning',
+      subject: 'Science & Technology',
+      paperCode: 'SCI-10',
+      room: 'Hall B-2',
+      maxMarks: 100,
+      passMarks: 33,
+      invigilator: 'H. Laldinpuia',
+      status: 'scheduled'
+    },
+    {
+      id: 'ex-10-04',
+      classId: 'cls-10',
+      examName: 'MBSE High School Board Preparatory Exam 2026',
+      term: 'Half Yearly',
+      date: '2026-10-19',
+      day: 'Monday',
+      time: '09:30 AM - 12:30 PM',
+      session: 'Morning',
+      subject: 'Social Science',
+      paperCode: 'SOC-10',
+      room: 'Hall B-2',
+      maxMarks: 100,
+      passMarks: 33,
+      invigilator: 'Zothanpuii',
+      status: 'scheduled'
+    },
+    {
+      id: 'ex-10-05',
+      classId: 'cls-10',
+      examName: 'MBSE High School Board Preparatory Exam 2026',
+      term: 'Half Yearly',
+      date: '2026-10-21',
+      day: 'Wednesday',
+      time: '09:30 AM - 12:30 PM',
+      session: 'Morning',
+      subject: 'Mizo (MIL)',
+      paperCode: 'MIZ-10',
+      room: 'Hall B-2',
+      maxMarks: 100,
+      passMarks: 33,
+      invigilator: 'Lalhmangaiha',
+      status: 'scheduled'
+    }
+  ]
+};
+
+export const INITIAL_LIVE_SESSION_REQUESTS = [
+  {
+    id: 'ls-001',
+    title: 'Electromagnetic Induction & Faraday Laws (Unit 4)',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    subject: 'Physics',
+    teacherId: 'stf-001',
+    teacherName: 'Lalthlamuana Sailo',
+    sessionType: 'live_class', // 'live_class' | 'live_stream' | 'live_tuition'
+    mediaMode: 'video_interactive', // 'video_interactive' | 'broadcast_stream' | 'voice_tuition'
+    scheduledDate: '2026-09-22',
+    scheduledTime: '06:30 PM - 07:30 PM',
+    durationMinutes: 60,
+    targetGroup: 'All Section Students',
+    agenda: 'Unit 4 Problem solving on Lenz law, Induced EMF, and MBSE previous year questions.',
+    status: 'approved', // 'pending' | 'approved' | 'rejected' | 'completed'
+    approvedBy: 'Rev. Dr. L. H. Rohmingliana (Principal)',
+    approvedAt: '2026-09-21 11:30 AM',
+    approvalRemarks: 'Sanctioned for MBSE board preparatory revision. Ensure recording is enabled.',
+    requestedAt: '2026-09-21 09:15 AM'
+  },
+  {
+    id: 'ls-002',
+    title: 'Remedial Voice & Video Tuition - Quadratic & Trigonometric Equations',
+    classId: 'cls-10',
+    className: 'Class 10 A',
+    subject: 'Mathematics',
+    teacherId: 'stf-005',
+    teacherName: 'V. Laltanpuia',
+    sessionType: 'live_tuition',
+    mediaMode: 'voice_tuition',
+    scheduledDate: '2026-09-22',
+    scheduledTime: '07:45 PM - 08:45 PM',
+    durationMinutes: 60,
+    targetGroup: 'Remedial / Doubt Clearing Group',
+    agenda: 'Special evening doubt clearance and formula retention for students scoring below 50 in Mid-term.',
+    status: 'pending',
+    approvedBy: null,
+    approvedAt: null,
+    approvalRemarks: null,
+    requestedAt: '2026-09-21 02:40 PM'
+  },
+  {
+    id: 'ls-003',
+    title: 'Mizoram State Science Fair Demonstration & Model Presentation',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    subject: 'Science Seminar',
+    teacherId: 'stf-002',
+    teacherName: 'Prof. J. Lalramenga',
+    sessionType: 'live_stream',
+    mediaMode: 'broadcast_stream',
+    scheduledDate: '2026-09-23',
+    scheduledTime: '10:00 AM - 11:00 AM',
+    durationMinutes: 60,
+    targetGroup: 'School-wide Broadcast',
+    agenda: 'Live laboratory demonstration of organic titration and water purification model.',
+    status: 'pending',
+    approvedBy: null,
+    approvedAt: null,
+    approvalRemarks: null,
+    requestedAt: '2026-09-21 03:10 PM'
   }
 ];
 
@@ -2960,7 +3288,13 @@ export const INITIAL_SYSTEM_CONFIG = {
   enableUpiPayments: true,
   enableSmsNotifications: true,
   enableHostelModule: true,
-  enableTransportModule: true
+  enableTransportModule: true,
+  schoolAiAssistant: {
+    enabled: true,
+    assistantName: 'Zoxs AI',
+    allowedRoles: ['principal', 'vice_principal', 'admin'],
+    language: 'both' // 'en' | 'mizo' | 'both'
+  }
 };
 
 export const INITIAL_ONLINE_ADMISSION_CONFIG = {
@@ -2985,6 +3319,49 @@ export const INITIAL_ONLINE_ADMISSION_CONFIG = {
   contactPhone: '+91 372 2322104 / +91 94361 40552',
   contactEmail: 'admissions@mizoramschool.edu.in'
 };
+
+export const INITIAL_OFFLINE_ADMISSION_CONFIG = {
+  isOpen: true,
+  academicSession: '2026 - 2027',
+  startDate: '2026-03-01',
+  endDate: '2026-07-15',
+  counterLocation: 'Administrative Block, Ground Floor Room 102 (Admissions Desk)',
+  counterHours: '09:30 AM - 02:30 PM (Monday to Friday)',
+  contactPerson: 'Chief Admissions Clerk / Superintendent',
+  closedMessage: 'Offline & Walk-in Admissions are temporarily paused or closed by the Principal & Vice Principal. Please visit during normal office hours or submit online inquiry.',
+  allowSpotRegistration: true,
+  feeCollectionAtCounter: true
+};
+
+export const INITIAL_ACADEMIC_SESSIONS = [
+  {
+    id: 'sess-2025-2026',
+    sessionName: '2025 - 2026',
+    status: 'completed', // 'active' | 'completed' | 'upcoming'
+    startDate: '2025-04-01',
+    endDate: '2026-03-31',
+    totalEnrolled: 18,
+    notes: 'Previous Academic Session successfully concluded with 100% MBSE Board Exam pass rate.'
+  },
+  {
+    id: 'sess-2026-2027',
+    sessionName: '2026 - 2027',
+    status: 'active',
+    startDate: '2026-04-01',
+    endDate: '2027-03-31',
+    totalEnrolled: 22,
+    notes: 'Current active academic session under MBSE syllabus and institutional guidelines.'
+  },
+  {
+    id: 'sess-2027-2028',
+    sessionName: '2027 - 2028',
+    status: 'upcoming',
+    startDate: '2027-04-01',
+    endDate: '2028-03-31',
+    totalEnrolled: 0,
+    notes: 'Next academic session (Enrollment & Class promotions to be scheduled upon session turnover).'
+  }
+];
 
 export const INITIAL_PAYMENT_CONFIG = {
   activeGateway: 'direct_upi', // 'direct_upi' | 'razorpay' | 'cashfree' | 'phonepe'
@@ -4008,26 +4385,150 @@ export const INITIAL_PTM_EVENTS = [
     teachersAvailable: [
       {
         teacherId: 'stf-001',
-        teacherName: 'Pu Lalthlamuana Sailo',
-        subject: 'Physics & Senior Science',
-        room: 'Room 201 (Science Block)',
+        teacherName: 'Rev. Dr. L. H. Rohmingliana',
+        subject: 'Principal & Chief Executive Counselor',
+        room: 'Principal Chamber (Main Admin Block)',
+        department: 'Leadership',
         slots: [
-          { id: 's-1', time: '09:00 AM - 09:15 AM', status: 'booked', parentName: 'Lalthanzuala Sailo', studentName: 'Lalmuanpuia Sailo', rollNo: '01' },
-          { id: 's-2', time: '09:20 AM - 09:35 AM', status: 'booked', parentName: 'Pi Lalmuanpuii', studentName: 'Vanlalhruaii Ralte', rollNo: '02' },
+          { id: 's-p1', time: '09:00 AM - 09:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-p2', time: '09:20 AM - 09:35 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-p3', time: '09:40 AM - 09:55 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-p4', time: '10:00 AM - 10:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null }
+        ]
+      },
+      {
+        teacherId: 'stf-006',
+        teacherName: 'Dr. C. Lalremruata',
+        subject: 'Vice Principal & PGT Chemistry',
+        room: 'Room 102 (Science Block)',
+        department: 'Science',
+        slots: [
+          { id: 's-vp1', time: '09:00 AM - 09:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-vp2', time: '09:20 AM - 09:35 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-vp3', time: '09:40 AM - 09:55 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-vp4', time: '10:00 AM - 10:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null }
+        ]
+      },
+      {
+        teacherId: 'stf-002',
+        teacherName: 'Pu Lalthlamuana Sailo',
+        subject: 'Physics & Senior Science (Class 12 Sci Master)',
+        room: 'Room 201 (Science Block)',
+        department: 'Science',
+        slots: [
+          { id: 's-1', time: '09:00 AM - 09:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-2', time: '09:20 AM - 09:35 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
           { id: 's-3', time: '09:40 AM - 09:55 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
           { id: 's-4', time: '10:00 AM - 10:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
           { id: 's-5', time: '10:20 AM - 10:35 AM', status: 'available', parentName: null, studentName: null, rollNo: null }
         ]
       },
       {
-        teacherId: 'stf-002',
+        teacherId: 'stf-003',
         teacherName: 'Pi Ruth Lalrinsangi',
-        subject: 'English Literature & Grammar',
+        subject: 'English Literature & Grammar (Class 12 Arts Master)',
         room: 'Room 202 (Arts Block)',
+        department: 'Languages',
         slots: [
-          { id: 's-6', time: '09:00 AM - 09:15 AM', status: 'booked', parentName: 'Pu C. Vanlalruata', studentName: 'C. Lalrinsanga', rollNo: '03' },
+          { id: 's-6', time: '09:00 AM - 09:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
           { id: 's-7', time: '09:20 AM - 09:35 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
-          { id: 's-8', time: '09:40 AM - 09:55 AM', status: 'available', parentName: null, studentName: null, rollNo: null }
+          { id: 's-8', time: '09:40 AM - 09:55 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-9', time: '10:00 AM - 10:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null }
+        ]
+      },
+      {
+        teacherId: 'stf-011',
+        teacherName: 'Pu Samuel Lalhminghlua',
+        subject: 'Mathematics & Computer Science',
+        room: 'Room 204 (IT & Math Lab)',
+        department: 'Mathematics',
+        slots: [
+          { id: 's-m1', time: '09:00 AM - 09:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-m2', time: '09:20 AM - 09:35 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-m3', time: '09:40 AM - 09:55 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-m4', time: '10:00 AM - 10:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null }
+        ]
+      },
+      {
+        teacherId: 'stf-012',
+        teacherName: 'Pi C. Vanlalbiaki',
+        subject: 'Biology & Environmental Science',
+        room: 'Room 203 (Biology Lab)',
+        department: 'Science',
+        slots: [
+          { id: 's-b1', time: '09:00 AM - 09:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-b2', time: '09:20 AM - 09:35 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-b3', time: '09:40 AM - 09:55 AM', status: 'available', parentName: null, studentName: null, rollNo: null }
+        ]
+      },
+      {
+        teacherId: 'stf-013',
+        teacherName: 'Pi Lalremsangi',
+        subject: 'Mizo MIL & Vernacular Studies',
+        room: 'Room 105 (Humanities Block)',
+        department: 'Languages',
+        slots: [
+          { id: 's-mz1', time: '09:00 AM - 09:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-mz2', time: '09:20 AM - 09:35 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-mz3', time: '09:40 AM - 09:55 AM', status: 'available', parentName: null, studentName: null, rollNo: null }
+        ]
+      },
+      {
+        teacherId: 'stf-014',
+        teacherName: 'Pu H. Lalthanzuala',
+        subject: 'History, Civics & Social Sciences',
+        room: 'Room 106 (Social Science Block)',
+        department: 'Humanities',
+        slots: [
+          { id: 's-h1', time: '09:00 AM - 09:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-h2', time: '09:20 AM - 09:35 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-h3', time: '09:40 AM - 09:55 AM', status: 'available', parentName: null, studentName: null, rollNo: null }
+        ]
+      },
+      {
+        teacherId: 'stf-007',
+        teacherName: 'Pu K. Vanlalhruaia',
+        subject: 'Chief Hostel Warden & Physical Education',
+        room: 'Hostel Office (Boys & Girls Quad)',
+        department: 'Hostel & Sports',
+        slots: [
+          { id: 's-w1', time: '09:00 AM - 09:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-w2', time: '09:20 AM - 09:35 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-w3', time: '09:40 AM - 09:55 AM', status: 'available', parentName: null, studentName: null, rollNo: null }
+        ]
+      },
+      {
+        teacherId: 'stf-004',
+        teacherName: 'Pu R. Laltluanga',
+        subject: 'Commercial Studies, Economics & Accounts',
+        room: 'Room 104 (Commerce Block)',
+        department: 'Commerce',
+        slots: [
+          { id: 's-c1', time: '09:00 AM - 09:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-c2', time: '09:20 AM - 09:35 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-c3', time: '09:40 AM - 09:55 AM', status: 'available', parentName: null, studentName: null, rollNo: null }
+        ]
+      },
+      {
+        teacherId: 'stf-008',
+        teacherName: 'Pi Lalrinchhani',
+        subject: 'PRT Nursery & Pre-Primary In-Charge',
+        room: 'Activity Hall (Pre-Primary Block)',
+        department: 'Primary',
+        slots: [
+          { id: 's-pr1', time: '09:00 AM - 09:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-pr2', time: '09:20 AM - 09:35 AM', status: 'available', parentName: null, studentName: null, rollNo: null }
+        ]
+      },
+      {
+        teacherId: 'stf-009',
+        teacherName: 'Pi Zonunmawii Ralte',
+        subject: 'PRT Kindergarten Educator & Counselor',
+        room: 'Room 3 (Junior Block)',
+        department: 'Primary',
+        slots: [
+          { id: 's-pr3', time: '09:00 AM - 09:15 AM', status: 'available', parentName: null, studentName: null, rollNo: null },
+          { id: 's-pr4', time: '09:20 AM - 09:35 AM', status: 'available', parentName: null, studentName: null, rollNo: null }
         ]
       }
     ]
