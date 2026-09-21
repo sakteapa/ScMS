@@ -2966,7 +2966,10 @@ export const INITIAL_SYSTEM_CONFIG = {
 export const INITIAL_ONLINE_ADMISSION_CONFIG = {
   isOpen: true,
   academicSession: '2026 - 2027',
-  applicationDeadline: '2026-05-31',
+  startDate: '2026-03-01',
+  endDate: '2026-06-30',
+  applicationDeadline: '2026-06-30',
+  autoEnforceDates: true,
   noticeTitle: 'Admissions 2026-2027 Open',
   noticeMessage: 'Official Online Student Admission & Status Verification Portal • MBSE Affiliated',
   closedMessage: 'Online admissions for the current academic session are temporarily closed by the School Administration. Please contact the administrative desk for inquiry.',

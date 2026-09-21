@@ -34,7 +34,8 @@ import {
   ZoomOut,
   RotateCw,
   X,
-  Download
+  Download,
+  Calendar
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useSchool } from '../context/SchoolContext';
@@ -1101,8 +1102,107 @@ export default function AdmissionsView({ setCurrentTab }) {
               </button>
             </div>
 
+            {/* Schedule Status & Overview Banner */}
+            {(() => {
+              const todayStr = new Date().toISOString().split('T')[0];
+              const adminStartDate = onlineAdmissionConfig?.startDate || '2026-03-01';
+              const adminEndDate = onlineAdmissionConfig?.endDate || onlineAdmissionConfig?.applicationDeadline || '2026-06-30';
+              const isAutoEnforce = onlineAdmissionConfig?.autoEnforceDates !== false;
+              
+              let statusType = 'open';
+              let statusLabel = 'ACTIVE & OPEN';
+              let statusDesc = `Portal is currently open for applications until ${adminEndDate}.`;
+              let statusBadgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+
+              if (onlineAdmissionConfig?.isOpen === false) {
+                statusType = 'paused';
+                statusLabel = 'MANUALLY PAUSED';
+                statusDesc = 'Portal is turned off by Admin. Applicants will see a closed notice.';
+                statusBadgeClass = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+              } else if (!isAutoEnforce) {
+                statusType = 'manual_open';
+                statusLabel = 'ALWAYS OPEN (Manual Mode)';
+                statusDesc = 'Date window schedule is ignored; registration is kept perpetually active.';
+                statusBadgeClass = 'bg-blue-500/20 text-blue-300 border-blue-500/40';
+              } else if (adminStartDate && todayStr < adminStartDate) {
+                statusType = 'upcoming';
+                statusLabel = 'UPCOMING (A LA HAWNG LO)';
+                statusDesc = `Admission registration will automatically open on ${adminStartDate}.`;
+                statusBadgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+              } else if (adminEndDate && todayStr > adminEndDate) {
+                statusType = 'expired';
+                statusLabel = 'EXPIRED (KHAR TAWH)';
+                statusDesc = `Admission schedule ended on ${adminEndDate}. Portal now displays admissions closed.`;
+                statusBadgeClass = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+              }
+
+              return (
+                <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shrink-0">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-200">Current Schedule Status:</span>
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${statusBadgeClass}`}>
+                          {statusLabel}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-0.5">{statusDesc}</p>
+                    </div>
+                  </div>
+
+                  {/* Auto-Enforce Switch */}
+                  <label className="flex items-center gap-2.5 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 cursor-pointer select-none hover:border-slate-700 transition shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={isAutoEnforce}
+                      onChange={(e) => updateOnlineAdmissionConfig({ autoEnforceDates: e.target.checked })}
+                      className="w-4 h-4 rounded text-cyan-500 focus:ring-0 focus:outline-none accent-cyan-500 cursor-pointer"
+                    />
+                    <div className="text-left">
+                      <span className="block text-xs font-bold text-slate-200">Auto-Enforce Dates</span>
+                      <span className="block text-[10px] text-slate-400">Auto open/close by calendar dates</span>
+                    </div>
+                  </label>
+                </div>
+              );
+            })()}
+
             {/* Config Fields Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Hawn Tan Ni (Start Date)</span>
+                </label>
+                <input
+                  type="date"
+                  value={onlineAdmissionConfig?.startDate || '2026-03-01'}
+                  onChange={(e) => updateOnlineAdmissionConfig({ startDate: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-400"
+                />
+                <span className="text-[10px] text-slate-500 mt-1 block">He ni hma chuan portal hi a inhawng lovang</span>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Khar Ni / Deadline (End Date)</span>
+                </label>
+                <input
+                  type="date"
+                  value={onlineAdmissionConfig?.endDate || onlineAdmissionConfig?.applicationDeadline || '2026-06-30'}
+                  onChange={(e) => updateOnlineAdmissionConfig({ 
+                    endDate: e.target.value,
+                    applicationDeadline: e.target.value 
+                  })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-400"
+                />
+                <span className="text-[10px] text-slate-500 mt-1 block">He ni hnu lamah chuan automatic-in a inkhâr ang</span>
+              </div>
+
               <div>
                 <label className="block text-slate-400 font-semibold mb-1">Academic Session / Year</label>
                 <input
@@ -1112,16 +1212,7 @@ export default function AdmissionsView({ setCurrentTab }) {
                   placeholder="e.g. 2026 - 2027"
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:outline-none focus:border-cyan-400"
                 />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 font-semibold mb-1">Application Deadline</label>
-                <input
-                  type="date"
-                  value={onlineAdmissionConfig?.applicationDeadline || '2026-05-31'}
-                  onChange={(e) => updateOnlineAdmissionConfig({ applicationDeadline: e.target.value })}
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-400"
-                />
+                <span className="text-[10px] text-slate-500 mt-1 block">Session tarlan tur</span>
               </div>
 
               <div>
@@ -1133,9 +1224,10 @@ export default function AdmissionsView({ setCurrentTab }) {
                   placeholder="+91 xxx xxx xxxx"
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:outline-none focus:border-cyan-400"
                 />
+                <span className="text-[10px] text-slate-500 mt-1 block">Zirlai nu/pa biak pawh theihna</span>
               </div>
 
-              <div className="sm:col-span-3">
+              <div className="sm:col-span-2 lg:col-span-4">
                 <label className="block text-slate-400 font-semibold mb-1">Public Portal Announcement / Banner Notice</label>
                 <input
                   type="text"

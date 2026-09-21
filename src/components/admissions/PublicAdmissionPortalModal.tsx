@@ -105,7 +105,21 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
 }) => {
   const [activeTab, setActiveTab] = useState<'register' | 'track'>('register');
 
-  const isAdmissionOpen = admissionConfig ? admissionConfig.isOpen !== false : true;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const startDate = admissionConfig?.startDate;
+  const endDate = admissionConfig?.endDate || admissionConfig?.applicationDeadline;
+  const autoEnforce = admissionConfig?.autoEnforceDates !== false;
+
+  let scheduleStatus: 'open' | 'upcoming' | 'closed' = 'open';
+  if (admissionConfig && admissionConfig.isOpen === false) {
+    scheduleStatus = 'closed';
+  } else if (autoEnforce && startDate && todayStr < startDate) {
+    scheduleStatus = 'upcoming';
+  } else if (autoEnforce && endDate && todayStr > endDate) {
+    scheduleStatus = 'closed';
+  }
+
+  const isAdmissionOpen = scheduleStatus === 'open';
   const activeAcademicYear = admissionConfig?.academicSession || '2026-2027';
 
   // Dynamic open classes configured by admin
@@ -326,11 +340,17 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
                   Mizoram School System (zoxs-sms)
                 </h2>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono border ${
-                  isAdmissionOpen
+                  scheduleStatus === 'open'
                     ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                    : scheduleStatus === 'upcoming'
+                    ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
                     : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
                 }`}>
-                  {isAdmissionOpen ? `Admissions ${activeAcademicYear} Open` : 'Admissions Closed'}
+                  {scheduleStatus === 'open'
+                    ? `Admissions Open • Deadline: ${endDate || 'Open'}`
+                    : scheduleStatus === 'upcoming'
+                    ? `Opens on ${startDate}`
+                    : 'Admissions Closed'}
                 </span>
               </div>
               <p className="text-xs text-gray-400">
@@ -382,15 +402,36 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
             <div>
               {!isAdmissionOpen ? (
                 <div className="p-8 text-center space-y-4 max-w-lg mx-auto my-6 bg-gray-800/60 border border-gray-700/80 rounded-2xl">
-                  <div className="w-16 h-16 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
-                    <Clock className="w-8 h-8" />
+                  <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto ${
+                    scheduleStatus === 'upcoming'
+                      ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-400'
+                      : 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                  }`}>
+                    <Calendar className="w-8 h-8" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-base font-bold text-white">Online Admissions Currently Closed</h3>
+                    <h3 className="text-base font-bold text-white">
+                      {scheduleStatus === 'upcoming' ? 'Online Admissions Opening Soon' : 'Online Admissions Currently Closed'}
+                    </h3>
                     <p className="text-xs text-gray-300 leading-relaxed">
-                      {admissionConfig?.closedMessage || 'Online student admission registration for this session is currently paused or closed by the school administration.'}
+                      {scheduleStatus === 'upcoming'
+                        ? `Online admissions for Session ${activeAcademicYear} will open on ${startDate} (Hawn tan ni: ${startDate}). Registration form will be activated on this date.`
+                        : (admissionConfig?.closedMessage || `Online admissions for Session ${activeAcademicYear} closed on ${endDate || 'the scheduled date'}. (Application thehluh theih hun chhung a liam tawh e).`)}
                     </p>
                   </div>
+                  {startDate && endDate && (
+                    <div className="p-3 rounded-xl bg-gray-900/80 border border-gray-800 text-xs text-gray-300 flex items-center justify-around">
+                      <div>
+                        <span className="text-[10px] text-gray-400 uppercase font-semibold block">Hawn Tan Ni:</span>
+                        <span className="font-mono text-indigo-300 font-bold">{startDate}</span>
+                      </div>
+                      <div className="h-6 w-px bg-gray-700" />
+                      <div>
+                        <span className="text-[10px] text-gray-400 uppercase font-semibold block">Khar Ni / Deadline:</span>
+                        <span className="font-mono text-rose-300 font-bold">{endDate}</span>
+                      </div>
+                    </div>
+                  )}
                   <div className="p-3.5 rounded-xl bg-gray-900/80 border border-gray-800 text-xs text-gray-300 space-y-1 text-left">
                     <span className="text-[10px] text-gray-400 uppercase font-semibold block">Office Admission Helpline:</span>
                     <p className="font-mono text-indigo-300 font-bold">{admissionConfig?.contactPhone || '+91 372 2322104 / +91 94361 40552'}</p>
