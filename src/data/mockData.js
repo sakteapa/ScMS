@@ -4449,7 +4449,8 @@ export const INITIAL_GRADING_SCALES = [
 ];
 
 export const INITIAL_FEE_HEADS = [
-  { id: 'fh-01', name: 'Monthly Tuition Fee', code: 'TUITION', frequency: 'monthly', defaultAmount: 1500, mandatory: true, description: 'Standard instructional teaching and classroom maintenance fee.' },
+  { id: 'fh-00', name: 'Monthly School Fee', code: 'MONTHLY_FEE', frequency: 'monthly', defaultAmount: 1800, mandatory: true, description: 'Compulsory standard monthly institutional school fee for all enrolled students.' },
+  { id: 'fh-01', name: 'Evening Tuition & Coaching (Optional)', code: 'TUITION_OPTIONAL', frequency: 'monthly', defaultAmount: 1200, mandatory: false, description: 'Optional extra coaching & evening tuition fee for participating students only.' },
   { id: 'fh-02', name: 'Annual Admission & Registration', code: 'ADM_REG', frequency: 'annual', defaultAmount: 3500, mandatory: true, description: 'Institutional session enrolment and board record maintenance.' },
   { id: 'fh-03', name: 'MBSE Terminal Examination Fee', code: 'EXAM_TERM', frequency: 'term', defaultAmount: 800, mandatory: true, description: 'Question paper printing, answer script evaluation, and marksheet generation.' },
   { id: 'fh-04', name: 'Science & Computer Lab Fee', code: 'LAB_PRACTICAL', frequency: 'term', defaultAmount: 600, mandatory: false, description: 'Reagents, microscopes, internet bandwidth, and optical equipment upkeep.' },

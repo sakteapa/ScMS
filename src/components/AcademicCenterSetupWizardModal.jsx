@@ -112,7 +112,9 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
     enableCampusAudioBell: true,
 
     // Step 4: Fees & Payment Gateway
-    tuitionFeeMonthly: 1500,
+    monthlySchoolFee: 1800,
+    enableOptionalTuition: false,
+    tuitionFeeMonthly: 1200,
     admissionFee: 3500,
     examFeePerTerm: 800,
     computerLabFee: 600,
@@ -201,7 +203,9 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
       closingTime: '03:30 PM',
       enableCampusAudioBell: true,
 
-      tuitionFeeMonthly: 1500,
+      monthlySchoolFee: 1800,
+      enableOptionalTuition: false,
+      tuitionFeeMonthly: 1200,
       admissionFee: 3500,
       examFeePerTerm: 800,
       computerLabFee: 600,
@@ -931,13 +935,17 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Monthly Tuition</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-emerald-400">Monthly School Fee *</label>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-bold">Mandatory</span>
+                  </div>
                   <input
                     type="number"
-                    value={formData.tuitionFeeMonthly}
-                    onChange={(e) => setFormData({ ...formData, tuitionFeeMonthly: e.target.value })}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"
+                    value={formData.monthlySchoolFee}
+                    onChange={(e) => setFormData({ ...formData, monthlySchoolFee: e.target.value })}
+                    className="w-full bg-slate-900 border border-emerald-500/40 rounded-xl px-3 py-2 text-sm text-white font-bold"
                   />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Zirlai zawng zawng tan</span>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Admission Fee</label>
@@ -947,6 +955,7 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
                     onChange={(e) => setFormData({ ...formData, admissionFee: e.target.value })}
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"
                   />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Session thar atan</span>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Term Exam Fee</label>
@@ -956,6 +965,7 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
                     onChange={(e) => setFormData({ ...formData, examFeePerTerm: e.target.value })}
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"
                   />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Question & Marksheet</span>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1">Computer / Lab Fee</label>
@@ -965,7 +975,51 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
                     onChange={(e) => setFormData({ ...formData, computerLabFee: e.target.value })}
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"
                   />
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">Practical / Science Lab</span>
                 </div>
+              </div>
+
+              {/* OPTIONAL EVENING TUITION / COACHING FEE */}
+              <div className="mt-4 pt-4 border-t border-slate-800/80">
+                <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900/80 border border-indigo-500/30">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-white">Special Evening Tuition &amp; Coaching Fee</span>
+                      <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full font-semibold border border-indigo-500/30">
+                        Optional (Mi zawng zawng an kal lo)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Zirlai mi zawng zawng an kal lo a, a hran liau liau a ni. Extra evening coaching leh tuition kal duhte chauhva belh theih a ni ang.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.enableOptionalTuition}
+                        onChange={(e) => setFormData({ ...formData, enableOptionalTuition: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                  </div>
+                </div>
+
+                {formData.enableOptionalTuition && (
+                  <div className="mt-3 p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300">Monthly Tuition Fee Amount (₹)</label>
+                      <span className="text-[11px] text-slate-400">Tuition kal zirlaite chauh bill tur amount:</span>
+                    </div>
+                    <input
+                      type="number"
+                      value={formData.tuitionFeeMonthly}
+                      onChange={(e) => setFormData({ ...formData, tuitionFeeMonthly: e.target.value })}
+                      className="w-36 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white font-bold text-right"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1435,7 +1489,10 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
                   </button>
                 </div>
                 <div className="space-y-1.5 text-xs">
-                  <div className="flex justify-between"><span className="text-slate-400">Monthly Tuition:</span> <span className="font-bold text-emerald-400">₹{formData.tuitionFeeMonthly}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Monthly School Fee:</span> <span className="font-bold text-emerald-400">₹{formData.monthlySchoolFee} (Mandatory)</span></div>
+                  {formData.enableOptionalTuition && (
+                    <div className="flex justify-between"><span className="text-slate-400">Evening Tuition:</span> <span className="text-indigo-300 font-semibold">₹{formData.tuitionFeeMonthly} (Optional)</span></div>
+                  )}
                   <div className="flex justify-between"><span className="text-slate-400">Sibling Discount:</span> <span className="text-slate-200">2nd ({formData.siblingDiscountPercent}%) • 3rd+ ({formData.thirdSiblingDiscountPercent}%)</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">Active Gateway:</span> <span className="uppercase text-indigo-300 font-semibold">{formData.activePaymentGateway}</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">Official UPI ID:</span> <span className="font-mono text-cyan-300">{formData.upiId}</span></div>
