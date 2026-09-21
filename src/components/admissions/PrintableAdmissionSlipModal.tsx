@@ -190,27 +190,74 @@ export const PrintableAdmissionSlipModal: React.FC<PrintableAdmissionSlipModalPr
             </div>
 
             <div className="p-4 rounded-xl bg-gray-800/40 border border-gray-800 print:bg-transparent print:border-gray-300 space-y-2 text-xs">
-              <h3 className="font-bold text-indigo-400 print:text-black uppercase tracking-wider pb-1 border-b border-gray-700/50 print:border-gray-200">
-                Document Checklist Status
-              </h3>
-              <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className={`w-3.5 h-3.5 ${application.documents.birthCertificate ? 'text-emerald-400' : 'text-gray-600'}`} />
-                  <span>Birth Certificate</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className={`w-3.5 h-3.5 ${application.documents.transferCertificate ? 'text-emerald-400' : 'text-gray-600'}`} />
-                  <span>Transfer Cert. (TC)</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className={`w-3.5 h-3.5 ${application.documents.previousMarksheet ? 'text-emerald-400' : 'text-gray-600'}`} />
-                  <span>Mark Sheet</span>
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className={`w-3.5 h-3.5 ${application.documents.passportPhoto ? 'text-emerald-400' : 'text-gray-600'}`} />
-                  <span>Passport Photo</span>
-                </span>
+              <div className="flex items-center justify-between pb-1 border-b border-gray-700/50 print:border-gray-200">
+                <h3 className="font-bold text-indigo-400 print:text-black uppercase tracking-wider">
+                  Document Verification Status
+                </h3>
+                {Array.isArray(application.documents) && application.documents.length > 0 && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 print:text-black font-semibold font-mono">
+                    {application.documents.length} Files Attached
+                  </span>
+                )}
               </div>
+              {(() => {
+                const hasDoc = (key: string, titleMatch: string) => {
+                  if (Array.isArray(application.documents)) {
+                    return application.documents.some(d => 
+                      (d.slotId && d.slotId.toLowerCase().includes(key)) ||
+                      (d.title && d.title.toLowerCase().includes(titleMatch.toLowerCase()))
+                    );
+                  }
+                  if (application.documentChecklist) {
+                    return Boolean((application.documentChecklist as any)[key]);
+                  }
+                  if (application.documents && typeof application.documents === 'object') {
+                    return Boolean((application.documents as any)[key]);
+                  }
+                  return false;
+                };
+
+                return (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className={`w-3.5 h-3.5 ${hasDoc('birthCertificate', 'birth') ? 'text-emerald-400 print:text-black' : 'text-gray-600 print:text-gray-400'}`} />
+                        <span>Birth Certificate</span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className={`w-3.5 h-3.5 ${hasDoc('transferCertificate', 'transfer') ? 'text-emerald-400 print:text-black' : 'text-gray-600 print:text-gray-400'}`} />
+                        <span>Transfer Cert. (TC)</span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className={`w-3.5 h-3.5 ${hasDoc('previousMarksheet', 'marksheet') ? 'text-emerald-400 print:text-black' : 'text-gray-600 print:text-gray-400'}`} />
+                        <span>Mark Sheet</span>
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className={`w-3.5 h-3.5 ${hasDoc('passportPhoto', 'photo') ? 'text-emerald-400 print:text-black' : 'text-gray-600 print:text-gray-400'}`} />
+                        <span>Passport Photo</span>
+                      </span>
+                    </div>
+
+                    {Array.isArray(application.documents) && application.documents.length > 0 && (
+                      <div className="pt-2 border-t border-gray-700/40 print:border-gray-200">
+                        <span className="text-[10px] text-gray-400 print:text-gray-600 font-semibold block mb-1">
+                          Uploaded Document Files:
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {application.documents.map((d: any, idx: number) => (
+                            <span 
+                              key={idx}
+                              className="text-[10px] px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700 text-gray-200 print:bg-gray-100 print:text-black print:border-gray-300 font-mono"
+                            >
+                              ✓ {d.title} ({d.fileName || d.fileSize || 'Attached'})
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

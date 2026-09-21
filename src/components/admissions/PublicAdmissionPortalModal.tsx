@@ -15,10 +15,13 @@ import {
   Sparkles,
   Award,
   ChevronRight,
+  ShieldCheck,
+  FileCheck,
 } from 'lucide-react';
 import { AdmissionApplication, AdmissionStatus } from '../../types';
 import { addDocument } from '../../lib/firebase';
 import { PrintableAdmissionSlipModal } from './PrintableAdmissionSlipModal';
+import AdmissionDocumentUploader from '../AdmissionDocumentUploader';
 
 interface PublicAdmissionPortalModalProps {
   isOpen: boolean;
@@ -45,6 +48,49 @@ const AIZAWL_LOCALITIES = [
   'Luangmual',
   'Tanhril',
   'Other Locality / District',
+];
+
+export const PUBLIC_ADMISSION_SLOTS = [
+  {
+    id: 'student_photo',
+    title: 'Student Passport Photo',
+    description: 'Recent passport-size photograph with plain background (Upload or Live Camera)',
+    icon: User,
+    color: 'from-cyan-500/20 to-blue-500/20 text-cyan-400 border-cyan-500/30',
+    mandatory: true,
+  },
+  {
+    id: 'birth_cert',
+    title: 'Birth Certificate',
+    description: 'Govt / Municipal issued Birth Certificate or Aadhaar Card (PDF or Image)',
+    icon: FileText,
+    color: 'from-amber-500/20 to-orange-500/20 text-amber-400 border-amber-500/30',
+    mandatory: true,
+  },
+  {
+    id: 'previous_marksheet',
+    title: 'Previous Class Marksheet',
+    description: 'Last passed qualifying examination marksheet or promotion card',
+    icon: Award,
+    color: 'from-purple-500/20 to-indigo-500/20 text-purple-400 border-purple-500/30',
+    mandatory: true,
+  },
+  {
+    id: 'aadhaar_id',
+    title: 'Aadhaar / Parent Photo ID',
+    description: 'Student or Parent/Guardian Aadhaar / Voter ID / Govt ID card',
+    icon: ShieldCheck,
+    color: 'from-emerald-500/20 to-teal-500/20 text-emerald-400 border-emerald-500/30',
+    mandatory: true,
+  },
+  {
+    id: 'transfer_cert',
+    title: 'Transfer Certificate (TC)',
+    description: 'Transfer certificate from previous institution (Optional during online application)',
+    icon: FileText,
+    color: 'from-rose-500/20 to-pink-500/20 text-rose-400 border-rose-500/30',
+    mandatory: false,
+  },
 ];
 
 export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProps> = ({
@@ -77,11 +123,8 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
   const [mediumOfInstruction, setMediumOfInstruction] = useState<'English' | 'Mizo'>('English');
   const [aadhaarNumber, setAadhaarNumber] = useState('');
 
-  // Documents
-  const [hasBirthCert, setHasBirthCert] = useState(true);
-  const [hasTC, setHasTC] = useState(true);
-  const [hasMarksheet, setHasMarksheet] = useState(true);
-  const [hasPhoto, setHasPhoto] = useState(true);
+  // Documents & File Attachments
+  const [uploadedDocs, setUploadedDocs] = useState<any[]>([]);
   const [declarationAgreed, setDeclarationAgreed] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -124,6 +167,19 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
       return;
     }
 
+    // Check mandatory documents
+    const mandatorySlots = PUBLIC_ADMISSION_SLOTS.filter((s) => s.mandatory);
+    const missingDocs = mandatorySlots.filter(
+      (slot) => !uploadedDocs.some((d) => d.slotId === slot.id || d.title === slot.title)
+    );
+
+    if (missingDocs.length > 0) {
+      setErrorMessage(
+        `Mandatory documents upload a ngai: ${missingDocs.map((m) => m.title).join(', ')}. Khawngaihin heng mandatory document-te hi upload/scan hmasa rawh.`
+      );
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       // Auto-generate application number
@@ -159,14 +215,17 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
         previousMarksPercentage: Number(previousMarksPercentage) || 0,
         mediumOfInstruction,
         aadhaarNumber: aadhaarNumber.trim() || undefined,
-        documents: {
-          birthCertificate: hasBirthCert,
-          transferCertificate: hasTC,
-          previousMarksheet: hasMarksheet,
-          passportPhoto: hasPhoto,
+        documents: uploadedDocs,
+        attachedDocuments: uploadedDocs,
+        documentChecklist: {
+          birthCertificate: uploadedDocs.some(d => d.slotId === 'birth_cert' || d.title.toLowerCase().includes('birth')),
+          transferCertificate: uploadedDocs.some(d => d.slotId === 'transfer_cert' || d.title.toLowerCase().includes('transfer')),
+          previousMarksheet: uploadedDocs.some(d => d.slotId === 'previous_marksheet' || d.title.toLowerCase().includes('marksheet')),
+          passportPhoto: uploadedDocs.some(d => d.slotId === 'student_photo' || d.title.toLowerCase().includes('photo')),
+          aadhaarCard: uploadedDocs.some(d => d.slotId === 'aadhaar_id' || d.title.toLowerCase().includes('aadhaar') || d.title.toLowerCase().includes('id')),
         },
         status: 'Pending',
-        reviewerRemarks: 'Application submitted via Online Public Admission Portal. Awaiting initial scrutiny.',
+        reviewerRemarks: `Application submitted via Online Public Admission Portal with ${uploadedDocs.length} documents attached.`,
         appliedDate: todayStr,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -210,6 +269,7 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
     setParentPhone('');
     setParentEmail('');
     setPreviousSchool('');
+    setUploadedDocs([]);
     setDeclarationAgreed(false);
   };
 
@@ -304,6 +364,12 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
                       <span className="text-gray-400">Applied Grade:</span>
                       <span className="font-medium text-gray-200">{submittedApp.targetClass}</span>
                     </div>
+                    <div className="flex justify-between py-1 border-b border-gray-700/60">
+                      <span className="text-gray-400">Attached Documents:</span>
+                      <span className="font-semibold text-emerald-300">
+                        {Array.isArray(submittedApp.documents) ? submittedApp.documents.length : 0} Files Uploaded &amp; Scanned
+                      </span>
+                    </div>
                     <div className="flex justify-between py-1">
                       <span className="text-gray-400">Current Status:</span>
                       <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold text-[11px]">
@@ -357,9 +423,24 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
                           onChange={(e) => setTargetClass(e.target.value)}
                           className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                         >
+                          <option value="Nursery">Nursery / Pre-School</option>
+                          <option value="Kindergarten (KG)">Kindergarten (KG)</option>
+                          <option value="Class 1">Class 1</option>
+                          <option value="Class 2">Class 2</option>
+                          <option value="Class 3">Class 3</option>
+                          <option value="Class 4">Class 4</option>
+                          <option value="Class 5">Class 5</option>
+                          <option value="Class 6">Class 6 (Middle School)</option>
+                          <option value="Class 7">Class 7</option>
+                          <option value="Class 8">Class 8</option>
+                          <option value="Class 9">Class 9 (Secondary)</option>
                           <option value="Class 10">Class 10 (MBSE HSLC Board)</option>
-                          <option value="Class 9">Class 9 (Secondary Foundation)</option>
-                          <option value="Class 8">Class 8 (Middle School Upper)</option>
+                          <option value="Class 11 - Science">Class 11 - Science (MBSE HSSLC)</option>
+                          <option value="Class 11 - Arts">Class 11 - Arts (MBSE HSSLC)</option>
+                          <option value="Class 11 - Commerce">Class 11 - Commerce (MBSE HSSLC)</option>
+                          <option value="Class 12 - Science">Class 12 - Science (MBSE HSSLC)</option>
+                          <option value="Class 12 - Arts">Class 12 - Arts (MBSE HSSLC)</option>
+                          <option value="Class 12 - Commerce">Class 12 - Commerce (MBSE HSSLC)</option>
                         </select>
                       </div>
                       <div>
@@ -623,53 +704,15 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
                     </div>
                   </div>
 
-                  {/* Section 5: Documents Available for Submission */}
-                  <div className="space-y-3 pt-4 border-t border-gray-800">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-2">
-                      <FileText className="w-4 h-4" />
-                      5. Mandatory Documents Checklist
-                    </h3>
-                    <p className="text-[11px] text-gray-400">
-                      Confirm available original documents to be presented during verification/interview:
-                    </p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <label className="flex items-center gap-2 p-2.5 rounded-lg bg-gray-800/60 border border-gray-700/60 text-xs text-gray-200 cursor-pointer hover:bg-gray-800">
-                        <input
-                          type="checkbox"
-                          checked={hasBirthCert}
-                          onChange={(e) => setHasBirthCert(e.target.checked)}
-                          className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 bg-gray-900 border-gray-700"
-                        />
-                        <span>Birth Certificate</span>
-                      </label>
-                      <label className="flex items-center gap-2 p-2.5 rounded-lg bg-gray-800/60 border border-gray-700/60 text-xs text-gray-200 cursor-pointer hover:bg-gray-800">
-                        <input
-                          type="checkbox"
-                          checked={hasTC}
-                          onChange={(e) => setHasTC(e.target.checked)}
-                          className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 bg-gray-900 border-gray-700"
-                        />
-                        <span>Transfer Cert. (TC)</span>
-                      </label>
-                      <label className="flex items-center gap-2 p-2.5 rounded-lg bg-gray-800/60 border border-gray-700/60 text-xs text-gray-200 cursor-pointer hover:bg-gray-800">
-                        <input
-                          type="checkbox"
-                          checked={hasMarksheet}
-                          onChange={(e) => setHasMarksheet(e.target.checked)}
-                          className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 bg-gray-900 border-gray-700"
-                        />
-                        <span>Last Exam Mark Sheet</span>
-                      </label>
-                      <label className="flex items-center gap-2 p-2.5 rounded-lg bg-gray-800/60 border border-gray-700/60 text-xs text-gray-200 cursor-pointer hover:bg-gray-800">
-                        <input
-                          type="checkbox"
-                          checked={hasPhoto}
-                          onChange={(e) => setHasPhoto(e.target.checked)}
-                          className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 bg-gray-900 border-gray-700"
-                        />
-                        <span>Passport Size Photos</span>
-                      </label>
-                    </div>
+                  {/* Section 5: Mandatory Documents Upload & Live Camera Scanner */}
+                  <div className="pt-4 border-t border-gray-800">
+                    <AdmissionDocumentUploader
+                      uploadedDocs={uploadedDocs}
+                      onDocsChange={setUploadedDocs}
+                      slots={PUBLIC_ADMISSION_SLOTS}
+                      title="5. Mandatory Documents & Photo Upload"
+                      subtitle="Attach required official documents (PDF/JPG/PNG) or use your phone/laptop camera to capture passport photos & mark sheets directly."
+                    />
                   </div>
 
                   {/* Declaration */}
@@ -800,6 +843,27 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
                           <span className="text-emerald-400 font-bold block">{matchedApplication.previousMarksPercentage}% score</span>
                         </div>
                       </div>
+
+                      {/* Attached Documents Status in Tracking */}
+                      {Array.isArray(matchedApplication.documents) && matchedApplication.documents.length > 0 && (
+                        <div className="p-3.5 rounded-xl bg-gray-900/60 border border-gray-800 space-y-2">
+                          <span className="text-gray-400 block text-[11px] font-semibold">
+                            Uploaded Mandatory Documents ({matchedApplication.documents.length}):
+                          </span>
+                          <div className="flex flex-wrap gap-2">
+                            {matchedApplication.documents.map((d: any, idx: number) => (
+                              <span 
+                                key={idx}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-800 border border-gray-700 text-xs text-gray-200"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>{d.title}</span>
+                                <span className="text-[10px] text-gray-400 font-mono">({d.fileName || d.fileSize || 'Attached'})</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Interview Notice Callout */}
                       {matchedApplication.status === 'Interview Scheduled' && matchedApplication.interviewDate && (

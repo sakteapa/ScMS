@@ -52,7 +52,10 @@ const DEFAULT_DOC_SLOTS = [
 export default function AdmissionDocumentUploader({ 
   uploadedDocs = [], 
   onDocsChange,
-  customRequirements = [] 
+  customRequirements = [],
+  slots = null,
+  title = "Document Upload & Photo Scanner",
+  subtitle = "Attach official documents or use your camera to scan passport photos & Aadhaar cards."
 }) {
   const [activeCameraSlot, setActiveCameraSlot] = useState(null);
   const [cameraStream, setCameraStream] = useState(null);
@@ -60,8 +63,8 @@ export default function AdmissionDocumentUploader({
   const [previewDoc, setPreviewDoc] = useState(null);
   const videoRef = useRef(null);
 
-  // Combine default slots with dynamic custom requirements from admin
-  const allSlots = [
+  // Combine default slots with dynamic custom requirements from admin or use provided slots
+  const allSlots = slots || [
     ...DEFAULT_DOC_SLOTS,
     ...customRequirements
       .filter(req => !DEFAULT_DOC_SLOTS.some(d => d.title.toLowerCase() === req.title.toLowerCase()))
@@ -164,10 +167,10 @@ export default function AdmissionDocumentUploader({
         <div>
           <h4 className="text-sm font-bold text-white font-['Outfit'] flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-cyan-400" />
-            <span>Document Upload &amp; Photo Scanner</span>
+            <span>{title}</span>
           </h4>
           <p className="text-[11px] text-slate-400">
-            Attach official documents or use your camera to scan passport photos &amp; Aadhaar cards.
+            {subtitle}
           </p>
         </div>
         <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-slate-800 text-cyan-300 border border-slate-700">
@@ -382,12 +385,33 @@ export default function AdmissionDocumentUploader({
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 max-h-96 flex items-center justify-center p-2">
-              <img 
-                src={previewDoc.url} 
-                alt={previewDoc.title} 
-                className="max-h-80 w-auto object-contain rounded-xl"
-              />
+            <div className="rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 max-h-96 flex items-center justify-center p-4">
+              {previewDoc.url && (previewDoc.url.startsWith('data:image') || previewDoc.url.includes('images.unsplash.com') || previewDoc.fileName?.match(/\.(jpg|jpeg|png|webp)$/i)) ? (
+                <img 
+                  src={previewDoc.url} 
+                  alt={previewDoc.title} 
+                  className="max-h-80 w-auto object-contain rounded-xl"
+                />
+              ) : (
+                <div className="text-center py-6 px-4 space-y-3">
+                  <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mx-auto text-cyan-400">
+                    <FileText className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h5 className="text-sm font-bold text-white">{previewDoc.title}</h5>
+                    <p className="text-xs text-slate-400 font-mono mt-0.5">{previewDoc.fileName}</p>
+                  </div>
+                  <a
+                    href={previewDoc.url}
+                    download={previewDoc.fileName || 'document'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-lg shadow-cyan-600/30 transition cursor-pointer"
+                  >
+                    <span>Download / Open Document</span>
+                  </a>
+                </div>
+              )}
             </div>
             <div className="flex justify-between items-center text-[11px] text-slate-400 pt-1">
               <span>{previewDoc.fileName} • {previewDoc.fileSize}</span>

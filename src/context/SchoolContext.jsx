@@ -1214,9 +1214,23 @@ export function SchoolProvider({ children }) {
   const submitOnlineAdmission = (appData) => {
     const newApp = {
       id: appData.id || `adm-${Date.now()}`,
-      applicationNumber: appData.applicationNumber || `ADM-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-      appliedDate: new Date().toISOString().split('T')[0],
-      status: 'pending',
+      applicationNo: appData.applicationNo || appData.applicationNumber || `ADM-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+      applicationNumber: appData.applicationNumber || appData.applicationNo || `ADM-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+      appliedDate: appData.appliedDate || new Date().toISOString().split('T')[0],
+      submittedAt: appData.createdAt || new Date().toISOString(),
+      status: appData.status?.toLowerCase() || 'pending',
+      entryType: 'online',
+      registeredBy: 'Applicant (Online Public Portal)',
+      applicantName: appData.applicantName,
+      appliedClass: appData.targetClass || appData.appliedClass,
+      parentName: appData.parentName,
+      contactPhone: appData.parentPhone || appData.contactPhone || '',
+      email: appData.parentEmail || appData.email || '',
+      address: appData.address || '',
+      previousSchool: appData.previousSchool || '',
+      marksPercentage: appData.previousMarksPercentage ? `${appData.previousMarksPercentage}%` : appData.marksPercentage || '',
+      documents: appData.documents || [],
+      attachedDocs: appData.documents || [],
       ...appData
     };
     setAdmissions(prev => [newApp, ...prev]);

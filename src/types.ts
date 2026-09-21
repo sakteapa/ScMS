@@ -532,13 +532,25 @@ export type AdmissionStatus =
   | 'Approved'
   | 'Rejected';
 
+export interface UploadedAdmissionDoc {
+  id: string;
+  slotId?: string;
+  title: string;
+  fileName: string;
+  fileSize: string;
+  status: string;
+  uploadedAt: string;
+  url: string;
+}
+
 export interface AdmissionDocuments {
-  birthCertificate: boolean;
-  transferCertificate: boolean;
-  previousMarksheet: boolean;
+  birthCertificate?: boolean;
+  transferCertificate?: boolean;
+  previousMarksheet?: boolean;
   characterCertificate?: boolean;
-  passportPhoto: boolean;
+  passportPhoto?: boolean;
   aadhaarCard?: boolean;
+  [key: string]: any;
 }
 
 export interface AdmissionApplication {
@@ -566,7 +578,9 @@ export interface AdmissionApplication {
   previousMarksGrade?: string;
   mediumOfInstruction: 'English' | 'Mizo';
   aadhaarNumber?: string;
-  documents: AdmissionDocuments;
+  documents: AdmissionDocuments | UploadedAdmissionDoc[] | any;
+  attachedDocuments?: UploadedAdmissionDoc[];
+  documentChecklist?: AdmissionDocuments;
   status: AdmissionStatus;
   interviewDate?: string; // YYYY-MM-DD
   interviewTime?: string; // e.g. "10:30 AM"
