@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
+import PublicAnnouncementBanner from '../components/PublicAnnouncementBanner';
 
 export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onOpenEditor, onOpenMobileApp }) {
   const { websiteConfig, notices = [], activeSchoolInfo } = useSchool();
@@ -63,17 +64,24 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-purple-500 selection:text-white">
-      {/* 1. TOP ANNOUNCEMENT BANNER */}
-      <div className="bg-gradient-to-r from-purple-900/90 via-indigo-900/90 to-blue-900/90 border-b border-purple-800/40 py-2 px-4 text-center text-xs font-semibold text-purple-200 flex items-center justify-center gap-2">
-        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-        <span>{hero.badge || 'Admissions Open for Academic Session 2026 - 2027'}</span>
-        <button 
-          onClick={onOpenAdmissions}
-          className="underline hover:text-white ml-2 inline-flex items-center gap-1 font-bold"
-        >
-          Apply Online <ChevronRight className="w-3 h-3" />
-        </button>
-      </div>
+      {/* 1. TOP ANNOUNCEMENT & SCROLLING BANNER */}
+      <PublicAnnouncementBanner
+        config={cfg.announcementBanner || {
+          enabled: true,
+          badgeText: 'ADMISSION 2026',
+          text: '🎉 Online Admissions for Academic Session 2026 - 2027 are officially open! Limited seats available in Science, Arts & Commerce streams. Apply online before June 30.',
+          mediaType: 'preset_gif',
+          presetGif: 'celebration',
+          linkType: 'admission_portal',
+          linkText: 'Apply Online',
+          theme: 'gradient_fire',
+          scrollSpeed: 'normal',
+          pauseOnHover: true,
+          clickableBanner: false,
+          showDismiss: true
+        }}
+        onOpenAdmissions={onOpenAdmissions}
+      />
 
       {/* 2. PUBLIC HEADER & NAVBAR */}
       <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80">

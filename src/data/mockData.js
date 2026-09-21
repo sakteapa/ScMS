@@ -4282,6 +4282,23 @@ export const INITIAL_WEBSITE_CONFIG = {
   establishedYear: '1998',
   affiliationBadge: 'MBSE Affiliated Higher Secondary Institution',
   logoUrl: '/favicon.svg',
+  announcementBanner: {
+    enabled: true,
+    badgeText: 'ADMISSION 2026',
+    text: '🎉 Online Admissions for Academic Session 2026 - 2027 are officially open! Limited seats available for Nursery to Class 12. Apply online before June 30.',
+    mediaType: 'preset_gif',
+    presetGif: 'celebration',
+    customMediaUrl: '',
+    mediaEmoji: '📢',
+    linkType: 'admission_portal',
+    linkUrl: '',
+    linkText: 'Apply Online',
+    theme: 'gradient_fire',
+    scrollSpeed: 'normal',
+    pauseOnHover: true,
+    clickableBanner: false,
+    showDismiss: true
+  },
   hero: {
     badge: '🎓 Admissions Open for Academic Session 2026 - 2027',
     headline: 'Nurturing Leaders of Tomorrow in Lunglawn, Lunglei',
