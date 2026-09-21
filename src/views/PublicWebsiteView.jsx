@@ -99,15 +99,17 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
 
           {/* Actions: Mobile App, Portal Login & CMS Button */}
           <div className="flex items-center gap-2.5">
-            {/* CMS Edit Button (If Admin/Principal or accessible) */}
-            <button
-              onClick={onOpenEditor}
-              className="px-3 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center gap-1.5 transition"
-              title="Open Website CMS Live Editor (Admin & Super Admin)"
-            >
-              <Edit3 className="w-3.5 h-3.5 text-purple-400" />
-              <span className="hidden sm:inline">CMS Editor</span>
-            </button>
+            {/* CMS Edit Button (Visible only to Logged In Admin / Principal / Super Admin) */}
+            {(currentUser?.role === 'superadmin' || currentUser?.role === 'principal' || currentUser?.role === 'admin') && (
+              <button
+                onClick={onOpenEditor}
+                className="px-3 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center gap-1.5 transition"
+                title="Open Website CMS Live Editor (Admin & Super Admin only)"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-purple-400" />
+                <span className="hidden sm:inline">CMS Editor</span>
+              </button>
+            )}
 
             {/* Mobile App Download Button */}
             <button

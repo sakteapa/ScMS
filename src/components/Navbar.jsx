@@ -14,7 +14,8 @@ import {
   Building2,
   Award,
   Smartphone,
-  Globe
+  Globe,
+  School
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
@@ -32,7 +33,20 @@ export default function Navbar({
   onViewWebsite
 }) {
   const { currentUser } = useAuth();
-  const { isOfflinePersistenceActive, lastSyncTime, notices = [], tasks = [], language, toggleLanguage, t } = useSchool();
+  const { 
+    isOfflinePersistenceActive, 
+    lastSyncTime, 
+    notices = [], 
+    tasks = [], 
+    language, 
+    toggleLanguage, 
+    t,
+    activeSchoolId,
+    activeSchoolInfo,
+    registeredSchools = [],
+    switchSchool
+  } = useSchool();
+  const [isSchoolMenuOpen, setIsSchoolMenuOpen] = useState(false);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstallable, setIsInstallable] = useState(false);
@@ -199,7 +213,56 @@ export default function Navbar({
           </span>
         </div>
 
-        {/* CSV Export Button */}
+        {/* Multi-Tenant School Selector Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setIsSchoolMenuOpen(!isSchoolMenuOpen)}
+            className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-gradient-to-r from-slate-900 to-indigo-950/60 border border-indigo-500/40 hover:border-indigo-400 text-white transition flex items-center gap-2 text-xs font-bold shadow-md shadow-indigo-950/30"
+            title="Switch Active School Tenant (Subdomain)"
+          >
+            <School className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="hidden md:inline max-w-[150px] truncate text-slate-200">
+              {activeSchoolInfo?.shortName || activeSchoolInfo?.name || 'School'}
+            </span>
+            <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+          </button>
+
+          {isSchoolMenuOpen && (
+            <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
+              <div className="px-3 py-2 border-b border-slate-800/80 mb-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active School Tenant</span>
+                <span className="text-xs text-indigo-300 font-semibold">{activeSchoolInfo?.name}</span>
+              </div>
+              <div className="space-y-1">
+                {registeredSchools.map((sch) => (
+                  <button
+                    key={sch.id}
+                    onClick={() => {
+                      setIsSchoolMenuOpen(false);
+                      switchSchool(sch.id);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition ${
+                      activeSchoolId === sch.id
+                        ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30'
+                        : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                    }`}
+                  >
+                    <div>
+                      <p className="font-semibold">{sch.shortName || sch.name}</p>
+                      <p className={`text-[10px] ${activeSchoolId === sch.id ? 'text-indigo-200' : 'text-slate-400'}`}>
+                        {sch.subdomain}.zoxs.in
+                      </p>
+                    </div>
+                    {activeSchoolId === sch.id && (
+                      <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">Active</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Global Language Localization Switcher Toggle */}
         <button
           onClick={toggleLanguage}

@@ -60,20 +60,50 @@ import {
 } from '../data/mockData';
 import { TRANSLATIONS } from '../data/translations';
 import { db, collection, getDocs, setDoc, addDoc, doc, query, orderBy, onSnapshot, isOfflinePersistenceActive } from '../services/firebase';
+import {
+  getActiveSchoolId,
+  getActiveSchoolInfo,
+  getRegisteredSchools,
+  registerNewSchool,
+  switchActiveSchool,
+  updateDynamicPwaBranding
+} from '../services/tenantService';
 
 const SchoolContext = createContext(null);
 
 export function SchoolProvider({ children }) {
-  // Persistence key helpers
+  // Multi-Tenant School Identification & Registry
+  const [activeSchoolId, setActiveSchoolId] = useState(() => getActiveSchoolId());
+  const [activeSchoolInfo, setActiveSchoolInfo] = useState(() => getActiveSchoolInfo());
+  const [registeredSchools, setRegisteredSchools] = useState(() => getRegisteredSchools());
+
+  // Dynamic PWA and document title updating based on active school
+  useEffect(() => {
+    updateDynamicPwaBranding(activeSchoolInfo);
+  }, [activeSchoolInfo]);
+
+  // Persistence key helpers with multi-tenant partitioning
   const loadInitial = (key, fallback) => {
     try {
-      const saved = localStorage.getItem(`zoxs_${key}`);
+      // 1. Try school-partitioned key: zoxs_<schoolId>_<key>
+      const tenantKey = `zoxs_${activeSchoolId}_${key}`;
+      let saved = localStorage.getItem(tenantKey);
+
+      // 2. Backward compatibility migration for default master school ('oha')
+      if (!saved && (activeSchoolId === 'oha' || activeSchoolId === 'default')) {
+        const legacy = localStorage.getItem(`zoxs_${key}`);
+        if (legacy) {
+          saved = legacy;
+          localStorage.setItem(tenantKey, legacy);
+        }
+      }
+
       if (saved) {
         const parsed = JSON.parse(saved);
         // Seamlessly migrate legacy generic school mock data to OHA Lunglawn, Lunglei
         if (key === 'system_config' && (parsed?.schoolName?.includes('Mizoram Higher Secondary') || parsed?.schoolName?.includes('Aizawl Model'))) {
           const updated = { ...parsed, schoolName: fallback.schoolName, address: fallback.address, contactPhone: fallback.contactPhone, contactEmail: fallback.contactEmail, motto: fallback.motto };
-          localStorage.setItem('zoxs_system_config', JSON.stringify(updated));
+          localStorage.setItem(`zoxs_${activeSchoolId}_system_config`, JSON.stringify(updated));
           return updated;
         }
         if (key === 'website_config' && (parsed?.schoolName?.includes('Mizoram Higher Secondary') || parsed?.schoolName?.includes('Aizawl Model'))) {
@@ -86,12 +116,12 @@ export function SchoolProvider({ children }) {
             hero: { ...parsed.hero, headline: fallback.hero.headline, subheadline: fallback.hero.subheadline }, 
             principalMessage: fallback.principalMessage 
           };
-          localStorage.setItem('zoxs_website_config', JSON.stringify(updated));
+          localStorage.setItem(`zoxs_${activeSchoolId}_website_config`, JSON.stringify(updated));
           return updated;
         }
         if (key === 'seal_config' && (parsed?.schoolCrestText?.includes('MIZORAM HIGHER SECONDARY') || !parsed?.schoolCrestText?.includes('LUNGLAWN'))) {
           const updated = { ...parsed, schoolCrestText: fallback.schoolCrestText, principalSignatoryName: fallback.principalSignatoryName, mottoText: fallback.mottoText };
-          localStorage.setItem('zoxs_seal_config', JSON.stringify(updated));
+          localStorage.setItem(`zoxs_${activeSchoolId}_seal_config`, JSON.stringify(updated));
           return updated;
         }
         if (Array.isArray(parsed) && Array.isArray(fallback)) {
@@ -507,64 +537,75 @@ export function SchoolProvider({ children }) {
     }
   };
 
-  // Auto save to local storage (offline cache mirror)
+  // Auto save to local storage (offline cache mirror with multi-tenant partitioning)
   useEffect(() => {
-    localStorage.setItem('zoxs_classes', JSON.stringify(classes));
-    localStorage.setItem('zoxs_students', JSON.stringify(students));
-    localStorage.setItem('zoxs_grades', JSON.stringify(grades));
-    localStorage.setItem('zoxs_fees', JSON.stringify(fees));
-    localStorage.setItem('zoxs_attendance', JSON.stringify(attendance));
-    localStorage.setItem('zoxs_staff', JSON.stringify(staff));
-    localStorage.setItem('zoxs_payroll', JSON.stringify(payroll));
-    localStorage.setItem('zoxs_library_books', JSON.stringify(libraryBooks));
-    localStorage.setItem('zoxs_notices', JSON.stringify(notices));
-    localStorage.setItem('zoxs_admissions', JSON.stringify(admissions));
-    localStorage.setItem('zoxs_admission_requirements', JSON.stringify(admissionRequirements));
-    localStorage.setItem('zoxs_issued_certificates', JSON.stringify(issuedCertificates));
-    localStorage.setItem('zoxs_report_card_withholds', JSON.stringify(reportCardWithholds));
-    localStorage.setItem('zoxs_transport_routes', JSON.stringify(transportRoutes));
-    localStorage.setItem('zoxs_hostel_rooms', JSON.stringify(hostelRooms));
-    localStorage.setItem('zoxs_timetables', JSON.stringify(timetables));
-    localStorage.setItem('zoxs_hostel_gate_passes', JSON.stringify(hostelGatePasses));
-    localStorage.setItem('zoxs_hostel_roll_calls', JSON.stringify(hostelRollCalls));
-    localStorage.setItem('zoxs_hostel_mess_menu', JSON.stringify(hostelMessMenu));
-    localStorage.setItem('zoxs_hostel_rules', JSON.stringify(hostelRules));
-    localStorage.setItem('zoxs_academic_events', JSON.stringify(academicEvents));
-    localStorage.setItem('zoxs_custom_scripts', JSON.stringify(customScripts));
-    localStorage.setItem('zoxs_system_plugins', JSON.stringify(plugins));
-    localStorage.setItem('zoxs_system_config', JSON.stringify(systemConfig));
-    localStorage.setItem('zoxs_payment_config', JSON.stringify(paymentConfig));
-    localStorage.setItem('zoxs_leave_applications', JSON.stringify(leaveApplications));
-    localStorage.setItem('zoxs_pay_scales', JSON.stringify(payScales));
-    localStorage.setItem('zoxs_tasks', JSON.stringify(tasks));
-    localStorage.setItem('zoxs_vacations', JSON.stringify(vacations));
-    localStorage.setItem('zoxs_clinic_records', JSON.stringify(clinicRecords));
-    localStorage.setItem('zoxs_clinic_config', JSON.stringify(clinicConfig));
-    localStorage.setItem('zoxs_visitors', JSON.stringify(visitors));
-    localStorage.setItem('zoxs_visitor_config', JSON.stringify(visitorConfig));
-    localStorage.setItem('zoxs_inventory_assets', JSON.stringify(inventoryAssets));
-    localStorage.setItem('zoxs_maintenance_tickets', JSON.stringify(maintenanceTickets));
-    localStorage.setItem('zoxs_inventory_config', JSON.stringify(inventoryConfig));
-    localStorage.setItem('zoxs_ptm_events', JSON.stringify(ptmEvents));
-    localStorage.setItem('zoxs_ptm_config', JSON.stringify(ptmConfig));
-    localStorage.setItem('zoxs_alumni', JSON.stringify(alumni));
-    localStorage.setItem('zoxs_transcript_requests', JSON.stringify(transcriptRequests));
-    localStorage.setItem('zoxs_alumni_config', JSON.stringify(alumniConfig));
-    localStorage.setItem('zoxs_canteen_menu', JSON.stringify(canteenMenu));
-    localStorage.setItem('zoxs_canteen_wallets', JSON.stringify(canteenWallets));
-    localStorage.setItem('zoxs_canteen_transactions', JSON.stringify(canteenTransactions));
-    localStorage.setItem('zoxs_canteen_config', JSON.stringify(canteenConfig));
-    localStorage.setItem('zoxs_study_materials', JSON.stringify(studyMaterials));
-    localStorage.setItem('zoxs_study_config', JSON.stringify(studyConfig));
-    localStorage.setItem('zoxs_seal_config', JSON.stringify(sealConfig));
-    localStorage.setItem('zoxs_subjects', JSON.stringify(subjects));
-    localStorage.setItem('zoxs_grading_scales', JSON.stringify(gradingScales));
-    localStorage.setItem('zoxs_fee_heads', JSON.stringify(feeHeads));
-    localStorage.setItem('zoxs_document_templates', JSON.stringify(documentTemplates));
-    localStorage.setItem('zoxs_system_nomenclature', JSON.stringify(systemNomenclature));
-    localStorage.setItem('zoxs_custom_student_fields', JSON.stringify(customStudentFields));
+    const saveTenantItem = (key, data) => {
+      try {
+        const val = JSON.stringify(data);
+        localStorage.setItem(`zoxs_${activeSchoolId}_${key}`, val);
+        // If master default school 'oha', mirror to legacy key for compatibility
+        if (activeSchoolId === 'oha' || activeSchoolId === 'default') {
+          localStorage.setItem(`zoxs_${key}`, val);
+        }
+      } catch (e) {}
+    };
+
+    saveTenantItem('classes', classes);
+    saveTenantItem('students', students);
+    saveTenantItem('grades', grades);
+    saveTenantItem('fees', fees);
+    saveTenantItem('attendance', attendance);
+    saveTenantItem('staff', staff);
+    saveTenantItem('payroll', payroll);
+    saveTenantItem('library_books', libraryBooks);
+    saveTenantItem('notices', notices);
+    saveTenantItem('admissions', admissions);
+    saveTenantItem('admission_requirements', admissionRequirements);
+    saveTenantItem('issued_certificates', issuedCertificates);
+    saveTenantItem('report_card_withholds', reportCardWithholds);
+    saveTenantItem('transport_routes', transportRoutes);
+    saveTenantItem('hostel_rooms', hostelRooms);
+    saveTenantItem('hostel_gate_passes', hostelGatePasses);
+    saveTenantItem('hostel_roll_calls', hostelRollCalls);
+    saveTenantItem('hostel_mess_menu', hostelMessMenu);
+    saveTenantItem('hostel_rules', hostelRules);
+    saveTenantItem('academic_events', academicEvents);
+    saveTenantItem('timetables', timetables);
+    saveTenantItem('custom_scripts', customScripts);
+    saveTenantItem('plugins', plugins);
+    saveTenantItem('system_config', systemConfig);
+    saveTenantItem('payment_config', paymentConfig);
+    saveTenantItem('leave_applications', leaveApplications);
+    saveTenantItem('pay_scales', payScales);
+    saveTenantItem('tasks', tasks);
+    saveTenantItem('vacations', vacations);
+    saveTenantItem('clinic_records', clinicRecords);
+    saveTenantItem('clinic_config', clinicConfig);
+    saveTenantItem('visitors', visitors);
+    saveTenantItem('visitor_config', visitorConfig);
+    saveTenantItem('inventory_assets', inventoryAssets);
+    saveTenantItem('maintenance_tickets', maintenanceTickets);
+    saveTenantItem('inventory_config', inventoryConfig);
+    saveTenantItem('ptm_events', ptmEvents);
+    saveTenantItem('ptm_config', ptmConfig);
+    saveTenantItem('alumni', alumni);
+    saveTenantItem('transcript_requests', transcriptRequests);
+    saveTenantItem('alumni_config', alumniConfig);
+    saveTenantItem('canteen_menu', canteenMenu);
+    saveTenantItem('canteen_wallets', canteenWallets);
+    saveTenantItem('canteen_transactions', canteenTransactions);
+    saveTenantItem('canteen_config', canteenConfig);
+    saveTenantItem('study_materials', studyMaterials);
+    saveTenantItem('study_config', studyConfig);
+    saveTenantItem('seal_config', sealConfig);
+    saveTenantItem('subjects', subjects);
+    saveTenantItem('grading_scales', gradingScales);
+    saveTenantItem('fee_heads', feeHeads);
+    saveTenantItem('document_templates', documentTemplates);
+    saveTenantItem('system_nomenclature', systemNomenclature);
+    saveTenantItem('custom_student_fields', customStudentFields);
     setLastSyncTime(new Date().toLocaleTimeString());
-  }, [classes, students, grades, fees, attendance, staff, payroll, libraryBooks, notices, admissions, admissionRequirements, issuedCertificates, reportCardWithholds, transportRoutes, hostelRooms, timetables, hostelGatePasses, hostelRollCalls, hostelMessMenu, hostelRules, academicEvents, customScripts, plugins, systemConfig, paymentConfig, leaveApplications, payScales, tasks, vacations, clinicRecords, clinicConfig, visitors, visitorConfig, inventoryAssets, maintenanceTickets, inventoryConfig, ptmEvents, ptmConfig, alumni, transcriptRequests, alumniConfig, canteenMenu, canteenWallets, canteenTransactions, canteenConfig, studyMaterials, studyConfig, sealConfig, subjects, gradingScales, feeHeads, documentTemplates, systemNomenclature, customStudentFields]);
+  }, [activeSchoolId, classes, students, grades, fees, attendance, staff, payroll, libraryBooks, notices, admissions, admissionRequirements, issuedCertificates, reportCardWithholds, transportRoutes, hostelRooms, timetables, hostelGatePasses, hostelRollCalls, hostelMessMenu, hostelRules, academicEvents, customScripts, plugins, systemConfig, paymentConfig, leaveApplications, payScales, tasks, vacations, clinicRecords, clinicConfig, visitors, visitorConfig, inventoryAssets, maintenanceTickets, inventoryConfig, ptmEvents, ptmConfig, alumni, transcriptRequests, alumniConfig, canteenMenu, canteenWallets, canteenTransactions, canteenConfig, studyMaterials, studyConfig, sealConfig, subjects, gradingScales, feeHeads, documentTemplates, systemNomenclature, customStudentFields]);
 
   // Real-time In-App Stylesheet & Scripts Live Injection
   useEffect(() => {
@@ -3516,6 +3557,19 @@ export function SchoolProvider({ children }) {
     return { success: true };
   };
 
+  // ==========================================
+  // MULTI-TENANT ACTIONS
+  // ==========================================
+  const switchSchool = (schoolId) => {
+    switchActiveSchool(schoolId);
+  };
+
+  const registerSchoolTenant = (schoolData) => {
+    const created = registerNewSchool(schoolData);
+    setRegisteredSchools(getRegisteredSchools());
+    return created;
+  };
+
   return (
     <SchoolContext.Provider value={{
       classes,
@@ -3741,6 +3795,12 @@ export function SchoolProvider({ children }) {
       addCustomStudentField,
       updateCustomStudentField,
       deleteCustomStudentField,
+      // 12. Multi-Tenant Architecture & Registry
+      activeSchoolId,
+      activeSchoolInfo,
+      registeredSchools,
+      switchSchool,
+      registerSchoolTenant,
       isSyncing,
       lastSyncTime,
       isOfflinePersistenceActive,

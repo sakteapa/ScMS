@@ -1,0 +1,212 @@
+/**
+ * ============================================================================
+ * MULTI-TENANT SUBDOMAIN & DEDICATED SCHOOL REGISTRY SERVICE
+ * ============================================================================
+ * Handles resolving active school tenant from:
+ * 1. URL Query Parameter (?school=stpauls, ?school=oha)
+ * 2. Hostname Subdomain (e.g. oha.zoxs.in -> oha, stpauls.zoxs.in -> stpauls)
+ * 3. Stored Active School in LocalStorage
+ * 4. Master Default Fallback ('oha' - Oxford Higher Academy, Lunglawn)
+ */
+
+export const DEFAULT_REGISTERED_SCHOOLS = [
+  {
+    id: 'oha',
+    name: 'Oxford Higher Academy',
+    shortName: 'OHA Lunglawn',
+    subdomain: 'oha',
+    code: 'OHA-MZ-02',
+    address: 'Lunglawn, Lunglei, Mizoram - 796701',
+    contactPhone: '+91 98623 45678',
+    contactEmail: 'admissions@ohalunglawn.edu.in',
+    motto: 'Excellence in Truth & Service',
+    affiliationBadge: 'MBSE Affiliated • Lunglawn, Lunglei',
+    primaryColor: '#6366f1',
+    secondaryColor: '#a855f7',
+    establishedYear: 2004
+  },
+  {
+    id: 'stpauls',
+    name: "St. Paul's Higher Secondary School",
+    shortName: "St. Paul's HSS",
+    subdomain: 'stpauls',
+    code: 'STP-AZL-01',
+    address: 'Tlangnuam, Aizawl, Mizoram - 796005',
+    contactPhone: '+91 94361 40012',
+    contactEmail: 'office@stpaulsaizawl.edu.in',
+    motto: 'Virtue and Labor',
+    affiliationBadge: 'MBSE Affiliated • Aizawl',
+    primaryColor: '#0ea5e9',
+    secondaryColor: '#10b981',
+    establishedYear: 1985
+  },
+  {
+    id: 'gmhs',
+    name: 'Govt. Mizo Higher Secondary School',
+    shortName: 'Govt. Mizo HSS',
+    subdomain: 'gmhs',
+    code: 'GMH-AZL-03',
+    address: 'Zarkawt, Aizawl, Mizoram - 796001',
+    contactPhone: '+91 94361 52834',
+    contactEmail: 'gmhss.aizawl@gmail.com',
+    motto: 'Knowledge is Power',
+    affiliationBadge: 'State Govt. • MBSE Affiliated',
+    primaryColor: '#f59e0b',
+    secondaryColor: '#ef4444',
+    establishedYear: 1952
+  }
+];
+
+/**
+ * Get full list of registered schools from localStorage or defaults
+ */
+export function getRegisteredSchools() {
+  try {
+    const saved = localStorage.getItem('zoxs_registered_schools');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Ensure default schools are included
+        const existingIds = new Set(parsed.map(s => s.id));
+        const missing = DEFAULT_REGISTERED_SCHOOLS.filter(s => !existingIds.has(s.id));
+        return [...parsed, ...missing];
+      }
+    }
+  } catch (e) {
+    console.warn('[TenantService] Failed to parse registered schools:', e);
+  }
+  return DEFAULT_REGISTERED_SCHOOLS;
+}
+
+/**
+ * Register a new school tenant dynamically
+ */
+export function registerNewSchool(schoolData = {}) {
+  const currentSchools = getRegisteredSchools();
+  const rawSubdomain = (schoolData.subdomain || schoolData.name || `school-${Date.now()}`)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+
+  const newSchool = {
+    id: schoolData.id || rawSubdomain,
+    name: schoolData.name || 'New Academy',
+    shortName: schoolData.shortName || schoolData.name || 'New Academy',
+    subdomain: rawSubdomain,
+    code: schoolData.code || `SCH-${Date.now().toString().slice(-4)}`,
+    address: schoolData.address || 'Mizoram, India',
+    contactPhone: schoolData.contactPhone || '+91 98620 00000',
+    contactEmail: schoolData.contactEmail || 'office@school.edu.in',
+    motto: schoolData.motto || 'Excellence in Education',
+    affiliationBadge: schoolData.affiliationBadge || 'MBSE Affiliated',
+    primaryColor: schoolData.primaryColor || '#6366f1',
+    secondaryColor: schoolData.secondaryColor || '#8b5cf6',
+    establishedYear: Number(schoolData.establishedYear) || new Date().getFullYear()
+  };
+
+  const updated = [newSchool, ...currentSchools.filter(s => s.id !== newSchool.id)];
+  try {
+    localStorage.setItem('zoxs_registered_schools', JSON.stringify(updated));
+  } catch (e) {
+    console.warn('[TenantService] Failed to save registered school:', e);
+  }
+
+  return newSchool;
+}
+
+/**
+ * Resolves the active school ID from URL parameter, Subdomain, or LocalStorage
+ */
+export function getActiveSchoolId() {
+  if (typeof window === 'undefined') return 'oha';
+
+  // 1. Check Query Parameter: ?school=stpauls or ?tenant=stpauls
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const querySchool = urlParams.get('school') || urlParams.get('tenant');
+    if (querySchool && querySchool.trim()) {
+      const cleanQuery = querySchool.trim().toLowerCase();
+      localStorage.setItem('zoxs_active_school_id', cleanQuery);
+      return cleanQuery;
+    }
+  } catch {}
+
+  // 2. Check Hostname Subdomain (e.g. stpauls.zoxs.in -> stpauls)
+  try {
+    const hostname = window.location.hostname;
+    const parts = hostname.split('.');
+    
+    // Ignore localhost, IP addresses, and apex domains
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname);
+
+    if (!isLocalhost && !isIp && parts.length >= 3) {
+      const sub = parts[0].toLowerCase();
+      if (sub !== 'www' && sub !== 'app' && sub !== 'portal' && sub !== 'sms') {
+        localStorage.setItem('zoxs_active_school_id', sub);
+        return sub;
+      }
+    }
+  } catch {}
+
+  // 3. Check Stored Active School in LocalStorage
+  try {
+    const saved = localStorage.getItem('zoxs_active_school_id');
+    if (saved && saved.trim()) {
+      return saved.trim().toLowerCase();
+    }
+  } catch {}
+
+  // 4. Default Fallback Master Tenant
+  return 'oha';
+}
+
+/**
+ * Get active school tenant metadata
+ */
+export function getActiveSchoolInfo() {
+  const activeId = getActiveSchoolId();
+  const allSchools = getRegisteredSchools();
+  const matched = allSchools.find(s => s.id === activeId || s.subdomain === activeId);
+  return matched || allSchools[0] || DEFAULT_REGISTERED_SCHOOLS[0];
+}
+
+/**
+ * Switch active school tenant and refresh page / update URL
+ */
+export function switchActiveSchool(schoolId) {
+  try {
+    localStorage.setItem('zoxs_active_school_id', schoolId.toLowerCase());
+    
+    // Update URL query parameter without losing path
+    const url = new URL(window.location.href);
+    url.searchParams.set('school', schoolId.toLowerCase());
+    window.history.replaceState({}, '', url.toString());
+
+    // Refresh to re-initialize isolated states
+    window.location.reload();
+  } catch (e) {
+    console.error('[TenantService] Failed to switch school:', e);
+  }
+}
+
+/**
+ * Dynamically update Document Title and PWA Manifest for personalized desktop installation
+ */
+export function updateDynamicPwaBranding(school) {
+  if (typeof document === 'undefined' || !school) return;
+
+  // 1. Update Browser Page Title
+  document.title = `${school.name} | Portal`;
+
+  // 2. Update Theme Color Meta Tag
+  const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+  if (metaThemeColor) {
+    metaThemeColor.setAttribute('content', school.primaryColor || '#090d16');
+  }
+
+  // 3. Update Meta Description
+  const metaDesc = document.querySelector('meta[name="description"]');
+  if (metaDesc) {
+    metaDesc.setAttribute('content', `${school.name} - Institutional Management Portal (${school.affiliationBadge})`);
+  }
+}
