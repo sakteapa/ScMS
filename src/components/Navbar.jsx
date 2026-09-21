@@ -15,7 +15,8 @@ import {
   Award,
   Smartphone,
   Globe,
-  School
+  School,
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
@@ -32,7 +33,7 @@ export default function Navbar({
   openWebsiteEditor,
   onViewWebsite
 }) {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
   const { 
     isOfflinePersistenceActive, 
     lastSyncTime, 
@@ -102,6 +103,11 @@ export default function Navbar({
       setIsInstallable(false);
     }
     setDeferredPrompt(null);
+  };
+
+  const handleLogout = async () => {
+    if (logout) await logout();
+    if (setCurrentTab) setCurrentTab('public_website');
   };
 
   const getTabLabel = (id) => {
@@ -386,6 +392,16 @@ export default function Navbar({
             </span>
           </div>
         </div>
+
+        {/* Logout Action Button */}
+        <button
+          onClick={handleLogout}
+          className="p-2 sm:px-3 sm:py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 transition flex items-center gap-1.5 text-xs font-bold shrink-0 shadow-sm"
+          title="Log out and return to Public Website"
+        >
+          <LogOut className="w-4 h-4 text-rose-400" />
+          <span className="hidden xl:inline">Logout</span>
+        </button>
       </div>
 
       {/* Interactive Notification Drawer */}

@@ -1211,6 +1211,18 @@ export function SchoolProvider({ children }) {
     return createdStudent;
   };
 
+  const submitOnlineAdmission = (appData) => {
+    const newApp = {
+      id: appData.id || `adm-${Date.now()}`,
+      applicationNumber: appData.applicationNumber || `ADM-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+      appliedDate: new Date().toISOString().split('T')[0],
+      status: 'pending',
+      ...appData
+    };
+    setAdmissions(prev => [newApp, ...prev]);
+    return { success: true, application: newApp };
+  };
+
   // 6b. Institutional Certificates (Transfer Certificate, Migration, Bonafide)
   const issueCertificate = (certData) => {
     const certPrefix = certData.certType === 'transfer' ? 'TC' : certData.certType === 'migration' ? 'MIG' : 'BON';
@@ -3666,6 +3678,7 @@ export function SchoolProvider({ children }) {
       adjustStaffSalary,
       submitAdmission,
       reviewAdmission,
+      submitOnlineAdmission,
       publishNotice,
       sendPrivateNotification,
       markNotificationAsRead,

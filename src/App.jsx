@@ -38,6 +38,7 @@ import StaffChatView from './views/StaffChatView';
 import AnalyticsDashboardView from './views/AnalyticsDashboardView';
 import PublicWebsiteView from './views/PublicWebsiteView';
 import WebsiteEditorModal from './components/WebsiteEditorModal';
+import { PublicAdmissionPortalModal } from './components/admissions/PublicAdmissionPortalModal';
 
 function SchoolAppContent() {
   const [currentTab, setCurrentTab] = useState('dashboard');
@@ -47,10 +48,11 @@ function SchoolAppContent() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isMobileAppModalOpen, setIsMobileAppModalOpen] = useState(false);
   const [isWebsiteEditorOpen, setIsWebsiteEditorOpen] = useState(false);
+  const [isPublicAdmissionModalOpen, setIsPublicAdmissionModalOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [selectedStudentForReport, setSelectedStudentForReport] = useState(null);
   
-  const { activePrivateCall, endPrivateCall } = useSchool();
+  const { activePrivateCall, endPrivateCall, admissions = [], submitOnlineAdmission } = useSchool();
 
   useEffect(() => {
     const handler = (e) => {
@@ -169,9 +171,21 @@ function SchoolAppContent() {
       <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
         <PublicWebsiteView
           onEnterPortal={() => setCurrentTab('dashboard')}
-          onOpenAdmissions={() => setCurrentTab('admissions')}
+          onOpenAdmissions={() => setIsPublicAdmissionModalOpen(true)}
           onOpenEditor={() => setIsWebsiteEditorOpen(true)}
           onOpenMobileApp={() => setIsMobileAppModalOpen(true)}
+        />
+
+        {/* Dedicated Public Online Admission Application Portal */}
+        <PublicAdmissionPortalModal
+          isOpen={isPublicAdmissionModalOpen}
+          onClose={() => setIsPublicAdmissionModalOpen(false)}
+          applications={admissions || []}
+          onApplicationSubmitted={(newApp) => {
+            if (submitOnlineAdmission) {
+              submitOnlineAdmission(newApp);
+            }
+          }}
         />
 
         <WebsiteEditorModal

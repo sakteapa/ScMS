@@ -29,13 +29,14 @@ import {
   Radio,
   MessageSquare,
   BarChart3,
-  Globe
+  Globe,
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
 
 export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIsMobileOpen }) {
-  const { currentUser, isPrincipal, isTeacher, isStudent, isParent } = useAuth();
+  const { currentUser, isPrincipal, isTeacher, isStudent, isParent, logout } = useAuth();
   const { admissions, notices, leaveApplications = [], systemConfig, t } = useSchool();
 
   const pendingAdmissionsCount = admissions.filter(a => a.status === 'pending').length;
@@ -342,14 +343,26 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
         </nav>
 
         {/* Footer info & School Emblem */}
-        <div className="p-4 border-t border-slate-800/80 bg-slate-950/40">
+        <div className="p-3.5 border-t border-slate-800/80 bg-slate-950/40 space-y-2.5">
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span className="font-semibold text-slate-300 truncate max-w-[140px]">{systemConfig?.schoolName || 'OHA (Oxford Higher Academy)'}</span>
             <span className="font-mono text-cyan-400/80 text-[10px] shrink-0">MBSE Affiliated</span>
           </div>
-          <div className="mt-1 text-[11px] text-slate-500 truncate">
+          <div className="text-[11px] text-slate-500 truncate">
             {systemConfig?.address || 'Lunglawn, Lunglei, Mizoram - 796701'}
           </div>
+
+          <button
+            onClick={async () => {
+              if (logout) await logout();
+              if (setCurrentTab) setCurrentTab('public_website');
+            }}
+            className="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/25 flex items-center justify-center gap-2 text-xs font-bold transition shadow-sm"
+            title="Log out and return to Public Website"
+          >
+            <LogOut className="w-3.5 h-3.5 text-rose-400" />
+            <span>Logout / Exit ERP</span>
+          </button>
         </div>
       </aside>
     </>
