@@ -162,6 +162,19 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
       setErrorMessage('Please enter the name of previous institution attended.');
       return;
     }
+
+    // Mandatory Aadhaar Number validation
+    const cleanAadhaar = aadhaarNumber.replace(/\D/g, '');
+    if (!cleanAadhaar) {
+      setErrorMessage('Student Aadhaar Card Number hi mandatory a ni. Khawngaihin 12-digit Aadhaar number ziak lut rawh.');
+      return;
+    }
+    if (cleanAadhaar.length !== 12) {
+      setErrorMessage(`Aadhaar Card Number hi digit 12 a ni tur a ni (tunah digit ${cleanAadhaar.length} chauh a la ni). Entirnan: 1234 5678 9012.`);
+      return;
+    }
+    const formattedAadhaar = cleanAadhaar.replace(/(\d{4})(\d{4})(\d{4})/, '$1 $2 $3');
+
     if (!declarationAgreed) {
       setErrorMessage('Please accept the declaration stating all submitted details are accurate.');
       return;
@@ -214,7 +227,7 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
         previousBoard,
         previousMarksPercentage: Number(previousMarksPercentage) || 0,
         mediumOfInstruction,
-        aadhaarNumber: aadhaarNumber.trim() || undefined,
+        aadhaarNumber: formattedAadhaar,
         documents: uploadedDocs,
         attachedDocuments: uploadedDocs,
         documentChecklist: {
@@ -269,6 +282,7 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
     setParentPhone('');
     setParentEmail('');
     setPreviousSchool('');
+    setAadhaarNumber('');
     setUploadedDocs([]);
     setDeclarationAgreed(false);
   };
@@ -525,14 +539,26 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs text-gray-300 mb-1 font-medium">Aadhaar Reference (Optional)</label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs text-gray-300 font-medium">Aadhaar Card Number *</label>
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
+                            Mandatory
+                          </span>
+                        </div>
                         <input
                           type="text"
-                          placeholder="xxxx-xxxx-xxxx"
+                          required
+                          maxLength={14}
+                          placeholder="xxxx xxxx xxxx (12 digits)"
                           value={aadhaarNumber}
-                          onChange={(e) => setAadhaarNumber(e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder-gray-500 font-mono"
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/\D/g, '').slice(0, 12);
+                            const parts = raw.match(/[\s\S]{1,4}/g) || [];
+                            setAadhaarNumber(parts.join(' '));
+                          }}
+                          className="w-full px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder-gray-500 font-mono tracking-wider"
                         />
+                        <p className="text-[10px] text-gray-400 mt-1">12-digit UIDAI official Aadhaar number</p>
                       </div>
                     </div>
                   </div>
