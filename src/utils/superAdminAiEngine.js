@@ -301,7 +301,8 @@ export function processSuperAdminAiCommand(query, {
   tasks = [],
   notices = [],
   setCurrentTab,
-  onRunDiagnostics
+  onRunDiagnostics,
+  initializeCleanOhaAcademy
 } = {}) {
   const q = (query || '').trim().toLowerCase();
 
@@ -309,6 +310,21 @@ export function processSuperAdminAiCommand(query, {
     return {
       message: 'Engtin nge ka puih theih ang che? (Entirnan: "System scan nei rawh", "Admission pending en rawh", "Class 10 zirlai zat", "Fee ba zat")',
       type: 'info'
+    };
+  }
+
+  // 0. Clean One Heart Academy, Lunglawn Setup & Mock Data Purge
+  if (
+    (q.includes('oneheart') || q.includes('one heart') || q.includes('lunglawn') || q.includes('lunglei') || q.includes('mock data') || q.includes('academy thar')) &&
+    (q.includes('hawng') || q.includes('thian') || q.includes('wipe') || q.includes('clear') || q.includes('buatsaih') || q.includes('data') || q.includes('internet'))
+  ) {
+    if (initializeCleanOhaAcademy) {
+      initializeCleanOhaAcademy();
+    }
+    return {
+      message: 'One Heart Academy (OHA), Lunglawn, Lunglei chu internet data zulzuiin tluang takin academy thar atan hawn a ni e! Dummy mock data (fake student, fees, grades) zawng zawng thianfai a ni a, zirlai thar admission lak leh Principal/Admin-in an khawih chhunzawm theih turin institutional portal hi a inpeih fel ta e.',
+      type: 'success',
+      suggestedAction: 'OHA_INITIALIZED'
     };
   }
 

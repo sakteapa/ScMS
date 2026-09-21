@@ -2101,6 +2101,97 @@ export function SchoolProvider({ children }) {
     }
   };
 
+  /**
+   * Initializes One Heart Academy, Lunglawn, Lunglei as a clean, real institutional portal
+   * Clears out all dummy mock data (students, grades, fees, dummy admissions) so Principal and Admin can start clean
+   */
+  const initializeCleanOhaAcademy = () => {
+    const activePrefix = `zoxs_${activeSchoolId}_`;
+    
+    // Clear out dummy mock records
+    setStudents([]);
+    localStorage.setItem(`${activePrefix}students`, JSON.stringify([]));
+    
+    setFees([]);
+    localStorage.setItem(`${activePrefix}fees`, JSON.stringify([]));
+    
+    setGrades([]);
+    localStorage.setItem(`${activePrefix}grades`, JSON.stringify([]));
+    
+    setAdmissions([]);
+    localStorage.setItem(`${activePrefix}admissions`, JSON.stringify([]));
+    
+    setAttendance([]);
+    localStorage.setItem(`${activePrefix}attendance`, JSON.stringify([]));
+    
+    setLeaveApplications([]);
+    localStorage.setItem(`${activePrefix}leave_applications`, JSON.stringify([]));
+    
+    // Set clean official One Heart Academy institutional system config
+    const ohaSystemConfig = {
+      ...systemConfig,
+      schoolName: 'OHA (One Heart Academy)',
+      motto: 'Knowledge is Light (Hriatna chu Eng a ni)',
+      establishedYear: '2023',
+      affiliationNo: 'MBSE-HSS-LGL-0421',
+      address: 'Lunglawn, Lunglei, Mizoram - 796701',
+      contactPhone: '+91 372 2322104 / +91 94361 40552',
+      contactEmail: 'oha.lunglawn@gmail.com',
+      academicSession: '2026 - 2027',
+      enableOnlineAdmissions: true,
+      enableUpiPayments: true,
+      enableSmsNotifications: true,
+      enableHostelModule: true,
+      enableTransportModule: true
+    };
+    setSystemConfig(ohaSystemConfig);
+    localStorage.setItem(`${activePrefix}system_config`, JSON.stringify(ohaSystemConfig));
+
+    // Set official website config
+    const ohaWebsiteConfig = {
+      ...websiteConfig,
+      schoolName: 'OHA (One Heart Academy)',
+      tagline: 'Mizoram Premier Day & Residential Academy',
+      motto: 'Knowledge • Character • Excellence',
+      address: 'Lunglawn, Lunglei, Mizoram - 796701',
+      phone: '+91 372 2322104 / +91 94361 40552',
+      email: 'oha.lunglawn@gmail.com',
+      hero: {
+        ...(websiteConfig.hero || {}),
+        headline: 'Welcome to One Heart Academy, Lunglawn, Lunglei',
+        subheadline: 'MBSE Affiliated institution offering holistic education from Elementary to Higher Secondary.'
+      },
+      principalMessage: {
+        principalName: 'Lalthlamuana Sailo',
+        principalDesignation: 'Principal, One Heart Academy',
+        fullMessage: 'At One Heart Academy (OHA), Lunglawn, Lunglei, we are dedicated to providing a nurturing environment where students excel in academics, sports, and moral character. Welcome to our official digital portal.'
+      }
+    };
+    setWebsiteConfig(ohaWebsiteConfig);
+    localStorage.setItem(`${activePrefix}website_config`, JSON.stringify(ohaWebsiteConfig));
+
+    // Initial welcome directive for Principal & Admin
+    const cleanNotice = [
+      {
+        id: 'not-oha-welcome',
+        scope: 'campus',
+        title: 'One Heart Academy (OHA) System Live & Operational',
+        content: 'One Heart Academy, Lunglawn, Lunglei digital portal has been initialized cleanly with zero dummy mock records. The administration and faculty may now proceed to enroll students, configure fee structures, and receive online admissions.',
+        category: 'general',
+        priority: 'high',
+        targetAudience: 'all',
+        publishedBy: 'System Architecture Cell',
+        publishedAt: new Date().toISOString(),
+        isPinned: true,
+        readBy: []
+      }
+    ];
+    setNotices(cleanNotice);
+    localStorage.setItem(`${activePrefix}notices`, JSON.stringify(cleanNotice));
+
+    return { success: true, message: 'One Heart Academy cleanly initialized with zero mock data!' };
+  };
+
   // In-App REPL / Terminal Sandbox Execution
   const executeTerminalCommand = (codeString) => {
     const startTime = performance.now();
@@ -3704,6 +3795,7 @@ export function SchoolProvider({ children }) {
       deleteCollectionRecord,
       exportDatabaseSnapshot,
       restoreDatabaseSnapshot,
+      initializeCleanOhaAcademy,
       executeTerminalCommand,
       updateTimeTableSlot,
       recordAttendance,

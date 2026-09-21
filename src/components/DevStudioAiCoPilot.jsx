@@ -243,6 +243,24 @@ export default function DevStudioAiCoPilot() {
               <RotateCcw className={`w-4 h-4 ${isScanning ? 'animate-spin' : ''}`} />
               <span>{isScanning ? 'Scanning System...' : 'Run Full Diagnostic'}</span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm('One Heart Academy, Lunglawn, Lunglei atan mock data (fake student, fees, grades) zawng zawng thianfai a, fresh institutional portal hawn i duh chiang em? Principal leh Admin in an khawih chhunzawm thei nghal ang.')) {
+                  if (schoolContext.initializeCleanOhaAcademy) {
+                    schoolContext.initializeCleanOhaAcademy();
+                    handleRunDiagnosticScan();
+                    alert('One Heart Academy (OHA) portal chu tluang takin hawn a ni e! Mock data zawng zawng thianfai a ni tawh e.');
+                  }
+                }
+              }}
+              className="px-4 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm transition shadow-lg shadow-amber-500/20 flex items-center gap-2 cursor-pointer"
+              title="Purge all fake mock records and launch clean OHA portal"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Launch Clean OHA (Clear Mock Data)</span>
+            </button>
           </div>
         </div>
 
