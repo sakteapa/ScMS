@@ -80,6 +80,14 @@ import {
   STPAULS_SYSTEM_CONFIG,
   STPAULS_WEBSITE_CONFIG
 } from '../data/stpaulsData';
+import {
+  GMHS_SCHOOL_INFO,
+  GMHS_CLASSES,
+  GMHS_STUDENTS,
+  GMHS_STAFF,
+  GMHS_SYSTEM_CONFIG,
+  GMHS_WEBSITE_CONFIG
+} from '../data/gmhsData';
 import { TRANSLATIONS } from '../data/translations';
 import { db, collection, getDocs, setDoc, addDoc, doc, query, orderBy, onSnapshot, isOfflinePersistenceActive, isLiveFirebaseConfigured } from '../services/firebase';
 import {
@@ -200,10 +208,49 @@ export function SchoolProvider({ children }) {
         }
       }
 
+      // 5. Seed dedicated Govt. Mizo Higher Secondary School (GMHS) data
+      if (!saved && activeSchoolId === 'gmhs') {
+        if (key === 'students') {
+          localStorage.setItem(tenantKey, JSON.stringify(GMHS_STUDENTS));
+          return GMHS_STUDENTS;
+        }
+        if (key === 'classes') {
+          localStorage.setItem(tenantKey, JSON.stringify(GMHS_CLASSES));
+          return GMHS_CLASSES;
+        }
+        if (key === 'staff') {
+          localStorage.setItem(tenantKey, JSON.stringify(GMHS_STAFF));
+          return GMHS_STAFF;
+        }
+        if (key === 'system_config') {
+          localStorage.setItem(tenantKey, JSON.stringify(GMHS_SYSTEM_CONFIG));
+          return GMHS_SYSTEM_CONFIG;
+        }
+        if (key === 'website_config') {
+          localStorage.setItem(tenantKey, JSON.stringify(GMHS_WEBSITE_CONFIG));
+          return GMHS_WEBSITE_CONFIG;
+        }
+      }
+
       if (saved) {
         const parsed = JSON.parse(saved);
         // Seamlessly migrate legacy generic school mock data to the active school name
         const activeSchoolName = activeSchoolInfo?.name || fallback?.schoolName;
+        if (key === 'system_config' && activeSchoolId !== 'oha' && activeSchoolId !== 'default' && (parsed?.schoolName?.includes('One Heart') || parsed?.schoolName?.includes('OHA') || parsed?.address?.includes('Lunglawn') || parsed?.schoolName?.includes('Mizoram Higher Secondary') || parsed?.schoolName?.includes('Aizawl Model') || parsed?.schoolName?.includes('Oxford'))) {
+          const updated = {
+            ...parsed,
+            schoolName: activeSchoolInfo?.name || activeSchoolName || parsed.schoolName,
+            motto: activeSchoolInfo?.motto || parsed.motto,
+            establishedYear: String(activeSchoolInfo?.establishedYear || parsed.establishedYear || '1952'),
+            affiliationNo: activeSchoolInfo?.code || 'MBSE-HSS-01',
+            address: activeSchoolInfo?.address || parsed.address,
+            contactPhone: activeSchoolInfo?.contactPhone || parsed.contactPhone,
+            contactEmail: activeSchoolInfo?.contactEmail || parsed.contactEmail,
+            primaryColor: activeSchoolInfo?.primaryColor || parsed.primaryColor
+          };
+          localStorage.setItem(`zoxs_${activeSchoolId}_system_config`, JSON.stringify(updated));
+          return updated;
+        }
         if (key === 'system_config' && activeSchoolName && (parsed?.schoolName?.includes('Mizoram Higher Secondary') || parsed?.schoolName?.includes('Aizawl Model'))) {
           const updated = { ...parsed, schoolName: activeSchoolName, address: activeSchoolInfo?.address || fallback.address, contactPhone: activeSchoolInfo?.contactPhone || fallback.contactPhone, contactEmail: activeSchoolInfo?.contactEmail || fallback.contactEmail, motto: activeSchoolInfo?.motto || fallback.motto };
           localStorage.setItem(`zoxs_${activeSchoolId}_system_config`, JSON.stringify(updated));
@@ -261,6 +308,42 @@ export function SchoolProvider({ children }) {
       console.warn(`Error loading key ${key}:`, e);
     }
     return fallback;
+  };
+
+  /**
+   * Generates a school-specific system configuration from activeSchoolInfo.
+   * Ensures non-OHA schools never fallback to OHA defaults.
+   */
+  const buildSchoolSystemConfigDefault = (baseConfig = INITIAL_SYSTEM_CONFIG) => {
+    const info = activeSchoolInfo || {};
+    if (!info.name || info.id === 'oha') {
+      return baseConfig;
+    }
+    return {
+      ...baseConfig,
+      schoolName: info.name,
+      motto: info.motto || 'Knowledge is Light',
+      establishedYear: String(info.establishedYear || '1952'),
+      affiliationNo: info.code || 'MBSE-HSS-01',
+      address: info.address || 'Mizoram, India',
+      contactPhone: info.contactPhone || '+91 94361 52834',
+      contactEmail: info.contactEmail || 'office@school.edu.in',
+      primaryColor: info.primaryColor || '#6366f1',
+      currency: 'INR',
+      currencySymbol: '₹',
+      academicSession: '2026 - 2027',
+      enableOnlineAdmissions: true,
+      enableUpiPayments: true,
+      enableSmsNotifications: true,
+      enableHostelModule: true,
+      enableTransportModule: true,
+      schoolAiAssistant: {
+        enabled: true,
+        assistantName: `${info.shortName || info.name} AI`,
+        allowedRoles: ['principal', 'vice_principal', 'admin'],
+        language: 'both'
+      }
+    };
   };
 
   /**
@@ -336,7 +419,22 @@ export function SchoolProvider({ children }) {
   // In-App Developer Studio & Customization States
   const [customScripts, setCustomScripts] = useState(() => loadInitial('custom_scripts', INITIAL_CUSTOM_SCRIPTS));
   const [plugins, setPlugins] = useState(() => loadInitial('system_plugins', INITIAL_SYSTEM_PLUGINS));
-  const [systemConfig, setSystemConfig] = useState(() => loadInitial('system_config', INITIAL_SYSTEM_CONFIG));
+  const [systemConfig, setSystemConfig] = useState(() => {
+    const base = loadInitial('system_config', buildSchoolSystemConfigDefault(INITIAL_SYSTEM_CONFIG));
+    if (
+      activeSchoolId !== 'oha' &&
+      activeSchoolId !== 'default' &&
+      activeSchoolInfo?.name &&
+      (base?.schoolName?.includes('One Heart') || base?.schoolName?.includes('OHA') || base?.address?.includes('Lunglawn') || !base?.schoolName)
+    ) {
+      const schoolSpecific = buildSchoolSystemConfigDefault(base || INITIAL_SYSTEM_CONFIG);
+      try {
+        localStorage.setItem(`zoxs_${activeSchoolId}_system_config`, JSON.stringify(schoolSpecific));
+      } catch (e) {}
+      return schoolSpecific;
+    }
+    return base;
+  });
   const [paymentConfig, setPaymentConfig] = useState(() => loadInitial('payment_config', INITIAL_PAYMENT_CONFIG));
   const [onlineAdmissionConfig, setOnlineAdmissionConfig] = useState(() => loadInitial('online_admission_config', INITIAL_ONLINE_ADMISSION_CONFIG));
   const [offlineAdmissionConfig, setOfflineAdmissionConfig] = useState(() => loadInitial('offline_admission_config', INITIAL_OFFLINE_ADMISSION_CONFIG));
@@ -2483,7 +2581,11 @@ export function SchoolProvider({ children }) {
   };
 
   const updateSystemConfig = (newConfig) => {
-    setSystemConfig(prev => ({ ...prev, ...newConfig }));
+    setSystemConfig(prev => {
+      const updated = { ...prev, ...newConfig };
+      saveTenantItem('system_config', updated);
+      return updated;
+    });
   };
 
   // 1-on-1 Private Call State (Video & Voice)

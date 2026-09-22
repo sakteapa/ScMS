@@ -38,7 +38,7 @@ import { useSchool } from '../context/SchoolContext';
 
 export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIsMobileOpen }) {
   const { currentUser, isPrincipal, isTeacher, isStudent, isParent, logout } = useAuth();
-  const { admissions, notices, leaveApplications = [], systemConfig, t, liveSessionRequests = [], staff = [] } = useSchool();
+  const { admissions, notices, leaveApplications = [], systemConfig, activeSchoolInfo, t, liveSessionRequests = [], staff = [] } = useSchool();
 
   const pendingAdmissionsCount = admissions.filter(a => a.status === 'pending').length;
   const pendingLeavesCount = leaveApplications.filter(l => l.status === 'pending_class_master' || l.status === 'pending_principal').length;
@@ -378,11 +378,11 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
         {/* Footer info & School Emblem */}
         <div className="p-3.5 border-t border-slate-800/80 bg-slate-950/40 space-y-2.5">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span className="font-semibold text-slate-300 truncate max-w-[140px]">{systemConfig?.schoolName || 'OHA (One Heart Academy)'}</span>
-            <span className="font-mono text-cyan-400/80 text-[10px] shrink-0">MBSE Affiliated</span>
+            <span className="font-semibold text-slate-300 truncate max-w-[140px]">{systemConfig?.schoolName || activeSchoolInfo?.name || 'School ERP'}</span>
+            <span className="font-mono text-cyan-400/80 text-[10px] shrink-0">{activeSchoolInfo?.affiliationBadge || 'MBSE Affiliated'}</span>
           </div>
           <div className="text-[11px] text-slate-500 truncate">
-            {systemConfig?.address || 'Lunglawn, Lunglei, Mizoram - 796701'}
+            {systemConfig?.address || activeSchoolInfo?.address || 'Mizoram, India'}
           </div>
 
           <button

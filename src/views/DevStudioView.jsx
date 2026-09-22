@@ -106,6 +106,11 @@ export default function DevStudioView() {
     testFirebaseConnection,
     syncToFirestore,
     pullFromFirestore,
+    // Multi-Tenant Academic Center
+    activeSchoolId,
+    activeSchoolInfo,
+    registeredSchools,
+    switchSchool,
     // Gateway
     gatewayConfig,
     updateGatewayConfig,
@@ -1666,6 +1671,31 @@ export default function DevStudioView() {
               <p className="text-slate-400 text-sm mt-1">
                 Software pumpui setting, legal details, clinic, security, finance, meal card, alumni leh module tin policy kimchang taka control-na hmunpui.
               </p>
+
+              <div className="flex flex-wrap items-center gap-2.5 mt-3 pt-3 border-t border-slate-800/80">
+                <span className="text-xs text-slate-400 font-medium">Currently Configuring Academic Center:</span>
+                <div className="flex items-center gap-2 bg-slate-950 border border-purple-500/30 px-3 py-1.5 rounded-xl shadow-inner">
+                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: activeSchoolInfo?.primaryColor || '#6366f1' }}></span>
+                  <span className="text-xs font-bold text-white">{activeSchoolInfo?.name || systemConfig?.schoolName}</span>
+                  <span className="text-[10px] font-mono text-purple-300 bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800/50">
+                    ID: {activeSchoolId?.toUpperCase()}
+                  </span>
+                </div>
+                {registeredSchools && registeredSchools.length > 1 && (
+                  <select
+                    value={activeSchoolId}
+                    onChange={(e) => switchSchool(e.target.value)}
+                    className="bg-slate-950 border border-slate-700/80 text-xs text-cyan-300 font-semibold px-2.5 py-1.5 rounded-xl focus:outline-none focus:border-cyan-500 cursor-pointer transition hover:border-slate-600"
+                    title="Switch to configure a different academic center"
+                  >
+                    {registeredSchools.map(sch => (
+                      <option key={sch.id} value={sch.id} className="bg-slate-900 text-white">
+                        Switch Center: {sch.shortName || sch.name} ({sch.id.toUpperCase()})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
@@ -1678,7 +1708,13 @@ export default function DevStudioView() {
                 <span>Guided Setup Wizard</span>
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
+                  if (updateSystemConfig && systemConfig) {
+                    updateSystemConfig(systemConfig);
+                  }
+                  if (syncToFirestore) {
+                    syncToFirestore(true);
+                  }
                   setConfigSavedToast(true);
                   setTimeout(() => setConfigSavedToast(false), 3500);
                 }}
