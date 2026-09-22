@@ -614,12 +614,12 @@ export function SchoolProvider({ children }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(new Date().toLocaleTimeString());
   const [firebaseSyncStatus, setFirebaseSyncStatus] = useState({
-    connected: false,
+    connected: isLiveFirebaseConfigured,
     lastPushAt: null,
     lastPullAt: null,
     lastError: null,
     pushProgress: null, // e.g. 'Pushing students (2/12)...'
-    autoSyncEnabled: false,
+    autoSyncEnabled: isLiveFirebaseConfigured,
   });
 
   // ── FIREBASE SYNC HELPERS ─────────────────────────────────────────────────
@@ -645,17 +645,17 @@ export function SchoolProvider({ children }) {
     }
   };
 
-  // Push all localStorage collections to Firestore
-  const syncToFirestore = async () => {
+  // Push all localStorage collections to Firestore (supports manual and background silent auto-sync)
+  const syncToFirestore = async (silent = false) => {
     if (isShowcaseMode) {
-      triggerShowcaseNotice('Cloud Sync to Firestore');
+      if (!silent) triggerShowcaseNotice('Cloud Sync to Firestore');
       return { success: false, error: 'Database mutation is protected in Showcase Demo Mode.' };
     }
     if (!db) {
-      setFirebaseSyncStatus(p => ({ ...p, lastError: 'Firebase not initialised. Enter credentials first.', pushProgress: null }));
+      if (!silent) setFirebaseSyncStatus(p => ({ ...p, lastError: 'Firebase not initialised. Enter credentials first.', pushProgress: null }));
       return { success: false };
     }
-    setIsSyncing(true);
+    if (!silent) setIsSyncing(true);
     const collectionsMap = [
       { key: 'students',           data: students },
       { key: 'classes',            data: classes },
@@ -687,13 +687,17 @@ export function SchoolProvider({ children }) {
     let pushed = 0;
     const errors = [];
     try {
+      const colPrefix = (activeSchoolId === 'oha' || activeSchoolId === 'default') ? 'zoxs_' : `zoxs_${activeSchoolId}_`;
       for (const col of collectionsMap) {
-        setFirebaseSyncStatus(p => ({ ...p, pushProgress: `Pushing ${col.key} (${pushed + 1}/${collectionsMap.length})...` }));
+        if (!silent) setFirebaseSyncStatus(p => ({ ...p, pushProgress: `Pushing ${col.key} (${pushed + 1}/${collectionsMap.length})...` }));
         const arr = Array.isArray(col.data) ? col.data : [];
         for (const record of arr) {
           if (!record?.id) continue;
           try {
-            await setDoc(doc(db, `zoxs_${col.key}`, String(record.id)), record, { merge: true });
+            await setDoc(doc(db, `${colPrefix}${col.key}`, String(record.id)), { ...record, schoolId: activeSchoolId }, { merge: true });
+            if (activeSchoolId === 'oha' || activeSchoolId === 'default') {
+              await setDoc(doc(db, `zoxs_${col.key}`, String(record.id)), record, { merge: true });
+            }
           } catch (e) {
             errors.push(`${col.key}/${record.id}: ${e.message}`);
           }
@@ -704,24 +708,24 @@ export function SchoolProvider({ children }) {
       setLastSyncTime(ts);
       setFirebaseSyncStatus(p => ({
         ...p, connected: true, lastPushAt: ts, pushProgress: null,
-        lastError: errors.length ? `${errors.length} record(s) failed: ${errors[0]}` : null
+        lastError: errors.length ? `${errors.length} record(s) notice: ${errors[0]}` : null
       }));
       return { success: true, errors };
     } catch (err) {
-      setFirebaseSyncStatus(p => ({ ...p, lastError: err.message, pushProgress: null }));
+      if (!silent) setFirebaseSyncStatus(p => ({ ...p, lastError: err.message, pushProgress: null }));
       return { success: false, error: err.message };
     } finally {
-      setIsSyncing(false);
+      if (!silent) setIsSyncing(false);
     }
   };
 
-  // Pull all Firestore collections → overwrite local state
-  const pullFromFirestore = async () => {
+  // Pull all Firestore collections → overwrite local state (supports manual and background silent hydration)
+  const pullFromFirestore = async (silent = false) => {
     if (!db) {
-      setFirebaseSyncStatus(p => ({ ...p, lastError: 'Firebase not initialised. Enter credentials first.', pushProgress: null }));
+      if (!silent) setFirebaseSyncStatus(p => ({ ...p, lastError: 'Firebase not initialised. Enter credentials first.', pushProgress: null }));
       return { success: false };
     }
-    setIsSyncing(true);
+    if (!silent) setIsSyncing(true);
     const collectionsMap = [
       { key: 'students',    setter: setStudents },
       { key: 'classes',     setter: setClasses },
@@ -751,10 +755,14 @@ export function SchoolProvider({ children }) {
     ];
     let pulled = 0;
     try {
+      const colPrefix = (activeSchoolId === 'oha' || activeSchoolId === 'default') ? 'zoxs_' : `zoxs_${activeSchoolId}_`;
       for (const col of collectionsMap) {
-        setFirebaseSyncStatus(p => ({ ...p, pushProgress: `Pulling ${col.key} (${pulled + 1}/${collectionsMap.length})...` }));
+        if (!silent) setFirebaseSyncStatus(p => ({ ...p, pushProgress: `Pulling ${col.key} (${pulled + 1}/${collectionsMap.length})...` }));
         try {
-          const snap = await getDocs(collection(db, `zoxs_${col.key}`));
+          let snap = await getDocs(collection(db, `${colPrefix}${col.key}`));
+          if (snap.empty && colPrefix !== 'zoxs_') {
+            snap = await getDocs(collection(db, `zoxs_${col.key}`));
+          }
           if (!snap.empty) {
             const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             col.setter(docs);
@@ -767,10 +775,10 @@ export function SchoolProvider({ children }) {
       setFirebaseSyncStatus(p => ({ ...p, connected: true, lastPullAt: ts, pushProgress: null, lastError: null }));
       return { success: true };
     } catch (err) {
-      setFirebaseSyncStatus(p => ({ ...p, lastError: err.message, pushProgress: null }));
+      if (!silent) setFirebaseSyncStatus(p => ({ ...p, lastError: err.message, pushProgress: null }));
       return { success: false, error: err.message };
     } finally {
-      setIsSyncing(false);
+      if (!silent) setIsSyncing(false);
     }
   };
 
@@ -841,7 +849,48 @@ export function SchoolProvider({ children }) {
     saveTenantItem('system_nomenclature', systemNomenclature);
     saveTenantItem('custom_student_fields', customStudentFields);
     setLastSyncTime(new Date().toLocaleTimeString());
+
+    // Automatic Live Cloud Sync to Firestore (Debounced 2.5s)
+    let autoSyncTimer = null;
+    if (isLiveFirebaseConfigured && db && !isShowcaseMode) {
+      autoSyncTimer = setTimeout(() => {
+        syncToFirestore(true).catch(err => {
+          console.warn('[Firebase AutoSync] Background cloud sync notice:', err);
+        });
+      }, 2500);
+    }
+
+    return () => {
+      if (autoSyncTimer) clearTimeout(autoSyncTimer);
+    };
   }, [activeSchoolId, classes, students, grades, fees, attendance, staff, payroll, libraryBooks, notices, admissions, admissionRequirements, onlineAdmissionConfig, issuedCertificates, reportCardWithholds, transportRoutes, hostelRooms, timetables, hostelGatePasses, hostelRollCalls, hostelMessMenu, hostelRules, academicEvents, customScripts, plugins, systemConfig, paymentConfig, leaveApplications, payScales, tasks, vacations, clinicRecords, clinicConfig, visitors, visitorConfig, inventoryAssets, maintenanceTickets, inventoryConfig, ptmEvents, ptmConfig, alumni, transcriptRequests, alumniConfig, canteenMenu, canteenWallets, canteenTransactions, canteenConfig, studyMaterials, studyConfig, sealConfig, subjects, gradingScales, feeHeads, documentTemplates, systemNomenclature, customStudentFields]);
+
+  // Automatic Startup Cloud Sync & Hydration (On first visit or school switch)
+  useEffect(() => {
+    if (!isLiveFirebaseConfigured || !db) return;
+
+    let isMounted = true;
+    const initialCloudSync = async () => {
+      try {
+        const colPrefix = (activeSchoolId === 'oha' || activeSchoolId === 'default') ? 'zoxs_' : `zoxs_${activeSchoolId}_`;
+        const snap = await getDocs(collection(db, `${colPrefix}students`));
+        if (!snap.empty && isMounted) {
+          // Cloud has data: automatically pull and hydrate latest data
+          console.log(`[Firebase AutoSync] Found cloud records in ${colPrefix}students, pulling latest...`);
+          await pullFromFirestore(true);
+        } else if (snap.empty && isMounted) {
+          // Cloud is empty on first setup: automatically seed local data to Firestore
+          console.log(`[Firebase AutoSync] Cloud collection ${colPrefix}students is empty, auto-seeding initial data...`);
+          await syncToFirestore(true);
+        }
+      } catch (err) {
+        console.warn('[Firebase AutoSync] Startup sync probe notice:', err);
+      }
+    };
+
+    initialCloudSync();
+    return () => { isMounted = false; };
+  }, [activeSchoolId, isLiveFirebaseConfigured]);
 
   // Real-time In-App Stylesheet & Scripts Live Injection
   useEffect(() => {
