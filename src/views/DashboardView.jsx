@@ -18,21 +18,12 @@ import {
   Building2,
   CalendarDays
 } from 'lucide-react';
-import { useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
 
 export default function DashboardView({ setCurrentTab, openRoleSwitcher }) {
-  const { center_id } = useParams();
   const { currentUser, isPrincipal, isTeacher, isWarden, isSuperAdmin, isVicePrincipal } = useAuth();
-  const { students, attendance, fees, grades, notices, admissions, classes, systemConfig, activeSchoolId, switchSchool } = useSchool();
-
-  // If URL has center_id and it differs from active school, sync it
-  React.useEffect(() => {
-    if (center_id && center_id !== activeSchoolId && typeof switchSchool === 'function') {
-      switchSchool(center_id);
-    }
-  }, [center_id, activeSchoolId]);
+  const { students, attendance, fees, grades, notices, admissions, classes, systemConfig, activeSchoolId } = useSchool();
 
   const today = new Date().toISOString().split('T')[0];
   const todayAttendance = attendance.filter(a => a.date === today);

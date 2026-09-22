@@ -55,10 +55,10 @@ function SchoolAppContent() {
 
   // Automatically sync academic center if specified in URL route (e.g. /:center_id)
   useEffect(() => {
-    if (center_id && center_id !== activeSchoolId && typeof switchSchool === 'function') {
+    if (center_id && center_id.toLowerCase() !== (activeSchoolId || '').toLowerCase() && typeof switchSchool === 'function') {
       switchSchool(center_id);
     }
-  }, [center_id, activeSchoolId]);
+  }, [center_id]);
 
   const isAllowedTab = (tab, role) => {
     if (role === 'superadmin') return true;

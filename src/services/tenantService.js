@@ -205,8 +205,8 @@ export function getActiveSchoolId() {
     }
   } catch {}
 
-  // 6. Default Fallback Master Tenant
-  return 'oha';
+  // 6. Default Fallback Master Tenant (St. Paul's Higher Secondary School)
+  return 'stpauls';
 }
 
 /**
@@ -224,12 +224,15 @@ export function getActiveSchoolInfo() {
  */
 export function switchActiveSchool(schoolId) {
   try {
-    const cleanId = (schoolId || 'oha').toLowerCase().trim();
+    const cleanId = (schoolId || 'stpauls').toLowerCase().trim();
     localStorage.setItem('zoxs_active_school_id', cleanId);
     
     // Navigate cleanly to the new center's URL path: e.g. /ghhss or /stpauls
     if (typeof window !== 'undefined') {
-      window.location.href = `/${cleanId}`;
+      const currentPath = (window.location.pathname || '').replace(/^\/+|\/+$/g, '').split('/')[0].toLowerCase();
+      if (currentPath !== cleanId) {
+        window.location.href = `/${cleanId}`;
+      }
     }
   } catch (e) {
     console.error('[TenantService] Failed to switch school:', e);

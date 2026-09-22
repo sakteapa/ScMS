@@ -72,6 +72,14 @@ import {
   GHHSS_SYSTEM_CONFIG,
   GHHSS_WEBSITE_CONFIG
 } from '../data/ghhssData';
+import {
+  STPAULS_SCHOOL_INFO,
+  STPAULS_CLASSES,
+  STPAULS_STUDENTS,
+  STPAULS_STAFF,
+  STPAULS_SYSTEM_CONFIG,
+  STPAULS_WEBSITE_CONFIG
+} from '../data/stpaulsData';
 import { TRANSLATIONS } from '../data/translations';
 import { db, collection, getDocs, setDoc, addDoc, doc, query, orderBy, onSnapshot, isOfflinePersistenceActive, isLiveFirebaseConfigured } from '../services/firebase';
 import {
@@ -165,6 +173,30 @@ export function SchoolProvider({ children }) {
         if (key === 'website_config') {
           localStorage.setItem(tenantKey, JSON.stringify(GHHSS_WEBSITE_CONFIG));
           return GHHSS_WEBSITE_CONFIG;
+        }
+      }
+
+      // 4. Seed dedicated St. Paul's Higher Secondary School (STPAULS) data
+      if (!saved && activeSchoolId === 'stpauls') {
+        if (key === 'students') {
+          localStorage.setItem(tenantKey, JSON.stringify(STPAULS_STUDENTS));
+          return STPAULS_STUDENTS;
+        }
+        if (key === 'classes') {
+          localStorage.setItem(tenantKey, JSON.stringify(STPAULS_CLASSES));
+          return STPAULS_CLASSES;
+        }
+        if (key === 'staff') {
+          localStorage.setItem(tenantKey, JSON.stringify(STPAULS_STAFF));
+          return STPAULS_STAFF;
+        }
+        if (key === 'system_config') {
+          localStorage.setItem(tenantKey, JSON.stringify(STPAULS_SYSTEM_CONFIG));
+          return STPAULS_SYSTEM_CONFIG;
+        }
+        if (key === 'website_config') {
+          localStorage.setItem(tenantKey, JSON.stringify(STPAULS_WEBSITE_CONFIG));
+          return STPAULS_WEBSITE_CONFIG;
         }
       }
 
@@ -4433,7 +4465,7 @@ export function SchoolProvider({ children }) {
   // MULTI-TENANT ACTIONS & CLEAN SLATE INITIALIZATION
   // ==========================================
   const switchSchool = (schoolId) => {
-    const cleanId = (schoolId || 'oha').toLowerCase().trim();
+    const cleanId = (schoolId || 'stpauls').toLowerCase().trim();
     localStorage.setItem('zoxs_active_school_id', cleanId);
     setActiveSchoolId(cleanId);
     const allSchools = getRegisteredSchools();
