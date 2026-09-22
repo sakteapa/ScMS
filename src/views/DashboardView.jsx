@@ -18,12 +18,21 @@ import {
   Building2,
   CalendarDays
 } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
 
 export default function DashboardView({ setCurrentTab, openRoleSwitcher }) {
+  const { center_id } = useParams();
   const { currentUser, isPrincipal, isTeacher, isWarden, isSuperAdmin, isVicePrincipal } = useAuth();
-  const { students, attendance, fees, grades, notices, admissions, classes, systemConfig } = useSchool();
+  const { students, attendance, fees, grades, notices, admissions, classes, systemConfig, activeSchoolId, switchSchool } = useSchool();
+
+  // If URL has center_id and it differs from active school, sync it
+  React.useEffect(() => {
+    if (center_id && center_id !== activeSchoolId && typeof switchSchool === 'function') {
+      switchSchool(center_id);
+    }
+  }, [center_id, activeSchoolId]);
 
   const today = new Date().toISOString().split('T')[0];
   const todayAttendance = attendance.filter(a => a.date === today);
@@ -51,6 +60,11 @@ export default function DashboardView({ setCurrentTab, openRoleSwitcher }) {
               <span className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                 {systemConfig?.schoolName || 'OHA (One Heart Academy)'}
               </span>
+              {center_id && (
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
+                  Center: {center_id}
+                </span>
+              )}
               <span className="text-[11px] sm:text-xs text-slate-400">Nursery to Class 12</span>
             </div>
             <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white font-['Outfit']">

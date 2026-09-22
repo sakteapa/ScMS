@@ -54,6 +54,21 @@ export const DEFAULT_REGISTERED_SCHOOLS = [
     primaryColor: '#f59e0b',
     secondaryColor: '#ef4444',
     establishedYear: 1952
+  },
+  {
+    id: 'ghhss',
+    name: 'Govt. Hnahthial Higher Secondary School',
+    shortName: 'GHHSS Hnahthial',
+    subdomain: 'ghhss',
+    code: 'GHSS-HNL-01',
+    address: 'Venglai, Hnahthial, Mizoram - 796571',
+    contactPhone: '+91 94361 58820',
+    contactEmail: 'ghhss.hnahthial@gmail.com',
+    motto: 'Strive to Excel (Taimakna chu Hlawhtlinna)',
+    affiliationBadge: 'State Govt. • MBSE Affiliated (HSS)',
+    primaryColor: '#0284c7',
+    secondaryColor: '#0d9488',
+    establishedYear: 1974
   }
 ];
 
@@ -120,7 +135,19 @@ export function registerNewSchool(schoolData = {}) {
 export function getActiveSchoolId() {
   if (typeof window === 'undefined') return 'oha';
 
-  // 1. Check Query Parameter: ?school=stpauls or ?tenant=stpauls
+  // 1. Check URL Path Parameter: e.g. /oha or /center_123
+  try {
+    const pathname = (window.location.pathname || '').replace(/^\/+|\/+$/g, '');
+    const firstSegment = pathname.split('/')[0];
+    const reservedRoutes = ['login', 'assets', 'api', 'public_website', 'favicon.ico', 'index.html'];
+    if (firstSegment && !reservedRoutes.includes(firstSegment.toLowerCase())) {
+      const cleanPath = firstSegment.trim().toLowerCase();
+      localStorage.setItem('zoxs_active_school_id', cleanPath);
+      return cleanPath;
+    }
+  } catch {}
+
+  // 2. Check Query Parameter: ?school=stpauls or ?tenant=stpauls
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const querySchool = urlParams.get('school') || urlParams.get('tenant');

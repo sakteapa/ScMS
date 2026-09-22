@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SchoolProvider, useSchool } from './context/SchoolContext';
 import { ShieldAlert } from 'lucide-react';
@@ -47,9 +48,17 @@ import WebsiteEditorModal from './components/WebsiteEditorModal';
 import { PublicAdmissionPortalModal } from './components/admissions/PublicAdmissionPortalModal';
 
 function SchoolAppContent() {
+  const { center_id } = useParams();
   const { currentUser, isPrincipal, isVicePrincipal, isTeacher, isWarden, isStudent, isParent, isSuperAdmin } = useAuth();
-  const { staff = [], showcaseNotice } = useSchool();
+  const { staff = [], showcaseNotice, activeSchoolId, switchSchool } = useSchool();
   const userRole = currentUser?.role || 'principal';
+
+  // Automatically sync academic center if specified in URL route (e.g. /:center_id)
+  useEffect(() => {
+    if (center_id && center_id !== activeSchoolId && typeof switchSchool === 'function') {
+      switchSchool(center_id);
+    }
+  }, [center_id, activeSchoolId]);
 
   const isAllowedTab = (tab, role) => {
     if (role === 'superadmin') return true;
@@ -113,7 +122,8 @@ function SchoolAppContent() {
     }
   };
 
-  const defaultTab = currentUser ? ((userRole === 'student' || userRole === 'parent') ? 'portal' : 'dashboard') : 'login';
+  // Default landing page: Public Front Website for visitors; Portal/Dashboard for logged-in users
+  const defaultTab = currentUser ? ((userRole === 'student' || userRole === 'parent') ? 'portal' : 'dashboard') : 'public_website';
   const [currentTab, setCurrentTab] = useState(defaultTab);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
@@ -142,7 +152,7 @@ function SchoolAppContent() {
       }
     } else {
       if (currentTab !== 'public_website' && currentTab !== 'login') {
-        setCurrentTab('login');
+        setCurrentTab('public_website');
       }
     }
   }, [currentUser, userRole]);
@@ -520,10 +530,15 @@ function SchoolAppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <SchoolProvider>
-        <SchoolAppContent />
-      </SchoolProvider>
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <SchoolProvider>
+          <Routes>
+            <Route path="/" element={<SchoolAppContent />} />
+            <Route path="/:center_id/*" element={<SchoolAppContent />} />
+          </Routes>
+        </SchoolProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

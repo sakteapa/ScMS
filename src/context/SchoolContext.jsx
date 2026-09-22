@@ -64,6 +64,14 @@ import {
   INITIAL_ACADEMIC_SESSIONS,
   INITIAL_OFFLINE_ADMISSION_CONFIG
 } from '../data/mockData';
+import {
+  GHHSS_SCHOOL_INFO,
+  GHHSS_CLASSES,
+  GHHSS_STUDENTS,
+  GHHSS_STAFF,
+  GHHSS_SYSTEM_CONFIG,
+  GHHSS_WEBSITE_CONFIG
+} from '../data/ghhssData';
 import { TRANSLATIONS } from '../data/translations';
 import { db, collection, getDocs, setDoc, addDoc, doc, query, orderBy, onSnapshot, isOfflinePersistenceActive, isLiveFirebaseConfigured } from '../services/firebase';
 import {
@@ -133,6 +141,30 @@ export function SchoolProvider({ children }) {
         if (legacy) {
           saved = legacy;
           localStorage.setItem(tenantKey, legacy);
+        }
+      }
+
+      // 3. Seed dedicated Govt. Hnahthial Higher Secondary School (GHHSS) data
+      if (!saved && activeSchoolId === 'ghhss') {
+        if (key === 'students') {
+          localStorage.setItem(tenantKey, JSON.stringify(GHHSS_STUDENTS));
+          return GHHSS_STUDENTS;
+        }
+        if (key === 'classes') {
+          localStorage.setItem(tenantKey, JSON.stringify(GHHSS_CLASSES));
+          return GHHSS_CLASSES;
+        }
+        if (key === 'staff') {
+          localStorage.setItem(tenantKey, JSON.stringify(GHHSS_STAFF));
+          return GHHSS_STAFF;
+        }
+        if (key === 'system_config') {
+          localStorage.setItem(tenantKey, JSON.stringify(GHHSS_SYSTEM_CONFIG));
+          return GHHSS_SYSTEM_CONFIG;
+        }
+        if (key === 'website_config') {
+          localStorage.setItem(tenantKey, JSON.stringify(GHHSS_WEBSITE_CONFIG));
+          return GHHSS_WEBSITE_CONFIG;
         }
       }
 
