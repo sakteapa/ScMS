@@ -51,9 +51,9 @@ export default function DashboardView({ setCurrentTab, openRoleSwitcher }) {
               <span className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                 {systemConfig?.schoolName || 'OHA (One Heart Academy)'}
               </span>
-              {center_id && (
+              {activeSchoolId && (
                 <span className="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
-                  Center: {center_id}
+                  Center: {activeSchoolId}
                 </span>
               )}
               <span className="text-[11px] sm:text-xs text-slate-400">Nursery to Class 12</span>
