@@ -88,6 +88,14 @@ import {
   GMHS_SYSTEM_CONFIG,
   GMHS_WEBSITE_CONFIG
 } from '../data/gmhsData';
+import {
+  DEMO_SCHOOL_INFO,
+  DEMO_CLASSES,
+  DEMO_STUDENTS,
+  DEMO_STAFF,
+  DEMO_SYSTEM_CONFIG,
+  DEMO_WEBSITE_CONFIG
+} from '../data/demoSchoolData';
 import { TRANSLATIONS } from '../data/translations';
 import { db, collection, getDocs, setDoc, addDoc, doc, query, orderBy, onSnapshot, isOfflinePersistenceActive, isLiveFirebaseConfigured } from '../services/firebase';
 import {
@@ -160,77 +168,58 @@ export function SchoolProvider({ children }) {
         }
       }
 
+
+      // Helper: detect if a saved system_config/website_config is contaminated with OHA data
+      const isOhaContaminated = (rawJson) => {
+        try {
+          const p = JSON.parse(rawJson);
+          return (
+            p?.schoolName?.includes('One Heart') ||
+            p?.schoolName?.includes('OHA') ||
+            p?.address?.includes('Lunglawn') ||
+            p?.contact?.address?.includes('Lunglawn') ||
+            p?.hero?.headline?.includes('One Heart')
+          );
+        } catch { return false; }
+      };
+
       // 3. Seed dedicated Govt. Hnahthial Higher Secondary School (GHHSS) data
-      if (!saved && activeSchoolId === 'ghhss') {
-        if (key === 'students') {
-          localStorage.setItem(tenantKey, JSON.stringify(GHHSS_STUDENTS));
-          return GHHSS_STUDENTS;
-        }
-        if (key === 'classes') {
-          localStorage.setItem(tenantKey, JSON.stringify(GHHSS_CLASSES));
-          return GHHSS_CLASSES;
-        }
-        if (key === 'staff') {
-          localStorage.setItem(tenantKey, JSON.stringify(GHHSS_STAFF));
-          return GHHSS_STAFF;
-        }
-        if (key === 'system_config') {
-          localStorage.setItem(tenantKey, JSON.stringify(GHHSS_SYSTEM_CONFIG));
-          return GHHSS_SYSTEM_CONFIG;
-        }
-        if (key === 'website_config') {
-          localStorage.setItem(tenantKey, JSON.stringify(GHHSS_WEBSITE_CONFIG));
-          return GHHSS_WEBSITE_CONFIG;
-        }
+      if (activeSchoolId === 'ghhss') {
+        if (!saved && key === 'students') { localStorage.setItem(tenantKey, JSON.stringify(GHHSS_STUDENTS)); return GHHSS_STUDENTS; }
+        if (!saved && key === 'classes')  { localStorage.setItem(tenantKey, JSON.stringify(GHHSS_CLASSES));  return GHHSS_CLASSES;  }
+        if (!saved && key === 'staff')    { localStorage.setItem(tenantKey, JSON.stringify(GHHSS_STAFF));    return GHHSS_STAFF;    }
+        if (key === 'system_config'  && (!saved || isOhaContaminated(saved)))  { localStorage.setItem(tenantKey, JSON.stringify(GHHSS_SYSTEM_CONFIG));  return GHHSS_SYSTEM_CONFIG;  }
+        if (key === 'website_config' && (!saved || isOhaContaminated(saved)))  { localStorage.setItem(tenantKey, JSON.stringify(GHHSS_WEBSITE_CONFIG)); return GHHSS_WEBSITE_CONFIG; }
       }
 
       // 4. Seed dedicated St. Paul's Higher Secondary School (STPAULS) data
-      if (!saved && activeSchoolId === 'stpauls') {
-        if (key === 'students') {
-          localStorage.setItem(tenantKey, JSON.stringify(STPAULS_STUDENTS));
-          return STPAULS_STUDENTS;
-        }
-        if (key === 'classes') {
-          localStorage.setItem(tenantKey, JSON.stringify(STPAULS_CLASSES));
-          return STPAULS_CLASSES;
-        }
-        if (key === 'staff') {
-          localStorage.setItem(tenantKey, JSON.stringify(STPAULS_STAFF));
-          return STPAULS_STAFF;
-        }
-        if (key === 'system_config') {
-          localStorage.setItem(tenantKey, JSON.stringify(STPAULS_SYSTEM_CONFIG));
-          return STPAULS_SYSTEM_CONFIG;
-        }
-        if (key === 'website_config') {
-          localStorage.setItem(tenantKey, JSON.stringify(STPAULS_WEBSITE_CONFIG));
-          return STPAULS_WEBSITE_CONFIG;
-        }
+      if (activeSchoolId === 'stpauls') {
+        if (!saved && key === 'students') { localStorage.setItem(tenantKey, JSON.stringify(STPAULS_STUDENTS)); return STPAULS_STUDENTS; }
+        if (!saved && key === 'classes')  { localStorage.setItem(tenantKey, JSON.stringify(STPAULS_CLASSES));  return STPAULS_CLASSES;  }
+        if (!saved && key === 'staff')    { localStorage.setItem(tenantKey, JSON.stringify(STPAULS_STAFF));    return STPAULS_STAFF;    }
+        if (key === 'system_config'  && (!saved || isOhaContaminated(saved)))  { localStorage.setItem(tenantKey, JSON.stringify(STPAULS_SYSTEM_CONFIG));  return STPAULS_SYSTEM_CONFIG;  }
+        if (key === 'website_config' && (!saved || isOhaContaminated(saved)))  { localStorage.setItem(tenantKey, JSON.stringify(STPAULS_WEBSITE_CONFIG)); return STPAULS_WEBSITE_CONFIG; }
       }
 
       // 5. Seed dedicated Govt. Mizo Higher Secondary School (GMHS) data
-      if (!saved && activeSchoolId === 'gmhs') {
-        if (key === 'students') {
-          localStorage.setItem(tenantKey, JSON.stringify(GMHS_STUDENTS));
-          return GMHS_STUDENTS;
-        }
-        if (key === 'classes') {
-          localStorage.setItem(tenantKey, JSON.stringify(GMHS_CLASSES));
-          return GMHS_CLASSES;
-        }
-        if (key === 'staff') {
-          localStorage.setItem(tenantKey, JSON.stringify(GMHS_STAFF));
-          return GMHS_STAFF;
-        }
-        if (key === 'system_config') {
-          localStorage.setItem(tenantKey, JSON.stringify(GMHS_SYSTEM_CONFIG));
-          return GMHS_SYSTEM_CONFIG;
-        }
-        if (key === 'website_config') {
-          localStorage.setItem(tenantKey, JSON.stringify(GMHS_WEBSITE_CONFIG));
-          return GMHS_WEBSITE_CONFIG;
-        }
+      if (activeSchoolId === 'gmhs') {
+        if (!saved && key === 'students') { localStorage.setItem(tenantKey, JSON.stringify(GMHS_STUDENTS)); return GMHS_STUDENTS; }
+        if (!saved && key === 'classes')  { localStorage.setItem(tenantKey, JSON.stringify(GMHS_CLASSES));  return GMHS_CLASSES;  }
+        if (!saved && key === 'staff')    { localStorage.setItem(tenantKey, JSON.stringify(GMHS_STAFF));    return GMHS_STAFF;    }
+        if (key === 'system_config'  && (!saved || isOhaContaminated(saved)))  { localStorage.setItem(tenantKey, JSON.stringify(GMHS_SYSTEM_CONFIG));  return GMHS_SYSTEM_CONFIG;  }
+        if (key === 'website_config' && (!saved || isOhaContaminated(saved)))  { localStorage.setItem(tenantKey, JSON.stringify(GMHS_WEBSITE_CONFIG)); return GMHS_WEBSITE_CONFIG; }
       }
+
+      // 6. Seed dedicated Mizoram Model Demonstration Academy (DEMO) data
+      // ALWAYS return canonical seed data for demo — never persist edits
+      if (activeSchoolId === 'demo') {
+        if (key === 'students')      { localStorage.setItem(tenantKey, JSON.stringify(DEMO_STUDENTS));       return DEMO_STUDENTS;       }
+        if (key === 'classes')       { localStorage.setItem(tenantKey, JSON.stringify(DEMO_CLASSES));        return DEMO_CLASSES;        }
+        if (key === 'staff')         { localStorage.setItem(tenantKey, JSON.stringify(DEMO_STAFF));          return DEMO_STAFF;          }
+        if (key === 'system_config') { localStorage.setItem(tenantKey, JSON.stringify(DEMO_SYSTEM_CONFIG));  return DEMO_SYSTEM_CONFIG;  }
+        if (key === 'website_config'){ localStorage.setItem(tenantKey, JSON.stringify(DEMO_WEBSITE_CONFIG)); return DEMO_WEBSITE_CONFIG; }
+      }
+
 
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -435,6 +424,30 @@ export function SchoolProvider({ children }) {
     }
     return base;
   });
+
+  // Runtime guard: if in-memory systemConfig is contaminated with OHA data for a known school,
+  // immediately correct it with the canonical seed config. Must be after systemConfig useState.
+  useEffect(() => {
+    if (!activeSchoolId || activeSchoolId === 'oha' || activeSchoolId === 'default') return;
+    const name = systemConfig?.schoolName || '';
+    const addr = systemConfig?.address || '';
+    const isOha = name.includes('One Heart') || name.includes('OHA') || addr.includes('Lunglawn');
+    if (!isOha) return;
+
+    let correctConfig = null;
+    if (activeSchoolId === 'ghhss')   correctConfig = GHHSS_SYSTEM_CONFIG;
+    if (activeSchoolId === 'stpauls') correctConfig = STPAULS_SYSTEM_CONFIG;
+    if (activeSchoolId === 'gmhs')    correctConfig = GMHS_SYSTEM_CONFIG;
+    if (activeSchoolId === 'demo')    correctConfig = DEMO_SYSTEM_CONFIG;
+
+    if (correctConfig) {
+      setSystemConfig(correctConfig);
+      try {
+        localStorage.setItem(`zoxs_${activeSchoolId}_system_config`, JSON.stringify(correctConfig));
+      } catch (e) {}
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSchoolId, systemConfig?.schoolName]);
   const [paymentConfig, setPaymentConfig] = useState(() => loadInitial('payment_config', INITIAL_PAYMENT_CONFIG));
   const [onlineAdmissionConfig, setOnlineAdmissionConfig] = useState(() => loadInitial('online_admission_config', INITIAL_ONLINE_ADMISSION_CONFIG));
   const [offlineAdmissionConfig, setOfflineAdmissionConfig] = useState(() => loadInitial('offline_admission_config', INITIAL_OFFLINE_ADMISSION_CONFIG));
@@ -4617,13 +4630,17 @@ export function SchoolProvider({ children }) {
   // ==========================================
   const switchSchool = (schoolId) => {
     const cleanId = (schoolId || 'stpauls').toLowerCase().trim();
+    const currentId = (activeSchoolId || '').toLowerCase().trim();
+
+    // Already on this school — nothing to do
+    if (cleanId === currentId) return;
+
     localStorage.setItem('zoxs_active_school_id', cleanId);
-    setActiveSchoolId(cleanId);
-    const allSchools = getRegisteredSchools();
-    const matched = allSchools.find(s => s.id === cleanId || s.subdomain === cleanId) || allSchools[0];
-    setActiveSchoolInfo(matched);
-    updateDynamicPwaBranding(matched);
     switchActiveSchool(cleanId);
+
+    // Full page navigation so all useState initializers re-run with the correct tenant.
+    // This is the safest way to guarantee each school loads its own seed data cleanly.
+    window.location.href = `/${cleanId}`;
   };
 
   const registerSchoolTenant = (schoolData) => {

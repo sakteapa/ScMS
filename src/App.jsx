@@ -46,6 +46,7 @@ import PublicWebsiteView from './views/PublicWebsiteView';
 import LoginView from './views/LoginView';
 import WebsiteEditorModal from './components/WebsiteEditorModal';
 import { PublicAdmissionPortalModal } from './components/admissions/PublicAdmissionPortalModal';
+import PlatformLandingView from './views/PlatformLandingView';
 
 function SchoolAppContent() {
   const { center_id } = useParams();
@@ -534,7 +535,7 @@ export default function App() {
       <AuthProvider>
         <SchoolProvider>
           <Routes>
-            <Route path="/" element={<SchoolAppContent />} />
+            <Route path="/" element={<PlatformLandingView />} />
             <Route path="/:center_id/*" element={<SchoolAppContent />} />
           </Routes>
         </SchoolProvider>

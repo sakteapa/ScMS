@@ -11,6 +11,22 @@
 
 export const DEFAULT_REGISTERED_SCHOOLS = [
   {
+    id: 'demo',
+    name: 'Mizoram Model Demonstration Academy',
+    shortName: 'Mizoram Demo Academy',
+    subdomain: 'demo',
+    code: 'DEMO-MZ-00',
+    address: 'Model Veng, Ramhlun North, Aizawl, Mizoram - 796012',
+    contactPhone: '+91 98623 00100',
+    contactEmail: 'demo.academy@mizoramschool.edu.in',
+    motto: 'Inspiring Excellence & Innovation (Hlawhtlinna leh Hmasawnna)',
+    affiliationBadge: 'MBSE Model Lab • Live Interactive Demo',
+    primaryColor: '#6366f1',
+    secondaryColor: '#06b6d4',
+    establishedYear: 2020,
+    isDemo: true
+  },
+  {
     id: 'oha',
     name: 'One Heart Academy',
     shortName: 'OHA Lunglawn',
@@ -150,7 +166,7 @@ export function getActiveSchoolId() {
   try {
     const pathname = (window.location.pathname || '').replace(/^\/+|\/+$/g, '');
     const firstSegment = pathname.split('/')[0];
-    const reservedRoutes = ['login', 'assets', 'api', 'public_website', 'favicon.ico', 'index.html', 'default'];
+    const reservedRoutes = ['login', 'assets', 'api', 'public_website', 'favicon.ico', 'index.html', 'default', 'platform', 'home'];
     if (firstSegment && !reservedRoutes.includes(firstSegment.toLowerCase())) {
       const cleanPath = firstSegment.trim().toLowerCase();
       localStorage.setItem('zoxs_active_school_id', cleanPath);
