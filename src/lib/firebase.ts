@@ -65,22 +65,37 @@ import {
 } from './offlineSyncService';
 
 // Firebase Client Configuration
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'demo-mizoram-sms-key',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'zoxs-sms.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'zoxs-sms-demo',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'zoxs-sms.appspot.com',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '1234567890',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:1234567890:web:abcdef123456',
+const getResolvedFirebaseConfig = () => {
+  try {
+    const custom = typeof window !== 'undefined' ? localStorage.getItem('zoxs_custom_firebase_config') : null;
+    if (custom) {
+      const parsed = JSON.parse(custom);
+      if (parsed && parsed.apiKey && parsed.projectId) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to parse custom firebase config in lib', e);
+  }
+  return {
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'demo-mizoram-sms-key',
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'zoxs-sms.firebaseapp.com',
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'zoxs-sms-demo',
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'zoxs-sms.appspot.com',
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '1234567890',
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:1234567890:web:abcdef123456',
+  };
 };
 
+const firebaseConfig = getResolvedFirebaseConfig();
+
 export const isLiveFirebaseConfigured = Boolean(
-  import.meta.env.VITE_FIREBASE_API_KEY &&
-  !import.meta.env.VITE_FIREBASE_API_KEY.includes('demo') &&
-  !import.meta.env.VITE_FIREBASE_API_KEY.includes('Demo') &&
-  import.meta.env.VITE_FIREBASE_PROJECT_ID &&
-  import.meta.env.VITE_FIREBASE_PROJECT_ID !== 'zoxs-sms-demo' &&
-  import.meta.env.VITE_FIREBASE_PROJECT_ID !== 'zoxs-sms-mizoram'
+  firebaseConfig.apiKey &&
+  !firebaseConfig.apiKey.includes('demo') &&
+  !firebaseConfig.apiKey.includes('Demo') &&
+  firebaseConfig.projectId &&
+  firebaseConfig.projectId !== 'zoxs-sms-demo' &&
+  firebaseConfig.projectId !== 'zoxs-sms-mizoram'
 );
 
 let app: FirebaseApp;

@@ -20,7 +20,12 @@ import {
   Users, 
   FileText,
   Volume2,
-  VolumeX
+  VolumeX,
+  Move,
+  GripVertical,
+  Mic,
+  MicOff,
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
@@ -48,8 +53,172 @@ export default function SuperAdminAiWidget({ setCurrentTab }) {
   const [isScanning, setIsScanning] = useState(false);
   const [scanReport, setScanReport] = useState(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isListening, setIsListening] = useState(false);
 
+  const recognitionRef = useRef(null);
   const chatEndRef = useRef(null);
+
+  // Initialize Speech Recognition for Super Admin voice dictation
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-IN';
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          if (transcript) {
+            setChatInput(prev => (prev ? `${prev} ${transcript}` : transcript));
+          }
+          setIsListening(false);
+        };
+        recognition.onerror = () => setIsListening(false);
+        recognition.onend = () => setIsListening(false);
+        recognitionRef.current = recognition;
+      }
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) return;
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch {
+        setIsListening(false);
+      }
+    }
+  };
+
+  // ── Draggable FAB Position State ──
+  const [fabPosition, setFabPosition] = useState(() => {
+    try {
+      const saved = localStorage.getItem('zoxs_superadmin_ai_pos');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed?.x === 'number' && typeof parsed?.y === 'number') {
+          return parsed;
+        }
+      }
+    } catch {}
+    return null;
+  });
+
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef({
+    startX: 0,
+    startY: 0,
+    startPosX: 0,
+    startPosY: 0,
+    hasMoved: false,
+  });
+  const fabElementRef = useRef(null);
+
+  // Initialize position on mount (safe bottom-right, clearing bottom navigation)
+  useEffect(() => {
+    if (!fabPosition && typeof window !== 'undefined') {
+      const initX = Math.max(16, window.innerWidth - 76);
+      const initY = Math.max(16, window.innerHeight - 84);
+      setFabPosition({ x: initX, y: initY });
+    }
+  }, [fabPosition]);
+
+  // Keep within screen bounds on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setFabPosition((prev) => {
+        if (!prev) return prev;
+        const btnW = fabElementRef.current?.offsetWidth || 56;
+        const btnH = fabElementRef.current?.offsetHeight || 56;
+        const maxX = Math.max(8, window.innerWidth - btnW - 8);
+        const maxY = Math.max(8, window.innerHeight - btnH - 8);
+        return {
+          x: Math.max(8, Math.min(maxX, prev.x)),
+          y: Math.max(8, Math.min(maxY, prev.y)),
+        };
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handlePointerDown = (e) => {
+    if (e.button && e.button !== 0) return;
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const curX = fabPosition?.x ?? (window.innerWidth - 76);
+    const curY = fabPosition?.y ?? (window.innerHeight - 84);
+
+    dragRef.current = {
+      startX: clientX,
+      startY: clientY,
+      startPosX: curX,
+      startPosY: curY,
+      hasMoved: false,
+    };
+
+    const handlePointerMove = (moveEvt) => {
+      const curMoveX = moveEvt.touches ? moveEvt.touches[0].clientX : moveEvt.clientX;
+      const curMoveY = moveEvt.touches ? moveEvt.touches[0].clientY : moveEvt.clientY;
+      const dx = curMoveX - dragRef.current.startX;
+      const dy = curMoveY - dragRef.current.startY;
+
+      if (!dragRef.current.hasMoved && Math.hypot(dx, dy) > 4) {
+        dragRef.current.hasMoved = true;
+        setIsDragging(true);
+      }
+
+      if (dragRef.current.hasMoved) {
+        const btnW = fabElementRef.current?.offsetWidth || 56;
+        const btnH = fabElementRef.current?.offsetHeight || 56;
+        const maxX = Math.max(8, window.innerWidth - btnW - 8);
+        const maxY = Math.max(8, window.innerHeight - btnH - 8);
+        const nextX = Math.max(8, Math.min(maxX, dragRef.current.startPosX + dx));
+        const nextY = Math.max(8, Math.min(maxY, dragRef.current.startPosY + dy));
+        setFabPosition({ x: nextX, y: nextY });
+      }
+    };
+
+    const handlePointerUp = () => {
+      window.removeEventListener('mousemove', handlePointerMove);
+      window.removeEventListener('mouseup', handlePointerUp);
+      window.removeEventListener('touchmove', handlePointerMove);
+      window.removeEventListener('touchend', handlePointerUp);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+
+      if (dragRef.current.hasMoved) {
+        setTimeout(() => setIsDragging(false), 50);
+        setFabPosition((finalPos) => {
+          if (finalPos) {
+            try {
+              localStorage.setItem('zoxs_superadmin_ai_pos', JSON.stringify(finalPos));
+            } catch {}
+          }
+          return finalPos;
+        });
+      } else {
+        setIsDragging(false);
+        setIsOpen((prev) => !prev);
+        playChime();
+      }
+    };
+
+    window.addEventListener('mousemove', handlePointerMove);
+    window.addEventListener('mouseup', handlePointerUp);
+    window.addEventListener('touchmove', handlePointerMove, { passive: true });
+    window.addEventListener('touchend', handlePointerUp);
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+  };
 
   // Play subtle feedback chime
   const playChime = () => {
@@ -139,11 +308,57 @@ export default function SuperAdminAiWidget({ setCurrentTab }) {
     }, 400);
   };
 
+  const getDockInlineStyle = () => {
+    if (typeof window === 'undefined' || !fabPosition) return {};
+    const isMobile = window.innerWidth < 640;
+    if (isMobile) {
+      return {
+        position: 'fixed',
+        left: '12px',
+        right: '12px',
+        bottom: '84px',
+        zIndex: 9995,
+      };
+    }
+
+    const dockW = 420;
+    const dockH = Math.min(580, window.innerHeight * 0.85);
+
+    // X alignment
+    let left = fabPosition.x - dockW + 60;
+    if (left < 16) {
+      left = Math.max(16, fabPosition.x);
+    }
+    if (left + dockW > window.innerWidth - 16) {
+      left = Math.max(16, window.innerWidth - dockW - 16);
+    }
+
+    // Y alignment
+    let top = fabPosition.y - dockH - 12;
+    if (top < 16) {
+      if (fabPosition.y + 64 + dockH <= window.innerHeight - 16) {
+        top = fabPosition.y + 64;
+      } else {
+        top = Math.max(16, Math.min(window.innerHeight - dockH - 16, fabPosition.y - dockH / 2));
+      }
+    }
+
+    return {
+      position: 'fixed',
+      left: `${left}px`,
+      top: `${top}px`,
+      zIndex: 9995,
+    };
+  };
+
   return (
-    <div className="fixed bottom-20 sm:bottom-6 right-3 sm:right-6 z-50 font-sans">
+    <>
       {/* 1. EXPANDED AI DOCK */}
       {isOpen && (
-        <div className="w-[calc(100vw-1.5rem)] sm:w-[420px] max-w-[420px] h-[520px] sm:h-[580px] max-h-[75vh] sm:max-h-[85vh] bg-[#0c1322] border border-cyan-500/30 rounded-3xl shadow-2xl flex flex-col overflow-hidden mb-3 animate-in fade-in slide-in-from-bottom-5">
+        <div 
+          style={getDockInlineStyle()}
+          className="w-[calc(100vw-1.5rem)] sm:w-[420px] max-w-[420px] h-[520px] sm:h-[580px] max-h-[75vh] sm:max-h-[85vh] bg-[#0c1322] border border-cyan-500/30 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        >
           {/* Top Dock Header */}
           <div className="p-4 bg-gradient-to-r from-slate-900 via-indigo-950/60 to-slate-900 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -195,6 +410,19 @@ export default function SuperAdminAiWidget({ setCurrentTab }) {
                 <ChevronDown className="w-4 h-4" />
               </button>
             </div>
+          </div>
+
+          {/* Super Admin Root Access Banner */}
+          <div className="px-3.5 py-1.5 bg-gradient-to-r from-amber-500/15 via-cyan-500/10 to-indigo-500/15 border-b border-amber-500/30 flex items-center justify-between text-[11px] text-amber-200">
+            <div className="flex items-center gap-1.5 truncate">
+              <span className="text-amber-400 font-bold shrink-0">👑</span>
+              <span className="font-semibold truncate">
+                Super Admin Root Control • Code &amp; Software Data Read/Write
+              </span>
+            </div>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+              Global Root
+            </span>
           </div>
 
           {/* Sub-Tab Navigation Bar */}
@@ -442,16 +670,20 @@ export default function SuperAdminAiWidget({ setCurrentTab }) {
           {activeSubTab === 'chat' && (
             <div className="px-3 py-1.5 bg-slate-950/90 border-t border-slate-800/60 flex items-center gap-1.5 overflow-x-auto scrollbar-none text-[10px]">
               {[
+                { label: '🛠️ Fix All Issues', prompt: 'fix all issues auto repair' },
+                { label: '🏫 Register School', prompt: 'School thar register rawh: Bethel High School' },
+                { label: '🏢 All Schools', prompt: 'school zawng zawng list' },
+                { label: '📢 Broadcast Notice', prompt: 'Global notice tichhuak rawh: Emergency Server Maintenance' },
+                { label: '💻 Inject CSS', prompt: 'css: .stat-card { border-radius: 16px; }' },
+                { label: '🔓 Open Admissions', prompt: 'online admission hawng rawh' },
                 { label: '🔍 System Scan', prompt: 'System health scan nei rawh' },
-                { label: '📝 Admissions', prompt: 'Admission pending zat leh dinhmun' },
-                { label: '💰 Fee Arrears', prompt: 'Fee ba leh collection status' },
                 { label: '⚡ Dev Studio', prompt: 'Dev Studio code editor hawng rawh' }
               ].map((chip, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => handleSendMessage(chip.prompt)}
-                  className="px-2 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 border border-slate-800 transition whitespace-nowrap shrink-0"
+                  className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 border border-slate-800 transition whitespace-nowrap shrink-0 flex items-center gap-1"
                 >
                   {chip.label}
                 </button>
@@ -460,55 +692,104 @@ export default function SuperAdminAiWidget({ setCurrentTab }) {
           )}
 
           {/* Dock Bottom Command Bar */}
-          <div className="p-3 bg-slate-950 border-t border-slate-800 flex items-center gap-2">
-            <input
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Ask AI or give command (Mizo / English)..."
-              className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
-            />
-            <button
-              type="button"
-              onClick={() => handleSendMessage()}
-              disabled={!chatInput.trim()}
-              className="p-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 text-slate-950 font-bold transition shadow"
-            >
-              <Send className="w-4 h-4" />
-            </button>
+          <div className="p-3 bg-slate-950 border-t border-slate-800 flex flex-col gap-2">
+            {isListening && (
+              <div className="px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/40 text-[11px] text-rose-300 flex items-center gap-2 animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                <span>🎤 Super Admin thu sawi a ngaithla mek e... (Listening)</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleListening}
+                className={`p-2 rounded-xl border transition shrink-0 ${
+                  isListening 
+                    ? 'bg-rose-500 text-white border-rose-400 animate-pulse' 
+                    : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-cyan-300 hover:border-cyan-500'
+                }`}
+                title={isListening ? 'Stop listening' : 'Voice Dictation (Mic hmang rawh)'}
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Super Admin prompt / write command (Mizo / English)..."
+                className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+              />
+              <button
+                type="button"
+                onClick={() => handleSendMessage()}
+                disabled={!chatInput.trim()}
+                className="p-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 text-slate-950 font-bold transition shadow shrink-0"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* 2. FLOATING TRIGGER BUTTON (PULSING ORB) */}
-      <button
-        type="button"
-        onClick={() => {
-          setIsOpen(!isOpen);
-          playChime();
-        }}
-        className={`relative p-3.5 sm:p-4 rounded-2xl shadow-2xl transition-all duration-300 flex items-center justify-center cursor-pointer group ${
-          isOpen
-            ? 'bg-slate-800 text-cyan-400 border border-slate-700'
-            : 'bg-gradient-to-tr from-cyan-500 via-indigo-600 to-purple-600 text-slate-950 hover:scale-105 shadow-cyan-500/25'
+      {/* 2. DRAGGABLE FLOATING TRIGGER BUTTON */}
+      <div
+        ref={fabElementRef}
+        onMouseDown={handlePointerDown}
+        onTouchStart={handlePointerDown}
+        style={
+          fabPosition
+            ? {
+                position: 'fixed',
+                left: `${fabPosition.x}px`,
+                top: `${fabPosition.y}px`,
+                touchAction: 'none',
+                zIndex: 9999,
+              }
+            : {
+                position: 'fixed',
+                bottom: '80px',
+                right: '16px',
+                touchAction: 'none',
+                zIndex: 9999,
+              }
+        }
+        className={`select-none group flex items-center justify-center ${
+          isDragging
+            ? 'cursor-grabbing scale-110 ring-4 ring-cyan-400/50 rounded-2xl shadow-cyan-500/50 shadow-2xl'
+            : 'cursor-grab hover:scale-105 active:scale-95 transition-transform duration-150'
         }`}
-        title="Super Admin AI System Co-Pilot (Click to toggle)"
+        title="Super Admin AI Assistant (Hnuk kual theih a ni / Drag anywhere to reposition)"
       >
-        <Bot className="w-6 h-6 transition-transform group-hover:rotate-12" />
-        
-        {/* Unread Critical Alert Badge */}
-        {(criticalCount > 0 || pendingActionsCount > 0) && !isOpen && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white font-mono font-bold text-[10px] flex items-center justify-center shadow-lg animate-pulse border-2 border-slate-950">
-            {criticalCount + pendingActionsCount}
-          </span>
-        )}
+        <div
+          className={`relative p-3.5 sm:p-4 rounded-2xl shadow-2xl flex items-center justify-center transition-all ${
+            isOpen
+              ? 'bg-slate-800 text-cyan-400 border border-slate-700 ring-2 ring-cyan-500/50'
+              : 'bg-gradient-to-tr from-cyan-500 via-indigo-600 to-purple-600 text-slate-950 shadow-cyan-500/30'
+          }`}
+        >
+          <Bot className="w-6 h-6 pointer-events-none transition-transform group-hover:rotate-12" />
 
-        {/* Pulse Aura */}
-        {!isOpen && (
-          <span className="absolute inset-0 rounded-2xl bg-cyan-400 opacity-20 animate-ping pointer-events-none" />
-        )}
-      </button>
-    </div>
+          {/* Drag Handle Indicator Pill */}
+          <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full bg-slate-950/90 text-[8px] font-mono text-cyan-300 opacity-0 group-hover:opacity-100 transition shadow pointer-events-none flex items-center gap-0.5 border border-cyan-500/40">
+            <Move className="w-2.5 h-2.5" />
+            <span>drag</span>
+          </div>
+
+          {/* Unread Critical Alert Badge */}
+          {(criticalCount > 0 || pendingActionsCount > 0) && !isOpen && (
+            <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white font-mono font-bold text-[10px] flex items-center justify-center shadow-lg animate-pulse border-2 border-slate-950 pointer-events-none">
+              {criticalCount + pendingActionsCount}
+            </span>
+          )}
+
+          {/* Pulse Aura */}
+          {!isOpen && (
+            <span className="absolute inset-0 rounded-2xl bg-cyan-400 opacity-20 animate-ping pointer-events-none" />
+          )}
+        </div>
+      </div>
+    </>
   );
 }

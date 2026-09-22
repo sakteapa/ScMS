@@ -14,7 +14,10 @@ import {
   UserPlus,
   Check,
   FileText,
-  Clock
+  Clock,
+  Server,
+  Archive,
+  ExternalLink
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 
@@ -247,6 +250,34 @@ export default function ExportModal({ isOpen, onClose }) {
               <span>Download Batch</span>
             </button>
           </div>
+        </div>
+
+        {/* Web Hosting Production Deployment Banner */}
+        <div className="mx-6 mt-4 p-4 rounded-2xl bg-gradient-to-r from-emerald-950/50 via-slate-900 to-cyan-950/40 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0">
+              <Server className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-bold text-white">Web Hosting Server Package (.ZIP)</h4>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  Ready to Deploy
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                cPanel, Hostinger, GoDaddy <code className="text-emerald-400 bg-slate-950 px-1 py-0.5 rounded">public_html</code>-a upload mai theih tur build sa vek a ni.
+              </p>
+            </div>
+          </div>
+          <a
+            href="/scms-production-webhosting.zip"
+            download="scms-production-webhosting.zip"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-md shadow-emerald-500/20 transition shrink-0"
+          >
+            <Archive className="w-4 h-4" />
+            <span>Download ZIP (999 KB)</span>
+          </a>
         </div>
 
         {/* Options List */}

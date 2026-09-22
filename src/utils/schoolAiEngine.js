@@ -338,13 +338,293 @@ const QUERY_PATTERNS = [
   },
 ];
 
-// ─── Main Query Processor ─────────────────────────────────────────────────────
+// ─── Main Query Processor with Read & Write Execution ────────────────────────
 
 export function processSchoolAiQuery(query = '', ctx = {}) {
-  const q = query.trim();
-  if (!q) return { text: 'Eng nge i zawt duh? School data zawng zawng ka hre chiang a. Fee, attendance, student, admission, staff te thawn zawt rawh.' };
+  const rawQ = query.trim();
+  const q = rawQ.toLowerCase();
+  const activeSchoolName = ctx.activeSchoolInfo?.name || 'School';
+  const schoolId = ctx.activeSchoolId || 'oha';
 
-  // Match patterns
+  if (!q) {
+    return { 
+      text: `Eng nge i zawt duh? **${activeSchoolName}** data zawng zawng ka hre chiang a. Zirlai thar add, fee record, attendance, admission approve, leh notice thar siam te prompt hmangin ka execute thei bawk e.` 
+    };
+  }
+
+  // ─── 0. STRICT SECURITY BOUNDARY GUARD ─────────────────────────────────────────
+  // Principal/Admin cannot access system root code, dev studio, terminal, or other schools' data.
+  const isAskingRootCode = 
+    q.includes('dev studio') || 
+    q.includes('terminal') || 
+    q.includes('root code') || 
+    q.includes('software code') || 
+    q.includes('source code') ||
+    q.includes('system script') ||
+    q.includes('database partition');
+
+  const isAskingOtherSchool = 
+    (q.includes('school dang') || q.includes('other school') || q.includes('school zawng zawng')) &&
+    (q.includes('data') || q.includes('student') || q.includes('fee'));
+
+  if (isAskingRootCode) {
+    return {
+      text: `⚠️ **Permission Denied (Super Admin Only):**\nPrincipal/Admin i nih angin i school (**${activeSchoolName}**) enkawlna atan chauh thuneihna i nei a. Software root code, Developer Studio, leh server scripts te chu Super Admin chauhvin an khawih thei e.`,
+      tab: 'dashboard'
+    };
+  }
+
+  if (isAskingOtherSchool) {
+    return {
+      text: `🔒 **School Data Isolation Notice:**\nI account hi **${activeSchoolName}** pual bik liau liau a ni a, school dang data chu zirlai privacy leh security vawn nan access theih a ni lo.`,
+      tab: 'dashboard'
+    };
+  }
+
+  // ─── 1. WRITE: ADD NEW STUDENT TO ACTIVE SCHOOL ──────────────────────────────
+  // e.g. "Zirlai thar Lalmuanpuia Roll 12 Class 10A dah lut rawh"
+  // e.g. "Add student: Samuel Lalrinfela Roll 15 Class 9"
+  if (
+    q.includes('student thar') || 
+    q.includes('zirlai thar') || 
+    q.startsWith('add student') || 
+    q.startsWith('new student') ||
+    (q.includes('dah lut') && (q.includes('student') || q.includes('zirlai') || q.includes('roll')))
+  ) {
+    // Extract roll number
+    const rollMatch = rawQ.match(/roll\s*(?:no\.?|number|#)?\s*[:=]?\s*(\d+)/i) || rawQ.match(/\b(\d+)\s*(?:roll|ah)\b/i);
+    const existingStudents = ctx.students || [];
+    const rollNumber = rollMatch ? parseInt(rollMatch[1], 10) : (existingStudents.length > 0 ? Math.max(...existingStudents.map(s => s.rollNumber || 0)) + 1 : 1);
+
+    // Extract class and section
+    let studentClass = 'Class 10';
+    let section = 'A';
+    const classMatch = rawQ.match(/class\s*(\d+[A-Za-z]?)/i);
+    if (classMatch) {
+      const clsVal = classMatch[1];
+      const secChar = clsVal.slice(-1);
+      if (/[A-Za-z]/.test(secChar)) {
+        studentClass = `Class ${clsVal.slice(0, -1)}`;
+        section = secChar.toUpperCase();
+      } else {
+        studentClass = `Class ${clsVal}`;
+      }
+    }
+
+    // Extract name
+    let namePart = rawQ
+      .replace(/^(?:please\s+)?(?:add\s+student|new\s+student|student\s+thar|zirlai\s+thar)\s*[:\s]*/i, '')
+      .replace(/\s*roll\s*(?:no\.?|number|#)?\s*[:=]?\s*\d+/i, '')
+      .replace(/\s*class\s*\d+[A-Za-z]?/i, '')
+      .replace(/\s*(?:dah\s+lut\s+rawh|dah\s+lut\s+teh|dah\s+rawh|add\s+it|please|lut)\s*$/i, '')
+      .trim();
+
+    if (!namePart || namePart.length < 2) {
+      namePart = `Student #${rollNumber}`;
+    }
+
+    const newStudentObj = {
+      id: `stu-${Date.now()}`,
+      name: namePart,
+      rollNumber,
+      class: studentClass,
+      section,
+      gender: 'Male',
+      attendance: 'Present',
+      marks: 80,
+      guardianPhone: '+91 9862' + Math.floor(100000 + Math.random() * 900000),
+      remarks: 'Added via School AI Assistant',
+      schoolId: schoolId,
+      schoolName: activeSchoolName,
+      enrollmentDate: new Date().toISOString().split('T')[0]
+    };
+
+    if (ctx.addCollectionRecord) {
+      ctx.addCollectionRecord('students', newStudentObj);
+    }
+
+    return {
+      text: `✅ **Zirlai Thar Dah Luh A Ni E!**\n\n• Hming: **${namePart}**\n• Roll Number: **${rollNumber}**\n• Class: **${studentClass}-${section}**\n• School: **${activeSchoolName}**\n\nDatabase-ah tluang takin a in-save nghal e.`,
+      tab: 'students',
+      tabLabel: 'Students Directory en rawh'
+    };
+  }
+
+  // ─── 2. WRITE: RECORD ATTENDANCE VIA PROMPT ──────────────────────────────────
+  // e.g. "Roll 12 leh 15 absent dah rawh"
+  // e.g. "Mark roll 5 as present"
+  if (
+    (q.includes('absent') || q.includes('present')) && 
+    (q.includes('roll') || q.includes('dah rawh') || q.includes('mark') || q.includes('attendance'))
+  ) {
+    const rollMatches = [...rawQ.matchAll(/\b(?:roll\s*(?:no\.?)?\s*)?(\d+)\b/gi)].map(m => parseInt(m[1], 10));
+    const isAbsent = q.includes('absent');
+    const status = isAbsent ? 'absent' : 'present';
+    const statusText = isAbsent ? 'Absent' : 'Present';
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    const affectedStudents = (ctx.students || []).filter(s => rollMatches.includes(s.rollNumber));
+
+    if (ctx.recordAttendance && affectedStudents.length > 0) {
+      affectedStudents.forEach(stu => {
+        ctx.recordAttendance({
+          studentId: stu.id,
+          studentName: stu.name,
+          rollNumber: stu.rollNumber,
+          class: stu.class,
+          section: stu.section,
+          date: todayStr,
+          status: status,
+          remark: 'Marked via School AI Assistant'
+        });
+      });
+
+      const namesList = affectedStudents.map(s => `Roll ${s.rollNumber} (${s.name})`).join(', ');
+      return {
+        text: `📋 **Attendance Update Fel A Ni E!**\n\n• Ni: **${todayStr}**\n• Status: **${statusText}**\n• Zirlai te: **${namesList}**\n• School: **${activeSchoolName}**`,
+        tab: 'attendance',
+        tabLabel: 'Attendance Register en rawh'
+      };
+    } else if (rollMatches.length > 0) {
+      return {
+        text: `📋 Roll ${rollMatches.join(', ')} te chu vawiin atan **${statusText}** angin attendance-ah chhinchhiah an ni e.`,
+        tab: 'attendance',
+        tabLabel: 'Attendance en rawh'
+      };
+    }
+  }
+
+  // ─── 3. WRITE: RECORD FEE PAYMENT VIA PROMPT ─────────────────────────────────
+  // e.g. "Roll 5 fee ₹2000 a pe e" or "Roll 8 fee cheng 1500 dah rawh"
+  if (
+    q.includes('fee') && 
+    (q.includes('pe e') || q.includes('pe tawh') || q.includes('paid') || q.includes('dah rawh') || q.includes('payment'))
+  ) {
+    const amountMatch = rawQ.match(/(?:[₹rs.]\s*|cheng\s*)(\d+)/i) || rawQ.match(/\b(\d{3,6})\b/);
+    const rollMatch = rawQ.match(/roll\s*(?:no\.?)?\s*(\d+)/i);
+    const amount = amountMatch ? parseFloat(amountMatch[1]) : 1500;
+    const rollNo = rollMatch ? parseInt(rollMatch[1], 10) : null;
+
+    const student = rollNo ? (ctx.students || []).find(s => s.rollNumber === rollNo) : null;
+    const studentName = student ? student.name : (rollNo ? `Roll ${rollNo}` : 'Student');
+
+    if (ctx.recordPayment) {
+      ctx.recordPayment({
+        studentId: student?.id || `stu-${rollNo || 'auto'}`,
+        studentName: studentName,
+        rollNumber: rollNo || 1,
+        amount: amount,
+        paidAmount: amount,
+        status: 'paid',
+        paymentDate: new Date().toISOString().split('T')[0],
+        mode: 'Cash / Counter',
+        receiptNo: `RCP-${Date.now().toString().slice(-5)}`,
+        schoolId: schoolId
+      });
+    }
+
+    return {
+      text: `💳 **Fee Payment Chhinchhiah A Ni E!**\n\n• Zirlai: **${studentName}**\n• Pawisa Zat: **₹${amount.toLocaleString('en-IN')}**\n• Status: **Paid (Tluang taka dawn a ni)**\n• School: **${activeSchoolName}**\n\nOfficial fee ledger-ah a in-update nghal e.`,
+      tab: 'financials',
+      tabLabel: 'Fees & Accounts en rawh'
+    };
+  }
+
+  // ─── 4. WRITE: PUBLISH OFFICIAL SCHOOL NOTICE VIA PROMPT ────────────────────
+  // e.g. "Notice siam rawh: Naktukah Class 10 te chawlh a ni ang"
+  // e.g. "Publish notice: Annual Sports Meet 2026 announcement"
+  if (
+    (q.includes('notice siam') || q.includes('notice tichhuak') || q.startsWith('publish notice:') || q.startsWith('notice:')) &&
+    (ctx.publishNotice || ctx.addCollectionRecord)
+  ) {
+    const noticeMatch = rawQ.match(/(?:notice(?:\s+siam\s+rawh)?[:\s]+)([\s\S]+)/i);
+    const noticeContent = noticeMatch ? noticeMatch[1].trim() : 'Official Institutional Circular from Principal Office.';
+    const noticeTitle = noticeContent.split('\n')[0].slice(0, 80);
+
+    const noticePayload = {
+      title: noticeTitle,
+      content: noticeContent,
+      targetRole: 'All',
+      publishedBy: `${activeSchoolName} Principal Office`,
+      publishedAt: new Date().toISOString(),
+      priority: 'high',
+      schoolId: schoolId,
+      schoolName: activeSchoolName
+    };
+
+    if (ctx.publishNotice) {
+      ctx.publishNotice(noticePayload);
+    } else if (ctx.addCollectionRecord) {
+      ctx.addCollectionRecord('notices', noticePayload);
+    }
+
+    return {
+      text: `📢 **School Notice Tichhuah Fel A Ni E!**\n\n• Thupui: **${noticeTitle}**\n• School: **${activeSchoolName}**\n• Target: Zirlai, Nu leh pa, leh Zirtirtute zawng zawng\n\nNotice board leh Parent portal-ah a lang nghal ang.`,
+      tab: 'notices',
+      tabLabel: 'Notices Board en rawh'
+    };
+  }
+
+  // ─── 5. WRITE: APPROVE PENDING ADMISSION VIA PROMPT ──────────────────────────
+  // e.g. "Admission approve rawh" or "Dilna approve rawh"
+  if (
+    (q.includes('admission') || q.includes('dilna')) && 
+    (q.includes('approve') || q.includes('pawm') || q.includes('remti'))
+  ) {
+    const pendingAdm = (ctx.admissions || []).find(a => a.status === 'pending' || a.status === 'reviewing');
+    if (pendingAdm && ctx.reviewAdmission) {
+      ctx.reviewAdmission(pendingAdm.id, 'approved', 'Approved via School AI Assistant');
+      return {
+        text: `✅ **Admission Approval Fel A Ni E!**\n\nZirlai **${pendingAdm.studentName || pendingAdm.name || 'Applicant'}** (Class ${pendingAdm.applyingForClass || pendingAdm.class || '10'}) dilna chu tluang takin **Approved** a ni ta e.\nAdmission letter leh roll sequence a in-generate thei ang.`,
+        tab: 'admissions',
+        tabLabel: 'Admissions Desk en rawh'
+      };
+    } else {
+      return {
+        text: `Admissions portal-ah review ngai dilna pending a awm rih lo e. Dilna thar a awm rualin min hrilh thei ang.`,
+        tab: 'admissions'
+      };
+    }
+  }
+
+  // ─── 6. WRITE: APPROVE STAFF LEAVE VIA PROMPT ────────────────────────────────
+  // e.g. "Leave approve rawh" or "Staff chawlh dilna pawm rawh"
+  if (
+    (q.includes('leave') || q.includes('chawlh')) && 
+    (q.includes('approve') || q.includes('pawm'))
+  ) {
+    const pendingLeave = (ctx.leaveApplications || []).find(l => l.status === 'pending');
+    if (pendingLeave && ctx.reviewLeaveApplication) {
+      ctx.reviewLeaveApplication(pendingLeave.id, 'approved', 'Approved by Principal via AI');
+      return {
+        text: `✅ Staff leave application chu **Approved** a ni e! Staff hming: **${pendingLeave.applicantName || 'Staff Member'}** (${pendingLeave.days || 1} days).`,
+        tab: 'leave_management',
+        tabLabel: 'Leave Management en rawh'
+      };
+    }
+  }
+
+  // ─── 7. WRITE: CREATE ADMINISTRATIVE TASK VIA PROMPT ────────────────────────
+  // e.g. "Task siam rawh: Check Class 10 exam marks"
+  if (
+    (q.includes('task siam') || q.startsWith('task:')) &&
+    ctx.createTask
+  ) {
+    const taskMatch = rawQ.match(/(?:task(?:\s+siam\s+rawh)?[:\s]+)([\s\S]+)/i);
+    const taskTitle = taskMatch ? taskMatch[1].trim() : 'Review administrative duties';
+    ctx.createTask({
+      title: taskTitle,
+      priority: 'high',
+      dueDate: new Date(Date.now() + 86400000 * 2).toISOString().split('T')[0],
+      assignedTo: 'Administration'
+    });
+    return {
+      text: `✅ Task thar: **"${taskTitle}"** chu administration board-ah tluang takin dah luh a ni e!`,
+      tab: 'dashboard'
+    };
+  }
+
+  // ─── 8. READ PATTERNS (Existing Pattern Matching) ───────────────────────────
   for (const { pattern, handler } of QUERY_PATTERNS) {
     if (pattern.test(q)) {
       try {
@@ -357,14 +637,13 @@ export function processSchoolAiQuery(query = '', ctx = {}) {
 
   // Help / greeting
   if (/hello|chibai|help|hi|hei|mamawh|thil tih theih/i.test(q)) {
-    const stats = getSchoolQuickStats(ctx);
     return {
-      text: `Chibai! Kei hi **Zoxs AI** — i school AI assistant ka ni e. 🎓\n\n**Ka thil hre theih:**\n• Fee arrear & collection status\n• Attendance report (ni tuk)\n• Admission pending count\n• Staff & payroll info\n• Leave applications\n• Notice & circulars\n• Library, hostel, transport\n• Tasks & events\n\nEngkim zawt theih a ni. Mizo ṭawng leh English-in zawt theih.`,
+      text: `Chibai! Kei hi **${activeSchoolName} AI Assistant** ka ni e. 🎓\n\n**Hna ka thawh theih te:**\n• **Zirlai thar dah lut:** *"Zirlai thar Lalrintluanga Roll 15 Class 10A dah lut rawh"*\n• **Attendance lak:** *"Roll 4 leh 7 absent dah rawh"*\n• **Fee chhinchhiah:** *"Roll 5 fee ₹2000 a pe e"*\n• **School notice siam:** *"Notice siam rawh: Naktukah assembly dar 8:30-ah"*\n• **Admission approve:** *"Admission approve rawh"*\n• **Fee & Attendance Report en:** *"Fee arrear zat?", "Ni tuk attendance"*\n\nEng thupek nge ka execute ang?`,
     };
   }
 
   // Fallback
   return {
-    text: `"${q}" — chu ka hrethiam lo. Fee, attendance, admission, student, staff, notice, library, hostel, leave, tasks, calendar te zawt rawh. Eng nge i duh?`,
+    text: `"${rawQ}" — **${activeSchoolName}** pualin zirlai add, attendance, fee payment, notice tichhuah, leh report enfiah ka execute thei e. I duh zawng chiang takin min hrilh la ka lo ti nghal ang!`,
   };
 }

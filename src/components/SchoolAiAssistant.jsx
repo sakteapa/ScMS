@@ -3,7 +3,7 @@ import {
   Bot, Sparkles, X, Send, Activity, AlertTriangle, CheckCircle2,
   ChevronDown, ArrowRight, Zap, TrendingUp, Users, DollarSign,
   CalendarDays, FileText, MessageCircle, Volume2, VolumeX, Minimize2,
-  Maximize2, RefreshCw, School, GripVertical, RotateCcw
+  Maximize2, RefreshCw, School, GripVertical, RotateCcw, Mic, MicOff, ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
@@ -41,7 +41,7 @@ function RichText({ text }) {
 export default function SchoolAiAssistant({ setCurrentTab }) {
   const { currentUser } = useAuth();
   const schoolCtx = useSchool();
-  const { systemConfig, activeSchoolInfo } = schoolCtx;
+  const { systemConfig, activeSchoolInfo, activeSchoolId } = schoolCtx;
 
   // Gate: only show to allowed roles when enabled
   const aiConfig = systemConfig?.schoolAiAssistant || {};
@@ -59,17 +59,59 @@ export default function SchoolAiAssistant({ setCurrentTab }) {
   const [stats, setStats] = useState({});
   const [isScanning, setIsScanning] = useState(false);
   const [lastScan, setLastScan] = useState(null);
+  const [isListening, setIsListening] = useState(false);
+
+  const recognitionRef = useRef(null);
+  const chatEndRef = useRef(null);
+
+  // Initialize Speech Recognition for hands-free voice prompting
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-IN';
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          if (transcript) {
+            setChatInput(prev => (prev ? `${prev} ${transcript}` : transcript));
+          }
+          setIsListening(false);
+        };
+        recognition.onerror = () => setIsListening(false);
+        recognition.onend = () => setIsListening(false);
+        recognitionRef.current = recognition;
+      }
+    }
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      return;
+    }
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (err) {
+        setIsListening(false);
+      }
+    }
+  };
 
   const [messages, setMessages] = useState([
     {
       id: 'init',
       sender: 'ai',
-      text: `Chibai! Kei hi **${aiConfig.assistantName || 'Zoxs AI'}** — i school AI assistant ka ni e. 🎓\n\nFee arrear, attendance, admission, staff, notice te thawn zawt rawh. School data live-in ka en a, a tul dan angin hna ka thawk ang.`,
+      text: `Chibai! Kei hi **${activeSchoolInfo?.name || 'School'} AI Assistant** ka ni e. 🎓\n\nI school pual bik liau liau a ni a, zirlai thar dah luh (add student), attendance lak, fee payment chhinchhiah, leh official notice tichhuah te prompt hmangin ka execute thei e.`,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     }
   ]);
-
-  const chatEndRef = useRef(null);
 
   // ── Draggable FAB Position State ───────────────────────────────────────────
   const [fabPosition, setFabPosition] = useState(() => {
@@ -280,12 +322,14 @@ export default function SchoolAiAssistant({ setCurrentTab }) {
 
   // ── Quick prompt chips ─────────────────────────────────────────────────────
   const QUICK_PROMPTS = [
-    { label: 'Fee arrear zat?', icon: '₹' },
-    { label: 'Ni tuk attendance', icon: '📊' },
-    { label: 'Admission pending', icon: '📋' },
-    { label: 'Staff zat', icon: '👥' },
-    { label: 'Leave pending', icon: '📅' },
-    { label: 'Task tih tur', icon: '✅' },
+    { label: '➕ Zirlai thar add', prompt: 'Zirlai thar Lalmuanpuia Roll 12 Class 10A dah lut rawh', icon: '👤' },
+    { label: '📋 Roll 4 absent dah', prompt: 'Roll 4 absent dah rawh', icon: '📝' },
+    { label: '💳 Fee pe chhinchhiah', prompt: 'Roll 5 fee ₹2000 a pe e', icon: '₹' },
+    { label: '📢 Notice siam rawh', prompt: 'Notice siam rawh: Naktukah Class 10 te meeting neih tur a ni', icon: '📣' },
+    { label: '✅ Admission approve', prompt: 'Admission approve rawh', icon: '🎓' },
+    { label: 'Fee arrear zat?', prompt: 'Fee arrear zat?', icon: '💰' },
+    { label: 'Ni tuk attendance', prompt: 'Ni tuk attendance', icon: '📊' },
+    { label: 'Task tih tur', prompt: 'Task tih tur', icon: '✅' },
   ];
 
   // ── FAB (Floating Action Button) ───────────────────────────────────────────
@@ -369,6 +413,19 @@ export default function SchoolAiAssistant({ setCurrentTab }) {
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
+          </div>
+
+          {/* School Scope Banner */}
+          <div className="px-3.5 py-1.5 bg-gradient-to-r from-indigo-950/70 via-slate-900 to-indigo-950/70 border-b border-indigo-500/20 flex items-center justify-between text-[11px] text-indigo-300">
+            <div className="flex items-center gap-1.5 truncate">
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <span className="font-semibold truncate">
+                {activeSchoolInfo?.name || 'School'} Admin • Ama School Bik Chauh
+              </span>
+            </div>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shrink-0">
+              School Isolation
+            </span>
           </div>
 
           {!isMinimized && (
@@ -524,7 +581,10 @@ export default function SchoolAiAssistant({ setCurrentTab }) {
                       {QUICK_PROMPTS.map(p => (
                         <button
                           key={p.label}
-                          onClick={() => { setChatInput(p.label); }}
+                          onClick={() => { 
+                            const val = p.prompt || p.label;
+                            setChatInput(val);
+                          }}
                           className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-indigo-900/50 border border-slate-700 hover:border-indigo-500/50 text-[11px] text-slate-300 hover:text-white transition"
                         >
                           <span>{p.icon}</span>
@@ -535,18 +595,36 @@ export default function SchoolAiAssistant({ setCurrentTab }) {
 
                     {/* Input */}
                     <div className="p-3 border-t border-slate-800/60 shrink-0">
-                      <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 focus-within:border-indigo-500 transition">
+                      {isListening && (
+                        <div className="mb-2 px-2.5 py-1 rounded-lg bg-rose-500/20 border border-rose-500/40 text-[11px] text-rose-300 flex items-center gap-2 animate-pulse">
+                          <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                          <span>🎤 Thu sawi rawh... mic a inhawng mek e (Listening...)</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 focus-within:border-indigo-500 transition">
+                        <button
+                          type="button"
+                          onClick={toggleListening}
+                          className={`p-1.5 rounded-lg transition shrink-0 ${
+                            isListening 
+                              ? 'bg-rose-500 text-white animate-pulse' 
+                              : 'text-slate-400 hover:text-indigo-300 hover:bg-slate-800'
+                          }`}
+                          title={isListening ? 'Stop listening' : 'Voice Dictation (Mic hmang rawh)'}
+                        >
+                          {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                        </button>
                         <input
                           value={chatInput}
                           onChange={e => setChatInput(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                          placeholder="Zawt rawh... (Mizo / English)"
+                          placeholder="Zawt rawh emaw thupek pe rawh... (Mizo / English)"
                           className="flex-1 bg-transparent text-sm text-white placeholder-slate-500 outline-none"
                         />
                         <button
                           onClick={handleSend}
                           disabled={!chatInput.trim() || isTyping}
-                          className="p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition"
+                          className="p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition shrink-0"
                         >
                           <Send className="w-3.5 h-3.5" />
                         </button>

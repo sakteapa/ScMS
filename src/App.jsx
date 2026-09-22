@@ -489,13 +489,13 @@ function SchoolAppContent() {
         />
       )}
 
-      {/* Global Super Admin AI Co-Pilot Widget (Super Admin only) */}
+      {/* Global Super Admin AI Co-Pilot Widget (Super Admin only - Full Code & Data Read/Write) */}
       {isSuperAdmin && (
         <SuperAdminAiWidget setCurrentTab={setCurrentTab} />
       )}
 
-      {/* School-Level AI Assistant for Principal / Vice Principal / Admin */}
-      {(isPrincipal || isVicePrincipal || isSuperAdmin) && (
+      {/* School-Level AI Assistant for Principal / Vice Principal / School Admin (Ama School Bik Chauh) */}
+      {!isSuperAdmin && (isPrincipal || isVicePrincipal || currentUser?.role === 'admin') && (
         <SchoolAiAssistant setCurrentTab={setCurrentTab} />
       )}
 
