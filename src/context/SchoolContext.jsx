@@ -4433,7 +4433,14 @@ export function SchoolProvider({ children }) {
   // MULTI-TENANT ACTIONS & CLEAN SLATE INITIALIZATION
   // ==========================================
   const switchSchool = (schoolId) => {
-    switchActiveSchool(schoolId);
+    const cleanId = (schoolId || 'oha').toLowerCase().trim();
+    localStorage.setItem('zoxs_active_school_id', cleanId);
+    setActiveSchoolId(cleanId);
+    const allSchools = getRegisteredSchools();
+    const matched = allSchools.find(s => s.id === cleanId || s.subdomain === cleanId) || allSchools[0];
+    setActiveSchoolInfo(matched);
+    updateDynamicPwaBranding(matched);
+    switchActiveSchool(cleanId);
   };
 
   const registerSchoolTenant = (schoolData) => {

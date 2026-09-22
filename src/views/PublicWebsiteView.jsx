@@ -24,16 +24,26 @@ import {
   Users, 
   Menu, 
   X,
-  HeartHandshake
+  HeartHandshake,
+  School,
+  ChevronDown
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
 import PublicAnnouncementBanner from '../components/PublicAnnouncementBanner';
 
 export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onOpenEditor, onOpenMobileApp }) {
-  const { websiteConfig, notices = [], activeSchoolInfo } = useSchool();
+  const { 
+    websiteConfig, 
+    notices = [], 
+    activeSchoolInfo, 
+    registeredSchools = [], 
+    activeSchoolId, 
+    switchSchool 
+  } = useSchool();
   const { currentUser, isPrincipal } = useAuth();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isSchoolMenuOpen, setIsSchoolMenuOpen] = useState(false);
 
   const cfg = websiteConfig || {};
   const hero = cfg.hero || {};
@@ -136,6 +146,54 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
               <span className="hidden md:inline">Mobile App</span>
             </button>
 
+            {/* Academic Center Switcher Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setIsSchoolMenuOpen(!isSchoolMenuOpen)}
+                className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-purple-500/50 text-slate-200 text-xs font-semibold flex items-center gap-1.5 sm:gap-2 transition cursor-pointer"
+                title="Select Academic Center / School"
+              >
+                <School className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span className="hidden sm:inline max-w-[130px] truncate">{activeSchoolInfo?.shortName || activeSchoolInfo?.name}</span>
+                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+              </button>
+
+              {isSchoolMenuOpen && (
+                <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
+                  <div className="px-3 py-2 border-b border-slate-800/80 mb-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Select Academic Center</span>
+                    <span className="text-xs text-indigo-300 font-semibold">{activeSchoolInfo?.name}</span>
+                  </div>
+                  <div className="space-y-1 max-h-64 overflow-y-auto">
+                    {registeredSchools.map((sch) => (
+                      <button
+                        key={sch.id}
+                        onClick={() => {
+                          setIsSchoolMenuOpen(false);
+                          if (switchSchool) switchSchool(sch.id);
+                        }}
+                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition cursor-pointer ${
+                          activeSchoolId === sch.id
+                            ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold shadow-md shadow-indigo-600/30'
+                            : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                        }`}
+                      >
+                        <div className="min-w-0 pr-2">
+                          <p className="font-semibold truncate">{sch.name}</p>
+                          <p className={`text-[10px] truncate ${activeSchoolId === sch.id ? 'text-indigo-200' : 'text-slate-400'}`}>
+                            {sch.address || sch.affiliationBadge}
+                          </p>
+                        </div>
+                        {activeSchoolId === sch.id && (
+                          <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold shrink-0">Active</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Portal / ERP Login Button */}
             <button
               onClick={onEnterPortal}
@@ -176,6 +234,31 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
                 <span>Admissions</span>
               </button>
             </div>
+
+            {/* Mobile School Switcher */}
+            <div className="py-2 border-b border-slate-800/80 space-y-1">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Academic Center:</p>
+              <div className="grid grid-cols-1 gap-1">
+                {registeredSchools.map((sch) => (
+                  <button
+                    key={sch.id}
+                    onClick={() => {
+                      setIsMobileNavOpen(false);
+                      if (switchSchool) switchSchool(sch.id);
+                    }}
+                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between ${
+                      activeSchoolId === sch.id
+                        ? 'bg-purple-600 text-white font-bold'
+                        : 'text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    <span className="truncate">{sch.shortName || sch.name}</span>
+                    {activeSchoolId === sch.id && <span className="text-[10px] font-mono">✓</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <a href="#about" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">About School</a>
             <a href="#academics" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Academics &amp; Streams</a>
             <a href="#facilities" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Campus Facilities</a>

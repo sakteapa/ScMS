@@ -135,19 +135,7 @@ export function registerNewSchool(schoolData = {}) {
 export function getActiveSchoolId() {
   if (typeof window === 'undefined') return 'oha';
 
-  // 1. Check URL Path Parameter: e.g. /oha or /center_123
-  try {
-    const pathname = (window.location.pathname || '').replace(/^\/+|\/+$/g, '');
-    const firstSegment = pathname.split('/')[0];
-    const reservedRoutes = ['login', 'assets', 'api', 'public_website', 'favicon.ico', 'index.html'];
-    if (firstSegment && !reservedRoutes.includes(firstSegment.toLowerCase())) {
-      const cleanPath = firstSegment.trim().toLowerCase();
-      localStorage.setItem('zoxs_active_school_id', cleanPath);
-      return cleanPath;
-    }
-  } catch {}
-
-  // 2. Check Query Parameter: ?school=stpauls or ?tenant=stpauls
+  // 1. Check Query Parameter: ?school=ghhss or ?tenant=ghhss (highest priority for explicit switcher links)
   try {
     const urlParams = new URLSearchParams(window.location.search);
     const querySchool = urlParams.get('school') || urlParams.get('tenant');
@@ -158,7 +146,19 @@ export function getActiveSchoolId() {
     }
   } catch {}
 
-  // 2. Check Custom Domain (e.g. school has its own domain name like stpaulsaizawl.edu.in)
+  // 2. Check URL Path Parameter: e.g. /ghhss, /stpauls, /gmhs, /oha
+  try {
+    const pathname = (window.location.pathname || '').replace(/^\/+|\/+$/g, '');
+    const firstSegment = pathname.split('/')[0];
+    const reservedRoutes = ['login', 'assets', 'api', 'public_website', 'favicon.ico', 'index.html', 'default'];
+    if (firstSegment && !reservedRoutes.includes(firstSegment.toLowerCase())) {
+      const cleanPath = firstSegment.trim().toLowerCase();
+      localStorage.setItem('zoxs_active_school_id', cleanPath);
+      return cleanPath;
+    }
+  } catch {}
+
+  // 3. Check Custom Domain (e.g. school has its own domain name like stpaulsaizawl.edu.in)
   try {
     const rawHost = (window.location.hostname || '').toLowerCase().replace(/^www\./, '');
     const isLocalhost = rawHost === 'localhost' || rawHost === '127.0.0.1';
@@ -179,7 +179,7 @@ export function getActiveSchoolId() {
     }
   } catch {}
 
-  // 3. Check Hostname Subdomain (e.g. stpauls.zoxs.in -> stpauls)
+  // 4. Check Hostname Subdomain (e.g. stpauls.zoxs.in -> stpauls)
   try {
     const hostname = window.location.hostname;
     const parts = hostname.split('.');
@@ -197,7 +197,7 @@ export function getActiveSchoolId() {
     }
   } catch {}
 
-  // 4. Check Stored Active School in LocalStorage
+  // 5. Check Stored Active School in LocalStorage
   try {
     const saved = localStorage.getItem('zoxs_active_school_id');
     if (saved && saved.trim()) {
@@ -205,7 +205,7 @@ export function getActiveSchoolId() {
     }
   } catch {}
 
-  // 5. Default Fallback Master Tenant
+  // 6. Default Fallback Master Tenant
   return 'oha';
 }
 
@@ -220,19 +220,17 @@ export function getActiveSchoolInfo() {
 }
 
 /**
- * Switch active school tenant and refresh page / update URL
+ * Switch active school tenant and navigate cleanly to /:schoolId
  */
 export function switchActiveSchool(schoolId) {
   try {
-    localStorage.setItem('zoxs_active_school_id', schoolId.toLowerCase());
+    const cleanId = (schoolId || 'oha').toLowerCase().trim();
+    localStorage.setItem('zoxs_active_school_id', cleanId);
     
-    // Update URL query parameter without losing path
-    const url = new URL(window.location.href);
-    url.searchParams.set('school', schoolId.toLowerCase());
-    window.history.replaceState({}, '', url.toString());
-
-    // Refresh to re-initialize isolated states
-    window.location.reload();
+    // Navigate cleanly to the new center's URL path: e.g. /ghhss or /stpauls
+    if (typeof window !== 'undefined') {
+      window.location.href = `/${cleanId}`;
+    }
   } catch (e) {
     console.error('[TenantService] Failed to switch school:', e);
   }
