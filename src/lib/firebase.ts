@@ -78,12 +78,12 @@ const getResolvedFirebaseConfig = () => {
     console.warn('Failed to parse custom firebase config in lib', e);
   }
   return {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'demo-mizoram-sms-key',
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyDSqQiLPUA18t-Y9SoftiYyWUyD9eImWek',
     authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'zoxs-sms.firebaseapp.com',
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'zoxs-sms-demo',
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'zoxs-sms.appspot.com',
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '1234567890',
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:1234567890:web:abcdef123456',
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'zoxs-sms',
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'zoxs-sms.firebasestorage.app',
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '524507763969',
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:524507763969:web:1c45b76be93505751ef700',
   };
 };
 

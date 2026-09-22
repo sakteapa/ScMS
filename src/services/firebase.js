@@ -30,14 +30,15 @@ import {
   signInWithPhoneNumber
 } from 'firebase/auth';
 
-// Standard Firebase configuration with fallback to environment variables or demo configuration
+// Standard Firebase configuration with fallback to environment variables or project configuration
 const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDemoMizoramSchoolKey2026Secure01",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "zoxs-sms-mizoram.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "zoxs-sms-mizoram",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "zoxs-sms-mizoram.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "928374910283",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:928374910283:web:a9f82d1c7e4b901a"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDSqQiLPUA18t-Y9SoftiYyWUyD9eImWek",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "zoxs-sms.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "zoxs-sms",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "zoxs-sms.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "524507763969",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:524507763969:web:1c45b76be93505751ef700",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-QSH1MXTBE5"
 };
 
 // Check if a configuration object represents an active live backend rather than a demo placeholder
