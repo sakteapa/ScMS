@@ -1198,10 +1198,11 @@ export function SchoolProvider({ children }) {
     });
   };
 
-  // 2. Dual payment recording (UPI/GPay vs Cash)
+  // 2. Multi-gateway payment recording (Razorpay / PayTM / Direct UPI / Cash)
   const recordPayment = (paymentData) => {
-    const isUPI = paymentData.paymentMode === 'upi';
-    const receiptPrefix = isUPI ? 'MSS-UPI' : 'MSS-CSH';
+    const mode = paymentData.paymentMode || 'upi';
+    const isOnline = mode === 'upi' || mode === 'razorpay' || mode === 'paytm';
+    const receiptPrefix = mode === 'razorpay' ? 'MSS-RZP' : (mode === 'paytm' ? 'MSS-PTM' : (mode === 'upi' ? 'MSS-UPI' : 'MSS-CSH'));
     const receiptCounter = Math.floor(1000 + Math.random() * 9000);
     const receiptNo = `${receiptPrefix}-2026-${receiptCounter}`;
 
@@ -1212,15 +1213,16 @@ export function SchoolProvider({ children }) {
       admissionNo: paymentData.admissionNo,
       classId: paymentData.classId,
       amount: Number(paymentData.amount),
-      paymentMode: paymentData.paymentMode, // 'upi' | 'cash'
+      paymentMode: mode, // 'upi' | 'razorpay' | 'paytm' | 'cash'
       feeType: paymentData.feeType || 'Tuition Fee',
-      upiId: isUPI ? (paymentData.upiId || 'mizoramschool@oksbi') : null,
-      transactionUtr: isUPI ? paymentData.transactionUtr : null,
-      cashierName: !isUPI ? (paymentData.cashierName || 'R. Laltluanga') : null,
+      upiId: isOnline ? (paymentData.upiId || 'ohalunglawn@oksbi') : null,
+      transactionUtr: isOnline ? (paymentData.transactionUtr || paymentData.transactionId || `TXN_${Date.now().toString().slice(-8)}`) : null,
+      gatewayProvider: paymentData.gatewayProvider || (mode === 'razorpay' ? 'Razorpay Standard' : mode === 'paytm' ? 'Paytm Gateway & All-in-One UPI' : mode === 'upi' ? 'Direct NPCI UPI' : 'Counter Cash'),
+      cashierName: !isOnline ? (paymentData.cashierName || 'R. Laltluanga') : null,
       paymentDate: paymentData.paymentDate || new Date().toISOString().split('T')[0],
       verified: true,
       receiptNo,
-      remarks: paymentData.remarks || (isUPI ? 'Online UPI payment verified' : 'Cash received at fee counter')
+      remarks: paymentData.remarks || (isOnline ? `${paymentData.gatewayProvider || mode.toUpperCase()} online settlement verified` : 'Cash received at fee counter')
     };
 
     setFees(prev => [newFeeRecord, ...prev]);

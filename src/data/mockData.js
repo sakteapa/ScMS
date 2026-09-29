@@ -3413,6 +3413,23 @@ export const INITIAL_PAYMENT_CONFIG = {
       saltIndex: '1',
       environment: 'sandbox',
       description: 'Seamless integration with India’s leading UPI ecosystem.'
+    },
+    paytm: {
+      id: 'paytm',
+      name: 'Paytm Payment Gateway & All-in-One UPI',
+      enabled: false,
+      mid: 'OHA_ED_PAYTM_STAGE_2026',
+      merchantKey: 'sec_ptm_key_8291029384756',
+      websiteName: 'DEFAULT',
+      industryType: 'Retail',
+      channelId: 'WEB',
+      environment: 'staging', // 'staging' | 'production'
+      themeColor: '#00b9f5',
+      enablePaytmWallet: true,
+      enableUpi: true,
+      enableNetbanking: true,
+      enableCards: true,
+      description: 'Official Paytm JS Checkout with Paytm Wallet, Postpaid, UPI, Cards, and Netbanking.'
     }
   }
 };

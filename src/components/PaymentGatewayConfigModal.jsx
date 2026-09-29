@@ -213,6 +213,31 @@ export default function PaymentGatewayConfigModal({ isOpen, onClose, onTestCheck
               </p>
             </div>
 
+            {/* Paytm All-in-One Gateway */}
+            <div
+              onClick={() => setSelectedGatewayId('paytm')}
+              className={`p-3.5 rounded-2xl border transition cursor-pointer space-y-1.5 ${
+                selectedGatewayId === 'paytm'
+                  ? 'bg-sky-500/10 border-sky-500/50 shadow-md'
+                  : 'bg-slate-950/60 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Smartphone className="w-4 h-4 text-sky-400" />
+                  <span className="text-xs font-bold text-white">Paytm Payment Gateway</span>
+                </div>
+                {activeGateway === 'paytm' && (
+                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold uppercase">
+                    Active
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-400 line-clamp-2">
+                Official Paytm JS Checkout: Paytm Wallet, NetBanking, Cards &amp; Fast UPI.
+              </p>
+            </div>
+
             {/* Test Simulation Button */}
             <div className="pt-2">
               <button
@@ -511,6 +536,125 @@ export default function PaymentGatewayConfigModal({ isOpen, onClose, onTestCheck
                         className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:outline-none focus:border-cyan-400"
                       />
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SPECIFIC CONFIG: PAYTM */}
+              {selectedGatewayId === 'paytm' && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-400 font-semibold mb-1">Environment</label>
+                      <select
+                        value={currentGw.environment || 'staging'}
+                        onChange={(e) => handleFieldChange('paytm', 'environment', e.target.value)}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-400"
+                      >
+                        <option value="staging">Staging (Test Environment)</option>
+                        <option value="production">Production (Live Transactions)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 font-semibold mb-1">Website Name</label>
+                      <input
+                        type="text"
+                        value={currentGw.websiteName || 'DEFAULT'}
+                        onChange={(e) => handleFieldChange('paytm', 'websiteName', e.target.value)}
+                        placeholder="DEFAULT or WEBSTAGING"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">
+                      Paytm Merchant ID (MID) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={currentGw.mid || ''}
+                      onChange={(e) => handleFieldChange('paytm', 'mid', e.target.value)}
+                      placeholder="e.g. OHA_ED_PAYTM_STAGE_2026 or Live MID"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">
+                      Paytm Merchant Key (Secret) *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showSecrets['ptm_sec'] ? 'text' : 'password'}
+                        required
+                        value={currentGw.merchantKey || ''}
+                        onChange={(e) => handleFieldChange('paytm', 'merchantKey', e.target.value)}
+                        placeholder="Paytm Merchant Secret Key"
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:outline-none focus:border-cyan-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSecret('ptm_sec')}
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-white"
+                      >
+                        {showSecrets['ptm_sec'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-400 font-semibold mb-1">Industry Type</label>
+                      <input
+                        type="text"
+                        value={currentGw.industryType || 'Retail'}
+                        onChange={(e) => handleFieldChange('paytm', 'industryType', e.target.value)}
+                        placeholder="Retail or Education"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 font-semibold mb-1">Channel ID</label>
+                      <input
+                        type="text"
+                        value={currentGw.channelId || 'WEB'}
+                        onChange={(e) => handleFieldChange('paytm', 'channelId', e.target.value)}
+                        placeholder="WEB or WAP"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pt-1">
+                    <label className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={currentGw.enablePaytmWallet ?? true}
+                        onChange={(e) => handleFieldChange('paytm', 'enablePaytmWallet', e.target.checked)}
+                        className="rounded bg-slate-900 border-slate-700 text-cyan-400"
+                      />
+                      <span className="text-[11px]">Paytm Wallet</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={currentGw.enableUpi ?? true}
+                        onChange={(e) => handleFieldChange('paytm', 'enableUpi', e.target.checked)}
+                        className="rounded bg-slate-900 border-slate-700 text-cyan-400"
+                      />
+                      <span className="text-[11px]">UPI &amp; QR</span>
+                    </label>
+                    <label className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={currentGw.enableCards ?? true}
+                        onChange={(e) => handleFieldChange('paytm', 'enableCards', e.target.checked)}
+                        className="rounded bg-slate-900 border-slate-700 text-cyan-400"
+                      />
+                      <span className="text-[11px]">Cards/NetBank</span>
+                    </label>
                   </div>
                 </div>
               )}
