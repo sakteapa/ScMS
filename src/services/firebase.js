@@ -17,7 +17,8 @@ import {
   query,
   where,
   orderBy,
-  onSnapshot
+  onSnapshot,
+  getDoc
 } from 'firebase/firestore';
 import { 
   getAuth, 
@@ -135,6 +136,7 @@ export {
   where, 
   orderBy, 
   onSnapshot,
+  getDoc,
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,

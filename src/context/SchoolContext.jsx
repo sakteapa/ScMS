@@ -97,7 +97,7 @@ import {
   DEMO_WEBSITE_CONFIG
 } from '../data/demoSchoolData';
 import { TRANSLATIONS } from '../data/translations';
-import { db, collection, getDocs, setDoc, addDoc, doc, query, orderBy, onSnapshot, isOfflinePersistenceActive, isLiveFirebaseConfigured } from '../services/firebase';
+import { db, collection, getDocs, getDoc, setDoc, addDoc, doc, query, orderBy, onSnapshot, isOfflinePersistenceActive, isLiveFirebaseConfigured } from '../services/firebase';
 import {
   getActiveSchoolId,
   getActiveSchoolInfo,
@@ -741,7 +741,6 @@ export function SchoolProvider({ children }) {
     try {
       if (!db) throw new Error('Firebase db is not initialised. Check your credentials.');
       // Lightweight probe: attempt to read a non-existent doc
-      const { getDoc } = await import('firebase/firestore');
       await getDoc(doc(db, '__zoxs_ping__', 'probe'));
       const ts = new Date().toLocaleTimeString();
       setFirebaseSyncStatus(p => ({ ...p, connected: true, lastError: null, pushProgress: null }));

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SchoolProvider, useSchool } from './context/SchoolContext';
@@ -13,40 +13,52 @@ import MobileAppDownloadModal from './components/MobileAppDownloadModal';
 import SuperAdminAiWidget from './components/SuperAdminAiWidget';
 import SchoolAiAssistant from './components/SchoolAiAssistant';
 import MobileBottomNav from './components/MobileBottomNav';
-
-import DashboardView from './views/DashboardView';
-import ClassAdminLiveView from './views/ClassAdminLiveView';
-import AcademicsView from './views/AcademicsView';
-import ReportCardView from './views/ReportCardView';
-import CertificatesView from './views/CertificatesView';
-import RoutineView from './views/RoutineView';
-import AttendanceView from './views/AttendanceView';
-import FinancialsView from './views/FinancialsView';
-import StudentsView from './views/StudentsView';
-import PortalView from './views/PortalView';
-import LibraryView from './views/LibraryView';
-import StaffPayrollView from './views/StaffPayrollView';
-import AdmissionsView from './views/AdmissionsView';
-import TransportHostelView from './views/TransportHostelView';
-import HostelView from './views/HostelView';
-import NoticesView from './views/NoticesView';
-import DevStudioView from './views/DevStudioView';
-import CalendarView from './views/CalendarView';
-import LeaveManagementView from './views/LeaveManagementView';
-import ClinicView from './views/ClinicView';
-import VisitorsView from './views/VisitorsView';
-import InventoryView from './views/InventoryView';
-import AlumniView from './views/AlumniView';
-import CanteenView from './views/CanteenView';
-import GroupConferenceView from './views/GroupConferenceView';
-import LiveBroadcastView from './views/LiveBroadcastView';
-import StaffChatView from './views/StaffChatView';
-import AnalyticsDashboardView from './views/AnalyticsDashboardView';
-import PublicWebsiteView from './views/PublicWebsiteView';
-import LoginView from './views/LoginView';
 import WebsiteEditorModal from './components/WebsiteEditorModal';
 import { PublicAdmissionPortalModal } from './components/admissions/PublicAdmissionPortalModal';
-import PlatformLandingView from './views/PlatformLandingView';
+
+// Code-split / Lazy-loaded Views for on-demand performance and optimal bundle size
+const DashboardView = lazy(() => import('./views/DashboardView'));
+const ClassAdminLiveView = lazy(() => import('./views/ClassAdminLiveView'));
+const AcademicsView = lazy(() => import('./views/AcademicsView'));
+const ReportCardView = lazy(() => import('./views/ReportCardView'));
+const CertificatesView = lazy(() => import('./views/CertificatesView'));
+const RoutineView = lazy(() => import('./views/RoutineView'));
+const AttendanceView = lazy(() => import('./views/AttendanceView'));
+const FinancialsView = lazy(() => import('./views/FinancialsView'));
+const StudentsView = lazy(() => import('./views/StudentsView'));
+const PortalView = lazy(() => import('./views/PortalView'));
+const LibraryView = lazy(() => import('./views/LibraryView'));
+const StaffPayrollView = lazy(() => import('./views/StaffPayrollView'));
+const AdmissionsView = lazy(() => import('./views/AdmissionsView'));
+const TransportHostelView = lazy(() => import('./views/TransportHostelView'));
+const HostelView = lazy(() => import('./views/HostelView'));
+const NoticesView = lazy(() => import('./views/NoticesView'));
+const DevStudioView = lazy(() => import('./views/DevStudioView'));
+const CalendarView = lazy(() => import('./views/CalendarView'));
+const LeaveManagementView = lazy(() => import('./views/LeaveManagementView'));
+const ClinicView = lazy(() => import('./views/ClinicView'));
+const VisitorsView = lazy(() => import('./views/VisitorsView'));
+const InventoryView = lazy(() => import('./views/InventoryView'));
+const AlumniView = lazy(() => import('./views/AlumniView'));
+const CanteenView = lazy(() => import('./views/CanteenView'));
+const GroupConferenceView = lazy(() => import('./views/GroupConferenceView'));
+const LiveBroadcastView = lazy(() => import('./views/LiveBroadcastView'));
+const StaffChatView = lazy(() => import('./views/StaffChatView'));
+const AnalyticsDashboardView = lazy(() => import('./views/AnalyticsDashboardView'));
+const PublicWebsiteView = lazy(() => import('./views/PublicWebsiteView'));
+const LoginView = lazy(() => import('./views/LoginView'));
+const PlatformLandingView = lazy(() => import('./views/PlatformLandingView'));
+
+const RESERVED_ROUTES = ['login', 'assets', 'api', 'public_website', 'favicon.ico', 'index.html', 'default', 'platform', 'home'];
+
+function ViewFallback() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[360px] w-full p-8 text-slate-400 space-y-3">
+      <div className="w-8 h-8 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+      <span className="text-xs font-medium text-slate-400">Loading module...</span>
+    </div>
+  );
+}
 
 function SchoolAppContent() {
   const { center_id } = useParams();
@@ -56,10 +68,15 @@ function SchoolAppContent() {
 
   // Automatically sync academic center if specified in URL route (e.g. /:center_id)
   useEffect(() => {
-    if (center_id && center_id.toLowerCase() !== (activeSchoolId || '').toLowerCase() && typeof switchSchool === 'function') {
-      switchSchool(center_id);
+    if (!center_id) return;
+    const cleanCenter = center_id.toLowerCase().trim();
+    if (RESERVED_ROUTES.includes(cleanCenter)) {
+      return;
     }
-  }, [center_id]);
+    if (cleanCenter !== (activeSchoolId || '').toLowerCase() && typeof switchSchool === 'function') {
+      switchSchool(cleanCenter);
+    }
+  }, [center_id, activeSchoolId]);
 
   const isAllowedTab = (tab, role) => {
     if (role === 'superadmin') return true;
@@ -296,60 +313,65 @@ function SchoolAppContent() {
   if (!currentUser) {
     if (currentTab === 'public_website') {
       return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
-          <PublicWebsiteView
-            onEnterPortal={() => setCurrentTab('login')}
-            onOpenAdmissions={() => setIsPublicAdmissionModalOpen(true)}
-            onOpenEditor={() => setIsWebsiteEditorOpen(true)}
-            onOpenMobileApp={() => setIsMobileAppModalOpen(true)}
-          />
+        <Suspense fallback={<ViewFallback />}>
+          <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
+            <PublicWebsiteView
+              onEnterPortal={() => setCurrentTab('login')}
+              onOpenAdmissions={() => setIsPublicAdmissionModalOpen(true)}
+              onOpenEditor={() => setIsWebsiteEditorOpen(true)}
+              onOpenMobileApp={() => setIsMobileAppModalOpen(true)}
+            />
 
-          {/* Dedicated Public Online Admission Application Portal */}
-          <PublicAdmissionPortalModal
-            isOpen={isPublicAdmissionModalOpen}
-            onClose={() => setIsPublicAdmissionModalOpen(false)}
-            applications={admissions || []}
-            admissionConfig={onlineAdmissionConfig}
-            schoolClasses={classes}
-            onApplicationSubmitted={(newApp) => {
-              if (submitOnlineAdmission) {
-                submitOnlineAdmission(newApp);
-              }
-            }}
-          />
+            {/* Dedicated Public Online Admission Application Portal */}
+            <PublicAdmissionPortalModal
+              isOpen={isPublicAdmissionModalOpen}
+              onClose={() => setIsPublicAdmissionModalOpen(false)}
+              applications={admissions || []}
+              admissionConfig={onlineAdmissionConfig}
+              schoolClasses={classes}
+              onApplicationSubmitted={(newApp) => {
+                if (submitOnlineAdmission) {
+                  submitOnlineAdmission(newApp);
+                }
+              }}
+            />
 
-          <WebsiteEditorModal
-            isOpen={isWebsiteEditorOpen}
-            onClose={() => setIsWebsiteEditorOpen(false)}
-            onViewWebsite={() => setCurrentTab('public_website')}
-          />
+            <WebsiteEditorModal
+              isOpen={isWebsiteEditorOpen}
+              onClose={() => setIsWebsiteEditorOpen(false)}
+              onViewWebsite={() => setCurrentTab('public_website')}
+            />
 
-          <MobileAppDownloadModal
-            isOpen={isMobileAppModalOpen}
-            onClose={() => setIsMobileAppModalOpen(false)}
-            deferredPrompt={deferredPrompt}
-            onDirectInstall={handleDirectInstall}
-          />
-        </div>
+            <MobileAppDownloadModal
+              isOpen={isMobileAppModalOpen}
+              onClose={() => setIsMobileAppModalOpen(false)}
+              deferredPrompt={deferredPrompt}
+              onDirectInstall={handleDirectInstall}
+            />
+          </div>
+        </Suspense>
       );
     }
 
     return (
-      <LoginView
-        onLoginSuccess={(loggedInUser) => {
-          const role = loggedInUser?.role || 'principal';
-          setCurrentTab((role === 'student' || role === 'parent') ? 'portal' : 'dashboard');
-        }}
-        onViewWebsite={() => setCurrentTab('public_website')}
-      />
+      <Suspense fallback={<ViewFallback />}>
+        <LoginView
+          onLoginSuccess={(loggedInUser) => {
+            const role = loggedInUser?.role || 'principal';
+            setCurrentTab((role === 'student' || role === 'parent') ? 'portal' : 'dashboard');
+          }}
+          onViewWebsite={() => setCurrentTab('public_website')}
+        />
+      </Suspense>
     );
   }
 
   if (currentTab === 'public_website') {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
-        <PublicWebsiteView
-          onEnterPortal={() => setCurrentTab((isStudent || isParent) ? 'portal' : 'dashboard')}
+      <Suspense fallback={<ViewFallback />}>
+        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
+          <PublicWebsiteView
+            onEnterPortal={() => setCurrentTab((isStudent || isParent) ? 'portal' : 'dashboard')}
           onOpenAdmissions={() => setIsPublicAdmissionModalOpen(true)}
           onOpenEditor={() => setIsWebsiteEditorOpen(true)}
           onOpenMobileApp={() => setIsMobileAppModalOpen(true)}
@@ -382,7 +404,8 @@ function SchoolAppContent() {
           onDirectInstall={handleDirectInstall}
         />
       </div>
-    );
+    </Suspense>
+  );
   }
 
   return (
@@ -450,7 +473,9 @@ function SchoolAppContent() {
         />
 
         <main className="flex-1 p-3.5 sm:p-6 lg:p-8 pb-24 sm:pb-28 lg:pb-8 max-w-7xl w-full mx-auto min-w-0">
-          {renderActiveView()}
+          <Suspense fallback={<ViewFallback />}>
+            {renderActiveView()}
+          </Suspense>
         </main>
       </div>
 
@@ -534,10 +559,12 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <SchoolProvider>
-          <Routes>
-            <Route path="/" element={<PlatformLandingView />} />
-            <Route path="/:center_id/*" element={<SchoolAppContent />} />
-          </Routes>
+          <Suspense fallback={<ViewFallback />}>
+            <Routes>
+              <Route path="/" element={<PlatformLandingView />} />
+              <Route path="/:center_id/*" element={<SchoolAppContent />} />
+            </Routes>
+          </Suspense>
         </SchoolProvider>
       </AuthProvider>
     </BrowserRouter>
