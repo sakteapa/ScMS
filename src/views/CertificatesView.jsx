@@ -20,7 +20,8 @@ import {
   FileCheck,
   X,
   Eye,
-  Check
+  Check,
+  GraduationCap
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import confetti from 'canvas-confetti';
@@ -34,7 +35,7 @@ export default function CertificatesView() {
   const canIssue = isPrincipal || isVicePrincipal || isSuperAdmin;
 
   const [activeTab, setActiveTab] = useState('generator'); // 'generator' | 'register'
-  const [selectedCertType, setSelectedCertType] = useState('transfer'); // 'transfer' | 'migration' | 'character'
+  const [selectedCertType, setSelectedCertType] = useState('transfer'); // 'transfer' | 'migration' | 'character' | 'provisional'
   const [selectedStudentId, setSelectedStudentId] = useState(students[0]?.id || '');
   const [isSealModalOpen, setIsSealModalOpen] = useState(false);
 
@@ -46,6 +47,10 @@ export default function CertificatesView() {
     studentName: 'Lalmuanpuia Pachuau',
     admissionNo: 'MZ-2026-0101',
     rollNo: '01',
+    penNo: 'PEN-MZ-2026-1001',
+    apaarId: '9876-0001-2026',
+    mbseRegNo: 'MBSE/REG/2026/001',
+    udiseCode: systemConfig?.udiseCode || '15030200101',
     fatherName: 'P.C. Lalthanmawia',
     motherName: 'Lalnunfeli',
     nationality: 'Indian',
@@ -58,6 +63,7 @@ export default function CertificatesView() {
     stream: 'Science',
     academicYear: '2025-2026',
     boardExamResult: 'Passed HSSLC Pre-Board with Distinction',
+    division: 'First Division (Distinction)',
     failedStatus: 'No',
     subjectsStudied: 'Physics, Chemistry, Mathematics, English, Mizo',
     qualifiedForPromotion: 'Yes, Qualified for University Degree Course',
@@ -79,7 +85,6 @@ export default function CertificatesView() {
   // Register Filter
   const [registerFilter, setRegisterFilter] = useState('all');
   const [registerSearch, setRegisterSearch] = useState('');
-  const [reprintCert, setReprintCert] = useState(null);
 
   // Auto-fill form when student is selected
   const handleStudentSelect = (stuId) => {
@@ -88,8 +93,14 @@ export default function CertificatesView() {
     if (!stu) return;
 
     const stuClass = classes.find(c => c.id === stu.classId);
-    const certPrefix = selectedCertType === 'transfer' ? 'TC' : selectedCertType === 'migration' ? 'MIG' : 'BON';
+    const certPrefix = selectedCertType === 'transfer' ? 'TC' : 
+                       selectedCertType === 'migration' ? 'MIG' : 
+                       selectedCertType === 'provisional' ? 'PROV' : 'BON';
     const autoNumber = `${certPrefix}/2026/0${(issuedCertificates.length + 45).toString().padStart(2, '0')}`;
+
+    const penNo = stu.penNo || `PEN-MZ-2026-${stu.admissionNo?.replace(/\D/g, '').padEnd(4, '0') || '1001'}`;
+    const apaarId = stu.apaarId || `9876-${stu.rollNo?.toString().padStart(4, '0') || '0001'}-2026`;
+    const mbseRegNo = stu.mbseRegNo || `MBSE/REG/2026/${stu.rollNo?.toString().padStart(3, '0') || '001'}`;
 
     setCertForm(prev => ({
       ...prev,
@@ -98,20 +109,25 @@ export default function CertificatesView() {
       studentName: `${stu.firstName} ${stu.lastName}`,
       admissionNo: stu.admissionNo,
       rollNo: stu.rollNo,
-      fatherName: stu.guardianName || 'Lalthanpuia',
-      motherName: 'Lalduhawmi',
+      penNo,
+      apaarId,
+      mbseRegNo,
+      fatherName: stu.fatherName || stu.guardianName || 'P.C. Lalthanmawia',
+      motherName: stu.motherName || 'Lalnunfeli',
       dob: stu.dob || '2008-01-01',
       classLastStudied: `${stuClass?.name || 'Class 12'} (${stu.stream ? stu.stream.toUpperCase() : 'General'})`,
       stream: stu.stream ? stu.stream.toUpperCase() : 'General',
-      daysPresent: `${Math.round(216 * (stu.attendanceRate / 100))} / 216 Days (${stu.attendanceRate}%)`,
+      daysPresent: `${Math.round(216 * ((stu.attendanceRate || 92) / 100))} / 216 Days (${stu.attendanceRate || 92}%)`,
       feeClearance: stu.feeStatus === 'cleared' ? 'All dues cleared in full' : 'Clearance provisional upon final ledger audit',
-      conduct: 'Good & Well Behaved'
+      conduct: 'Exemplary & Diligent'
     }));
   };
 
   const handleCertTypeChange = (type) => {
     setSelectedCertType(type);
-    const certPrefix = type === 'transfer' ? 'TC' : type === 'migration' ? 'MIG' : 'BON';
+    const certPrefix = type === 'transfer' ? 'TC' : 
+                       type === 'migration' ? 'MIG' : 
+                       type === 'provisional' ? 'PROV' : 'BON';
     const autoNumber = `${certPrefix}/2026/0${(issuedCertificates.length + 45).toString().padStart(2, '0')}`;
     setCertForm(prev => ({ ...prev, certNumber: autoNumber }));
   };
@@ -138,29 +154,61 @@ export default function CertificatesView() {
     alert(`Official ${selectedCertType.toUpperCase()} Certificate (${certForm.certNumber}) has been generated and recorded in the institutional register!`);
   };
 
-  // Filtered Register Records
+  // Filter Issued Certificates Register
   const filteredRegister = issuedCertificates.filter(cert => {
-    const matchesType = registerFilter === 'all' || cert.certType === registerFilter;
-    const matchesSearch = !registerSearch ||
-      cert.studentName.toLowerCase().includes(registerSearch.toLowerCase()) ||
-      cert.certNumber.toLowerCase().includes(registerSearch.toLowerCase()) ||
-      cert.admissionNo.toLowerCase().includes(registerSearch.toLowerCase());
-    return matchesType && matchesSearch;
+    const matchesFilter = registerFilter === 'all' || cert.certType === registerFilter;
+    const matchesSearch =
+      (cert.studentName && cert.studentName.toLowerCase().includes(registerSearch.toLowerCase())) ||
+      (cert.certNumber && cert.certNumber.toLowerCase().includes(registerSearch.toLowerCase())) ||
+      (cert.admissionNo && cert.admissionNo.toLowerCase().includes(registerSearch.toLowerCase()));
+    return matchesFilter && matchesSearch;
   });
 
   return (
     <div className="space-y-6 pb-16">
+      {/* Dynamic Print Stylesheet for Official A4 Certificate Output */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 8mm 10mm;
+          }
+          body {
+            background: white !important;
+            color: #0f172a !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .no-print, nav, aside, header {
+            display: none !important;
+          }
+          .printable-certificate-sheet {
+            box-shadow: none !important;
+            border: 3px double #0f172a !important;
+            border-radius: 0 !important;
+            padding: 24px 28px !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            background: white !important;
+            color: #0f172a !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
+        }
+      `}</style>
+
       {/* Header */}
       <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-white font-['Outfit'] flex items-center gap-2">
             <span>Institutional Certificates &amp; TC Generator</span>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold">
-              MBSE Standard Format
+              MBSE Form No. TC-1 Standard
             </span>
           </h2>
           <p className="text-xs text-slate-400">
-            Generate and print official School Transfer Certificates (TC), Migration Certificates, and Character/Bonafide Certificates.
+            Generate and print official School Transfer Certificates (TC), Migration Certificates, Bonafide/Character, and Provisional Certificates.
           </p>
         </div>
 
@@ -209,7 +257,7 @@ export default function CertificatesView() {
               <button
                 type="button"
                 onClick={() => handleCertTypeChange('transfer')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                   selectedCertType === 'transfer'
                     ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-lg shadow-cyan-500/20'
                     : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
@@ -221,32 +269,44 @@ export default function CertificatesView() {
               <button
                 type="button"
                 onClick={() => handleCertTypeChange('migration')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                   selectedCertType === 'migration'
                     ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-lg shadow-cyan-500/20'
                     : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                 }`}
               >
                 <Award className="w-4 h-4" />
-                <span>Migration Certificate</span>
+                <span>Migration / NOC</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleCertTypeChange('character')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                   selectedCertType === 'character'
                     ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-lg shadow-cyan-500/20'
                     : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                 }`}
               >
                 <ShieldCheck className="w-4 h-4" />
-                <span>Bonafide &amp; Character Cert</span>
+                <span>Bonafide &amp; Character</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCertTypeChange('provisional')}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                  selectedCertType === 'provisional'
+                    ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-lg shadow-cyan-500/20'
+                    : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                <GraduationCap className="w-4 h-4" />
+                <span>Provisional / Pass Cert</span>
               </button>
             </div>
 
             {/* Quick Student Select */}
             <div className="flex items-center gap-3">
-              <span className="text-xs text-slate-400 font-semibold">Select Student:</span>
+              <span className="text-xs text-slate-400 font-semibold">Auto-fill Student:</span>
               <select
                 value={selectedStudentId}
                 onChange={(e) => handleStudentSelect(e.target.value)}
@@ -317,6 +377,28 @@ export default function CertificatesView() {
                       type="text"
                       value={certForm.admissionNo}
                       onChange={(e) => setCertForm({ ...certForm, admissionNo: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* National Education Standard Identifiers */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">Student PEN (UDISE+)</label>
+                    <input
+                      type="text"
+                      value={certForm.penNo}
+                      onChange={(e) => setCertForm({ ...certForm, penNo: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">APAAR ID</label>
+                    <input
+                      type="text"
+                      value={certForm.apaarId}
+                      onChange={(e) => setCertForm({ ...certForm, apaarId: e.target.value })}
                       className="w-full px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono"
                     />
                   </div>
@@ -448,6 +530,18 @@ export default function CertificatesView() {
                   </div>
                 )}
 
+                {selectedCertType === 'provisional' && (
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">MBSE Division / Grade</label>
+                    <input
+                      type="text"
+                      value={certForm.division}
+                      onChange={(e) => setCertForm({ ...certForm, division: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-white"
+                    />
+                  </div>
+                )}
+
                 <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
                   <button
                     type="button"
@@ -493,21 +587,24 @@ export default function CertificatesView() {
                   <div className="flex items-center justify-center gap-4 text-[10px] text-slate-600 font-mono font-medium pt-0.5">
                     <span>Affiliation No: {systemConfig?.affiliationNo || 'MBSE-HSS-LGL-0421'}</span>
                     <span>•</span>
-                    <span>Estd: {systemConfig?.establishedYear || '1998'}</span>
+                    <span>UDISE: {certForm.udiseCode}</span>
                     <span>•</span>
-                    <span>Campus: {systemConfig?.address?.split(',')[0] || 'Lunglawn, Lunglei'}</span>
+                    <span>Estd: {systemConfig?.establishedYear || '1998'}</span>
                   </div>
                   <div className="pt-2">
                     <span className="inline-block px-4 py-1 rounded-full border-2 border-slate-900 text-xs uppercase tracking-widest font-black font-sans bg-slate-100 shadow-sm">
-                      {selectedCertType === 'transfer' ? 'TRANSFER CERTIFICATE (TC)' : selectedCertType === 'migration' ? 'MIGRATION CERTIFICATE' : 'BONAFIDE & CHARACTER CERTIFICATE'}
+                      {selectedCertType === 'transfer' ? 'TRANSFER CERTIFICATE (MBSE FORM TC-1)' : 
+                       selectedCertType === 'migration' ? 'MIGRATION & NO OBJECTION CERTIFICATE' : 
+                       selectedCertType === 'provisional' ? 'PROVISIONAL / COURSE COMPLETION CERTIFICATE' :
+                       'BONAFIDE & CHARACTER CERTIFICATE'}
                     </span>
                   </div>
                 </div>
 
                 {/* Top Reference Metadata Line */}
-                <div className="flex items-center justify-between text-xs py-3 border-b border-slate-300 font-sans">
+                <div className="flex items-center justify-between text-xs py-2.5 border-b border-slate-300 font-sans">
                   <div>
-                    <span className="text-slate-600">TC / Cert No: </span>
+                    <span className="text-slate-600">Cert / TC No: </span>
                     <strong className="font-mono font-bold text-slate-950">{certForm.certNumber}</strong>
                   </div>
                   <div>
@@ -515,18 +612,18 @@ export default function CertificatesView() {
                     <strong className="font-mono text-slate-900">{certForm.bookNumber}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-600">Admission No: </span>
+                    <span className="text-slate-600">Adm No: </span>
                     <strong className="font-mono text-slate-900">{certForm.admissionNo}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-600">Date of Issue: </span>
+                    <span className="text-slate-600">Date: </span>
                     <strong className="font-mono text-slate-900">{certForm.issueDate}</strong>
                   </div>
                 </div>
 
-                {/* Body Content by Certificate Type */}
+                {/* Body Content: TRANSFER CERTIFICATE */}
                 {selectedCertType === 'transfer' && (
-                  <div className="py-4 space-y-2 text-xs leading-relaxed font-sans">
+                  <div className="py-3 space-y-1.5 text-xs leading-relaxed font-sans">
                     <div className="flex border-b border-dotted border-slate-300 py-1">
                       <span className="w-1/2 text-slate-700">1. Name of the Pupil:</span>
                       <span className="w-1/2 font-bold uppercase text-slate-950">{certForm.studentName}</span>
@@ -540,62 +637,67 @@ export default function CertificatesView() {
                       <span className="w-1/2 font-bold text-slate-950">{certForm.motherName}</span>
                     </div>
                     <div className="flex border-b border-dotted border-slate-300 py-1">
-                      <span className="w-1/2 text-slate-700">4. Nationality &amp; Social Category:</span>
+                      <span className="w-1/2 text-slate-700">4. Student PEN (UDISE+) &amp; APAAR ID:</span>
+                      <span className="w-1/2 font-mono font-medium text-slate-900">{certForm.penNo} • {certForm.apaarId}</span>
+                    </div>
+                    <div className="flex border-b border-dotted border-slate-300 py-1">
+                      <span className="w-1/2 text-slate-700">5. Nationality &amp; Social Category:</span>
                       <span className="w-1/2 text-slate-900">{certForm.nationality} • {certForm.category}</span>
                     </div>
                     <div className="flex border-b border-dotted border-slate-300 py-1">
-                      <span className="w-1/2 text-slate-700">5. Date of first admission into school with class:</span>
+                      <span className="w-1/2 text-slate-700">6. Date of first admission into school with class:</span>
                       <span className="w-1/2 text-slate-900">{certForm.admissionDate} ({certForm.admissionClass})</span>
                     </div>
                     <div className="flex border-b border-dotted border-slate-300 py-1">
-                      <span className="w-1/2 text-slate-700">6. Date of Birth (in figures and words):</span>
+                      <span className="w-1/2 text-slate-700">7. Date of Birth (in figures and words):</span>
                       <span className="w-1/2 text-slate-900">
                         <strong className="font-mono">{certForm.dob}</strong> ({certForm.dobInWords})
                       </span>
                     </div>
                     <div className="flex border-b border-dotted border-slate-300 py-1">
-                      <span className="w-1/2 text-slate-700">7. Class in which the pupil last studied:</span>
+                      <span className="w-1/2 text-slate-700">8. Class in which the pupil last studied:</span>
                       <span className="w-1/2 font-bold text-slate-950">{certForm.classLastStudied}</span>
                     </div>
                     <div className="flex border-b border-dotted border-slate-300 py-1">
-                      <span className="w-1/2 text-slate-700">8. School / Board Annual Exam last taken:</span>
+                      <span className="w-1/2 text-slate-700">9. School / Board Annual Exam last taken:</span>
                       <span className="w-1/2 text-slate-900 font-medium">{certForm.boardExamResult}</span>
                     </div>
                     <div className="flex border-b border-dotted border-slate-300 py-1">
-                      <span className="w-1/2 text-slate-700">9. Whether failed, if so once/twice:</span>
+                      <span className="w-1/2 text-slate-700">10. Whether failed, if so once/twice:</span>
                       <span className="w-1/2 text-slate-900">{certForm.failedStatus}</span>
                     </div>
                     <div className="flex border-b border-dotted border-slate-300 py-1">
-                      <span className="w-1/2 text-slate-700">10. Subjects studied:</span>
+                      <span className="w-1/2 text-slate-700">11. Subjects studied:</span>
                       <span className="w-1/2 text-slate-900">{certForm.subjectsStudied}</span>
                     </div>
                     <div className="flex border-b border-dotted border-slate-300 py-1">
-                      <span className="w-1/2 text-slate-700">11. Whether qualified for promotion to higher class:</span>
+                      <span className="w-1/2 text-slate-700">12. Whether qualified for promotion to higher class:</span>
                       <span className="w-1/2 font-bold text-emerald-800">{certForm.qualifiedForPromotion}</span>
                     </div>
                     <div className="flex border-b border-dotted border-slate-300 py-1">
-                      <span className="w-1/2 text-slate-700">12. Month up to which pupil paid school dues:</span>
+                      <span className="w-1/2 text-slate-700">13. Month up to which pupil paid school dues:</span>
                       <span className="w-1/2 text-slate-900">{certForm.feeClearance}</span>
                     </div>
                     <div className="flex border-b border-dotted border-slate-300 py-1">
-                      <span className="w-1/2 text-slate-700">13. Total attendance in academic session:</span>
+                      <span className="w-1/2 text-slate-700">14. Total attendance in academic session:</span>
                       <span className="w-1/2 font-mono font-medium text-slate-900">{certForm.daysPresent}</span>
                     </div>
                     <div className="flex border-b border-dotted border-slate-300 py-1">
-                      <span className="w-1/2 text-slate-700">14. General conduct &amp; character:</span>
+                      <span className="w-1/2 text-slate-700">15. General conduct &amp; character:</span>
                       <span className="w-1/2 font-bold text-slate-950">{certForm.conduct}</span>
                     </div>
                     <div className="flex border-b border-dotted border-slate-300 py-1">
-                      <span className="w-1/2 text-slate-700">15. Reason for leaving the school:</span>
+                      <span className="w-1/2 text-slate-700">16. Reason for leaving the school:</span>
                       <span className="w-1/2 text-slate-900">{certForm.reasonForLeaving}</span>
                     </div>
                   </div>
                 )}
 
+                {/* Body Content: MIGRATION CERTIFICATE */}
                 {selectedCertType === 'migration' && (
                   <div className="py-8 space-y-4 text-sm leading-relaxed text-slate-800 font-sans text-justify">
                     <p>
-                      This is to officially certify that <strong className="uppercase font-bold text-slate-950">{certForm.studentName}</strong>, Son/Daughter of <strong className="text-slate-950">{certForm.fatherName}</strong> and <strong className="text-slate-950">{certForm.motherName}</strong>, having Admission No: <strong className="font-mono text-slate-950">{certForm.admissionNo}</strong>, was a bonafide student of this institution in <strong className="text-slate-950">{certForm.classLastStudied}</strong> during the academic session <strong className="text-slate-950">{certForm.academicYear}</strong>.
+                      This is to officially certify that <strong className="uppercase font-bold text-slate-950">{certForm.studentName}</strong>, Son/Daughter of <strong className="text-slate-950">{certForm.fatherName}</strong> and <strong className="text-slate-950">{certForm.motherName}</strong>, having Admission No: <strong className="font-mono text-slate-950">{certForm.admissionNo}</strong>, Student PEN: <strong className="font-mono text-slate-950">{certForm.penNo}</strong>, was a bonafide student of this institution in <strong className="text-slate-950">{certForm.classLastStudied}</strong> during the academic session <strong className="text-slate-950">{certForm.academicYear}</strong>.
                     </p>
                     <p>
                       He/She has successfully appeared for the Higher Secondary Examination / Assessment and has cleared all institutional dues.
@@ -609,19 +711,41 @@ export default function CertificatesView() {
                   </div>
                 )}
 
+                {/* Body Content: CHARACTER & BONAFIDE */}
                 {selectedCertType === 'character' && (
                   <div className="py-8 space-y-4 text-sm leading-relaxed text-slate-800 font-sans text-justify">
-                    <p>
+                    <p className="font-bold text-center tracking-widest text-slate-950 uppercase text-xs">
                       TO WHOMSOEVER IT MAY CONCERN
                     </p>
                     <p>
-                      This is to certify that <strong className="uppercase font-bold text-slate-950">{certForm.studentName}</strong>, Son/Daughter of <strong className="text-slate-950">{certForm.fatherName}</strong>, resident of {certForm.district || 'Lunglei'}, Mizoram, is a bonafide student of {systemConfig?.schoolName || 'OHA (One Heart Academy)'}, studying in <strong className="text-slate-950">{certForm.classLastStudied}</strong>, Roll No: <strong className="font-mono text-slate-950">{certForm.rollNo}</strong>, Admission No: <strong className="font-mono text-slate-950">{certForm.admissionNo}</strong>.
+                      This is to certify that <strong className="uppercase font-bold text-slate-950">{certForm.studentName}</strong>, Son/Daughter of <strong className="text-slate-950">{certForm.fatherName}</strong>, resident of {certForm.district || 'Lunglei'}, Mizoram, is a bonafide student of {systemConfig?.schoolName || 'OHA (One Heart Academy)'}, studying in <strong className="text-slate-950">{certForm.classLastStudied}</strong>, Roll No: <strong className="font-mono text-slate-950">{certForm.rollNo}</strong>, Admission No: <strong className="font-mono text-slate-950">{certForm.admissionNo}</strong>, Student PEN: <strong className="font-mono text-slate-950">{certForm.penNo}</strong>.
                     </p>
                     <p>
                       To the best of our official knowledge and institutional records, he/she bears an <strong className="text-slate-950">{certForm.conduct}</strong> moral character and has shown sincere diligence and exemplary participation in school curricular and sports activities.
                     </p>
                     <p>
                       This certificate is issued upon the request of the parent/guardian for the purpose of scholarship, admission verification, and official identification.
+                    </p>
+                  </div>
+                )}
+
+                {/* Body Content: PROVISIONAL CERTIFICATE */}
+                {selectedCertType === 'provisional' && (
+                  <div className="py-8 space-y-4 text-sm leading-relaxed text-slate-800 font-sans text-justify">
+                    <p className="font-bold text-center tracking-widest text-slate-950 uppercase text-xs">
+                      PROVISIONAL PASS &amp; COURSE COMPLETION CERTIFICATE
+                    </p>
+                    <p>
+                      This is to officially certify that <strong className="uppercase font-bold text-slate-950">{certForm.studentName}</strong>, Son/Daughter of <strong className="text-slate-950">{certForm.fatherName}</strong> and <strong className="text-slate-950">{certForm.motherName}</strong>, having Admission No: <strong className="font-mono text-slate-950">{certForm.admissionNo}</strong>, Roll No: <strong className="font-mono text-slate-950">{certForm.rollNo}</strong>, Registration No: <strong className="font-mono text-slate-950">{certForm.mbseRegNo}</strong>, was a regular pupil of this institution.
+                    </p>
+                    <p>
+                      He/She has completed the course of study prescribed by the Mizoram Board of School Education (MBSE) and has successfully passed the final examination in <strong className="text-slate-950">{certForm.classLastStudied}</strong> during the academic session <strong className="text-slate-950">{certForm.academicYear}</strong> in the <strong className="text-indigo-900 font-bold">{certForm.division}</strong>.
+                    </p>
+                    <p>
+                      During the period of his/her stay at this institution, his/her general conduct and character have been found to be <strong className="text-slate-950">{certForm.conduct}</strong>.
+                    </p>
+                    <p>
+                      This provisional certificate is valid until the original diploma and certificate are issued by the Mizoram Board of School Education.
                     </p>
                   </div>
                 )}
@@ -639,6 +763,7 @@ export default function CertificatesView() {
                             certNo: certForm.certNumber,
                             student: certForm.studentName,
                             admNo: certForm.admissionNo,
+                            pen: certForm.penNo,
                             issued: certForm.issueDate,
                             verified: true
                           })}
@@ -707,7 +832,7 @@ export default function CertificatesView() {
           {/* Register Toolbar */}
           <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              {['all', 'transfer', 'migration', 'character'].map((cat) => (
+              {['all', 'transfer', 'migration', 'character', 'provisional'].map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setRegisterFilter(cat)}
@@ -717,7 +842,7 @@ export default function CertificatesView() {
                       : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                   }`}
                 >
-                  {cat === 'all' ? `All (${issuedCertificates.length})` : cat}
+                  {cat === 'all' ? `All (${issuedCertificates.length})` : cat === 'transfer' ? 'TC' : cat}
                 </button>
               ))}
             </div>
@@ -769,6 +894,7 @@ export default function CertificatesView() {
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                           cert.certType === 'transfer' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
                           cert.certType === 'migration' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' :
+                          cert.certType === 'provisional' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
                           'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                         }`}>
                           {cert.certType === 'transfer' ? 'TC' : cert.certType}
@@ -784,7 +910,7 @@ export default function CertificatesView() {
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono ${
                           cert.status === 'active' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                         }`}>
-                          {cert.status}
+                          {cert.status || 'active'}
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-right">
@@ -792,7 +918,7 @@ export default function CertificatesView() {
                           <button
                             onClick={() => {
                               setSelectedCertType(cert.certType);
-                              setCertForm({ ...cert });
+                              setCertForm({ ...certForm, ...cert });
                               setActiveTab('generator');
                             }}
                             className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 font-semibold text-[11px] transition flex items-center gap-1"
