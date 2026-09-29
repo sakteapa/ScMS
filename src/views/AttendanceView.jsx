@@ -34,6 +34,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
 import FaceAttendanceScanner from '../components/FaceAttendanceScanner';
+import SmsWhatsAppNotificationHubModal from '../components/SmsWhatsAppNotificationHubModal';
 
 export default function AttendanceView({ setCurrentTab }) {
   const { 
@@ -45,9 +46,13 @@ export default function AttendanceView({ setCurrentTab }) {
     leaveApplications = [],
     autoAbsentNotificationEnabled = true,
     toggleAutoAbsentNotification,
-    dispatchBulkAbsentNotifications
+    dispatchBulkAbsentNotifications,
+    sendSmsAlert,
+    sendWhatsAppAlert
   } = useSchool();
   const { currentUser } = useAuth();
+
+  const [showSmsHubModal, setShowSmsHubModal] = useState(false);
 
   const [activeTab, setActiveTab] = useState('scanner'); // 'scanner' | 'batch_id_cards' | 'manual_matrix'
   const [selectedClassId, setSelectedClassId] = useState('cls-12-sci');
@@ -215,7 +220,17 @@ export default function AttendanceView({ setCurrentTab }) {
     });
 
     if (newStatus === 'absent' && autoAbsentNotificationEnabled) {
-      showToast(`Absent alert auto-dispatched to ${stu.guardianName || 'Parent'} (${stu.guardianPhone || 'WhatsApp'})`);
+      const phone = stu.guardianPhone || stu.parentPhone;
+      if (phone) {
+        const msg = `Nu leh Pa Chibai, Vawiin ni ${selectedDate} hian i fa ${stu.firstName} ${stu.lastName} (Roll No: #${stu.rollNo}) chu sikul a rawn kal lo (ABSENT) tih kan inhriattir a che. - Principal Office`;
+        try {
+          if (sendSmsAlert) sendSmsAlert(phone, msg, 'sms');
+          if (sendWhatsAppAlert) sendWhatsAppAlert(phone, msg);
+        } catch (e) {
+          console.warn('Absent alert dispatch notice:', e);
+        }
+      }
+      showToast(`Absent alert auto-dispatched to ${stu.guardianName || 'Parent'} (${phone || 'WhatsApp'})`);
     } else {
       showToast(`${stu.firstName} status changed to ${newStatus.toUpperCase()}`);
     }
@@ -728,6 +743,17 @@ export default function AttendanceView({ setCurrentTab }) {
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Mark All Present</span>
               </button>
+
+              {absentStudentsInClass.length > 0 && (
+                <button
+                  onClick={() => setShowSmsHubModal(true)}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-md shadow-rose-950/40"
+                  title="Nu leh pa hnena absent hriattirna thawnna (WhatsApp & SMS)"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Absent WhatsApp Alert ({absentStudentsInClass.length})</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -842,6 +868,21 @@ export default function AttendanceView({ setCurrentTab }) {
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
+
+                          {/* Direct WhatsApp Alert to Parent (when absent) */}
+                          {currentStatus === 'absent' && (
+                            <button
+                              onClick={() => {
+                                const cleanPhone = (st.guardianPhone || '').replace(/[^0-9]/g, '');
+                                const msg = `Nu leh Pa Chibai, Vawiin ni ${selectedDate} hian i fa ${st.firstName} ${st.lastName} (Roll No: #${st.rollNo}, ${selectedClass?.name}) chu sikul a rawn kal lo (ABSENT) tih kan inhriattir a che. - Principal Office`;
+                                window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+                              }}
+                              title="Direct WhatsApp Alert to Parent"
+                              className="p-1 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500 hover:text-slate-950 transition ml-1"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1052,6 +1093,13 @@ export default function AttendanceView({ setCurrentTab }) {
           </div>
         </div>
       )}
+
+      {/* Full SMS & WhatsApp Parent Notification Studio */}
+      <SmsWhatsAppNotificationHubModal
+        isOpen={showSmsHubModal}
+        onClose={() => setShowSmsHubModal(false)}
+        initialTab="attendance"
+      />
     </div>
   );
 }

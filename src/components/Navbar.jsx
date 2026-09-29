@@ -16,7 +16,8 @@ import {
   Smartphone,
   Globe,
   School,
-  LogOut
+  LogOut,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
@@ -32,6 +33,7 @@ export default function Navbar({
   openExportModal,
   openMobileAppModal,
   openWebsiteEditor,
+  openSmsHubModal,
   onViewWebsite
 }) {
   const { currentUser, logout, isPrincipal, isVicePrincipal, isSuperAdmin } = useAuth();
@@ -331,6 +333,18 @@ export default function Navbar({
             title="Firebase Web SDK v10.8.0 Settings"
           >
             <Database className="w-4 h-4 text-indigo-400" />
+          </button>
+        )}
+
+        {/* SMS & WhatsApp Notification Hub Trigger (Staff, Principal, SuperAdmin) */}
+        {(isPrincipal || isVicePrincipal || isSuperAdmin || currentUser?.role === 'teacher') && (
+          <button
+            onClick={openSmsHubModal}
+            className="p-1.5 sm:px-2.5 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-950/70 to-teal-950/70 border border-emerald-500/40 hover:border-emerald-400 text-emerald-300 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold shadow-md shadow-emerald-950/30 shrink-0"
+            title="SMS & WhatsApp Parent Notification Studio (Absent, Fee Due & Exam Results)"
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span className="hidden xl:inline">SMS &amp; WhatsApp</span>
           </button>
         )}
 

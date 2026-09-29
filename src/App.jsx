@@ -15,6 +15,7 @@ import SchoolAiAssistant from './components/SchoolAiAssistant';
 import MobileBottomNav from './components/MobileBottomNav';
 import WebsiteEditorModal from './components/WebsiteEditorModal';
 import { PublicAdmissionPortalModal } from './components/admissions/PublicAdmissionPortalModal';
+import SmsWhatsAppNotificationHubModal from './components/SmsWhatsAppNotificationHubModal';
 
 // Code-split / Lazy-loaded Views for on-demand performance and optimal bundle size
 const DashboardView = lazy(() => import('./views/DashboardView'));
@@ -102,6 +103,7 @@ function SchoolAppContent() {
       case 'class_admin_live':
       case 'report_cards':
       case 'attendance':
+      case 'sms_notifications':
       case 'inventory':
       case 'group_conference':
       case 'live_broadcast':
@@ -150,6 +152,7 @@ function SchoolAppContent() {
   const [isMobileAppModalOpen, setIsMobileAppModalOpen] = useState(false);
   const [isWebsiteEditorOpen, setIsWebsiteEditorOpen] = useState(false);
   const [isPublicAdmissionModalOpen, setIsPublicAdmissionModalOpen] = useState(false);
+  const [isSmsHubOpen, setIsSmsHubOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [selectedStudentForReport, setSelectedStudentForReport] = useState(null);
   
@@ -243,6 +246,14 @@ function SchoolAppContent() {
         return <CalendarView />;
       case 'attendance':
         return <AttendanceView setCurrentTab={setCurrentTab} />;
+      case 'sms_notifications':
+        return (
+          <SmsWhatsAppNotificationHubModal
+            isOpen={true}
+            onClose={() => setCurrentTab('dashboard')}
+            initialTab="attendance"
+          />
+        );
       case 'leave_management':
       case 'leave':
         return <LeaveManagementView />;
@@ -469,6 +480,7 @@ function SchoolAppContent() {
           openExportModal={() => setIsExportModalOpen(true)}
           openMobileAppModal={() => setIsMobileAppModalOpen(true)}
           openWebsiteEditor={() => setIsWebsiteEditorOpen(true)}
+          openSmsHubModal={() => setIsSmsHubOpen(true)}
           onViewWebsite={() => setCurrentTab('public_website')}
         />
 
@@ -513,6 +525,12 @@ function SchoolAppContent() {
         onClose={() => setIsMobileAppModalOpen(false)}
         deferredPrompt={deferredPrompt}
         onDirectInstall={handleDirectInstall}
+      />
+
+      {/* Global SMS & WhatsApp Notification Hub Modal */}
+      <SmsWhatsAppNotificationHubModal
+        isOpen={isSmsHubOpen}
+        onClose={() => setIsSmsHubOpen(false)}
       />
 
       {/* Global 1-on-1 Private Call Modal */}

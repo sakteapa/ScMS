@@ -27,7 +27,9 @@ import {
   Copy,
   Layers,
   ChevronRight,
-  Star
+  Star,
+  Send,
+  MessageSquare
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSchool } from '../context/SchoolContext';
@@ -542,7 +544,8 @@ export default function ReportCardView({ selectedStudentForReport }) {
     updateReportWithholdSettings,
     paymentConfig,
     systemConfig,
-    sealConfig
+    sealConfig,
+    activeSchoolInfo
   } = useSchool();
   const { currentUser, isStudent, isParent, isPrincipal, isVicePrincipal, isTeacher } = useAuth();
 
@@ -606,6 +609,28 @@ export default function ReportCardView({ selectedStudentForReport }) {
     const sAccess = checkReportCardAccess(s.id);
     return !sAccess.isWithheld;
   });
+
+  const handleShareWhatsApp = () => {
+    if (!student) return;
+    const reportData = computeStudentReport(student, grades);
+    const rawPhone = student.guardianPhone || student.parentPhone || '';
+    const phone = rawPhone.replace(/[^0-9]/g, '');
+    const cleanPhone = phone.startsWith('91') ? phone : (phone.length === 10 ? `91${phone}` : phone);
+    
+    const msg = `*${activeSchoolInfo?.name || 'Sikul'} - MBSE Official Exam Result*\n` +
+      `Nu leh Pa Chibai, He hi i fa *${student.firstName} ${student.lastName}* (Roll: #${student.rollNo}, ${studentClass?.name || 'Class 10'}) exam result a ni e:\n\n` +
+      `📊 *Marks*: ${reportData?.grandTotalObtained || 0} / ${reportData?.grandTotalMax || 500} (${reportData?.overallPercentage || 0}%)\n` +
+      `🏅 *Division*: ${reportData?.division || 'Passed'}\n` +
+      `⭐ *Grade*: ${reportData?.overallGrade || 'B1'}\n` +
+      `📋 *Status*: ${reportData?.resultStatus || 'PASSED'}\n\n` +
+      `Official portal-ah result kimchang en theih a ni: ${window.location.origin}`;
+
+    if (cleanPhone) {
+      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+    } else {
+      alert('Parent phone number is not available for this student.');
+    }
+  };
 
   const handlePrint = () => {
     window.print();
@@ -750,15 +775,26 @@ export default function ReportCardView({ selectedStudentForReport }) {
             )}
 
             {(!access.isWithheld || isManagement) && (
-              <button
-                onClick={handlePrint}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-cyan-500/20 flex items-center gap-2"
-              >
-                <Printer className="w-4 h-4" />
-                <span>
-                  {isBatchPrintMode ? `Print Entire Batch (${batchStudents.length} Students)` : 'Print Official A4 PDF'}
-                </span>
-              </button>
+              <>
+                <button
+                  onClick={handleShareWhatsApp}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-lg shadow-emerald-600/20 flex items-center gap-1.5"
+                  title="Share Student Marksheet & Result Summary via WhatsApp to Parent"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>WhatsApp Result</span>
+                </button>
+
+                <button
+                  onClick={handlePrint}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-cyan-500/20 flex items-center gap-2"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>
+                    {isBatchPrintMode ? `Print Entire Batch (${batchStudents.length} Students)` : 'Print Official A4 PDF'}
+                  </span>
+                </button>
+              </>
             )}
           </div>
         </div>

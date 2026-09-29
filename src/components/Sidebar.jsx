@@ -186,6 +186,14 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       badge: null
     },
     {
+      id: 'sms_notifications',
+      label: 'SMS & WhatsApp Broadcast',
+      icon: MessageSquare,
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
+      badge: 'Direct wa.me',
+      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+    },
+    {
       id: 'clinic',
       label: 'Clinic & Sick Bay',
       icon: HeartPulse,
