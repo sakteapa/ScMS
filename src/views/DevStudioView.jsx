@@ -69,8 +69,9 @@ import AcademicCenterSetupWizardModal from '../components/AcademicCenterSetupWiz
 import ExternalSoftwareApiHub from '../components/ExternalSoftwareApiHub';
 import InAppMasterConfigStudio from '../components/InAppMasterConfigStudio';
 import DevStudioAiCoPilot from '../components/DevStudioAiCoPilot';
+import ModuleManagerStudio from '../components/ModuleManagerStudio';
 
-export default function DevStudioView() {
+export default function DevStudioView({ setCurrentTab }) {
   const { currentUser, isSuperAdmin } = useAuth();
   const {
     customScripts,
@@ -147,7 +148,7 @@ export default function DevStudioView() {
     updateWebsiteConfig
   } = useSchool();
 
-  const [activeTab, setActiveTab] = useState('code'); // 'code', 'plugins', 'database', 'branding', 'terminal', 'cloud', 'gateways'
+  const [activeTab, setActiveTab] = useState('modules'); // 'modules', 'wizard', 'in_app_master', 'ai_copilot', 'code', 'plugins', 'database', 'branding', 'terminal', 'cloud', 'gateways', 'api_hub'
   const [configCategory, setConfigCategory] = useState('all');
   const [configSavedToast, setConfigSavedToast] = useState(false);
   const [isDevWebsiteEditorOpen, setIsDevWebsiteEditorOpen] = useState(false);
@@ -343,15 +344,20 @@ export default function DevStudioView() {
     ]);
   };
 
-  if (!isSuperAdmin && currentUser?.role !== 'superadmin') {
+  const isAuthorizedAdmin = isSuperAdmin || 
+    currentUser?.role === 'superadmin' || 
+    currentUser?.role === 'principal' || 
+    currentUser?.role === 'vice_principal';
+
+  if (!isAuthorizedAdmin) {
     return (
       <div className="py-24 text-center space-y-4 font-sans max-w-lg mx-auto">
         <div className="w-16 h-16 rounded-3xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center mx-auto shadow-xl">
           <ShieldCheck className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-bold text-white font-['Outfit']">Access Restricted: Super Admin Only</h2>
+        <h2 className="text-xl font-bold text-white font-['Outfit']">Access Restricted: Administration Only</h2>
         <p className="text-sm text-slate-400 leading-relaxed">
-          Developer Studio leh AI System Co-Pilot hi Super Admin (System Architect) chauhvin an khawih thei a ni. Principal, Staff, emaw Zirlai tan luh theih a ni lo.
+          System Control Center leh Module Manager hi Principal, Vice Principal, leh Super Admin chauhvin an khawih thei a ni.
         </p>
       </div>
     );
@@ -367,18 +373,19 @@ export default function DevStudioView() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5" /> Super Admin / Software Architect
+                <ShieldCheck className="w-3.5 h-3.5" />
+                {currentUser?.role === 'principal' ? 'Principal Control Center' : currentUser?.role === 'vice_principal' ? 'Vice Principal Control Center' : 'Super Admin / System Architect'}
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                In-App IDE Active
+                Institutional Studio Active
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-              <Code2 className="w-8 h-8 text-purple-400" />
-              Developer & Script Studio
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-3 font-['Outfit']">
+              <Sliders className="w-8 h-8 text-indigo-400" />
+              Control Center &amp; Module Studio
             </h1>
             <p className="text-slate-400 text-sm mt-1">
-              Khawvela external software (VS Code, Antigravity IDE) ngai tawh lovin browser chhung atangin software pumpui, CSS, JavaScript, plugins, database, leh resources khawih danglam zung zung rawh le.
+              School module zawng zawng on/off theihna, plugins, extensions, academic setup, branding, gateway, leh system configurations khawih danglamna hmunpui.
             </p>
           </div>
 
@@ -409,6 +416,23 @@ export default function DevStudioView() {
 
         {/* Tab Navigation */}
         <div className="flex items-center gap-2 overflow-x-auto mt-6 pt-4 border-t border-slate-800/80 scrollbar-none">
+          <button
+            onClick={() => setActiveTab('modules')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition shrink-0 ${
+              activeTab === 'modules'
+                ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-600/25 font-bold'
+                : 'text-emerald-300 hover:text-white hover:bg-slate-800/50 border border-emerald-500/30'
+            }`}
+          >
+            <Sliders className="w-4 h-4 text-emerald-400" />
+            <span>Modules &amp; Feature Flags</span>
+            <span className="px-1.5 py-0.2 rounded-full text-xs bg-emerald-500/30 text-emerald-200">
+              {Object.values(systemConfig?.enabledModules || {}).filter(v => v === false).length > 0 
+                ? `${Object.values(systemConfig?.enabledModules || {}).filter(v => v === false).length} Disabled` 
+                : 'All Active'}
+            </span>
+          </button>
+
           <button
             onClick={() => setActiveTab('wizard')}
             className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition shrink-0 ${
@@ -560,6 +584,11 @@ export default function DevStudioView() {
           </button>
         </div>
       </div>
+
+      {/* TAB: MODULES & FEATURE FLAGS MANAGER */}
+      {activeTab === 'modules' && (
+        <ModuleManagerStudio onNavigateTab={setCurrentTab} />
+      )}
 
       {/* TAB: ACADEMIC CENTER STEP-BY-STEP SETUP WIZARD */}
       {activeTab === 'wizard' && (

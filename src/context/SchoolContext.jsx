@@ -2624,6 +2624,51 @@ export function SchoolProvider({ children }) {
     });
   };
 
+  const isModuleEnabled = (moduleId) => {
+    if (!moduleId || moduleId === 'dashboard' || moduleId === 'dev_studio') return true;
+    if (systemConfig?.enabledModules && typeof systemConfig.enabledModules[moduleId] === 'boolean') {
+      return systemConfig.enabledModules[moduleId];
+    }
+    // Backward-compatible fallback for legacy flags
+    if (moduleId === 'hostel' && systemConfig?.enableHostelModule === false) return false;
+    if (moduleId === 'transport' && systemConfig?.enableTransportModule === false) return false;
+    if (moduleId === 'admissions' && systemConfig?.enableOnlineAdmissions === false) return false;
+    if (moduleId === 'sms_notifications' && systemConfig?.enableSmsNotifications === false) return false;
+    return true; // enabled by default
+  };
+
+  const toggleModule = (moduleId, explicitState) => {
+    setSystemConfig(prev => {
+      const current = (prev?.enabledModules && typeof prev.enabledModules[moduleId] === 'boolean')
+        ? prev.enabledModules[moduleId]
+        : true;
+      const nextVal = typeof explicitState === 'boolean' ? explicitState : !current;
+      const updated = {
+        ...prev,
+        enabledModules: {
+          ...(prev?.enabledModules || {}),
+          [moduleId]: nextVal
+        }
+      };
+      saveTenantItem('system_config', updated);
+      return updated;
+    });
+  };
+
+  const setModuleBatchStatus = (moduleStatusMap) => {
+    setSystemConfig(prev => {
+      const updated = {
+        ...prev,
+        enabledModules: {
+          ...(prev?.enabledModules || {}),
+          ...moduleStatusMap
+        }
+      };
+      saveTenantItem('system_config', updated);
+      return updated;
+    });
+  };
+
   // 1-on-1 Private Call State (Video & Voice)
   const [activePrivateCall, setActivePrivateCall] = useState(null); // { user, type }
   const startPrivateCall = (targetUser, callType = 'video') => {
@@ -5286,6 +5331,9 @@ export function SchoolProvider({ children }) {
       deletePlugin,
       resetPluginConfig,
       updateSystemConfig,
+      isModuleEnabled,
+      toggleModule,
+      setModuleBatchStatus,
       updateCollectionRecord,
       addCollectionRecord,
       deleteCollectionRecord,

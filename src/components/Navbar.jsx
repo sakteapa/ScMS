@@ -140,7 +140,8 @@ export default function Navbar({
         case 'transport': return 'School Bus & Live GPS Fleet';
         case 'transport_hostel': return 'Transport Fleet & Hostel Management';
         case 'notices': return 'Hriattirna Broadcast Board';
-        case 'dev_studio': return 'In-App Developer Studio & IDE';
+        case 'id_card_studio': return 'Smart ID & RFID Studio';
+        case 'dev_studio': return 'Control Center & Module Enkawlna';
         default: return 'School Management System';
       }
     }
@@ -152,6 +153,7 @@ export default function Navbar({
       case 'routine': return 'Class Routine & Academic Time Table';
       case 'calendar': return 'Mizoram Academic Calendar & Events';
       case 'attendance': return 'QR Scanner & Real-Time Attendance';
+      case 'id_card_studio': return 'Smart ID Card & RFID Studio';
       case 'financials': return 'Financial Ledger & Dual Payment Gateway';
       case 'students': return 'Student Directory & Identity Management';
       case 'portal': return 'Student & Parent Portal';
@@ -162,7 +164,7 @@ export default function Navbar({
       case 'transport': return 'Transport Fleet & Bus Routes';
       case 'transport_hostel': return 'Transport Fleet & Hostel Management';
       case 'notices': return 'Notice Broadcast Board';
-      case 'dev_studio': return 'In-App Developer Studio & IDE';
+      case 'dev_studio': return 'Control Center & Module Studio';
       default: return 'School Management System';
     }
   };

@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SchoolProvider, useSchool } from './context/SchoolContext';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, Sliders, CheckCircle2 } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import RoleSwitcherModal from './components/RoleSwitcherModal';
@@ -70,7 +70,7 @@ function ViewFallback() {
 function SchoolAppContent() {
   const { center_id } = useParams();
   const { currentUser, isPrincipal, isVicePrincipal, isTeacher, isWarden, isStudent, isParent, isSuperAdmin } = useAuth();
-  const { staff = [], showcaseNotice, activeSchoolId, switchSchool } = useSchool();
+  const { staff = [], showcaseNotice, activeSchoolId, switchSchool, isModuleEnabled, toggleModule } = useSchool();
   const userRole = currentUser?.role || 'principal';
 
   // Automatically sync academic center if specified in URL route (e.g. /:center_id)
@@ -146,7 +146,7 @@ function SchoolAppContent() {
       case 'transport_hostel':
         return ['principal', 'vice_principal', 'teacher'].includes(role);
       case 'dev_studio':
-        return role === 'superadmin';
+        return ['superadmin', 'principal', 'vice_principal'].includes(role);
       default:
         return false;
     }
@@ -226,6 +226,59 @@ function SchoolAppContent() {
           >
             {(isStudent || isParent) ? 'Portal-ah Let Rawh' : 'Dashboard-ah Let Rawh'}
           </button>
+        </div>
+      );
+    }
+
+    const isModuleActive = isModuleEnabled ? isModuleEnabled(currentTab) : true;
+    if (!isModuleActive && currentTab !== 'dashboard' && currentTab !== 'dev_studio' && currentTab !== 'public_website') {
+      const isAdmin = ['superadmin', 'principal', 'vice_principal'].includes(userRole);
+      return (
+        <div className="py-20 px-6 max-w-xl mx-auto text-center space-y-6">
+          <div className="w-20 h-20 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto shadow-2xl">
+            <Sliders className="w-10 h-10" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-white font-['Outfit']">Module Inactive / Hman Theih Rih Lo</h2>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              He module (<span className="text-amber-400 font-mono font-semibold">{currentTab}</span>) hi School Administration in an disable rih a ni.
+            </p>
+          </div>
+
+          {isAdmin ? (
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3 shadow-xl">
+              <p className="text-xs text-slate-400">
+                Principal / Vice Principal i nihna angin he module hi 1-click hmangin i ti nung (enable) leh nghal thei e:
+              </p>
+              <div className="flex items-center justify-center gap-3 pt-1">
+                <button
+                  onClick={() => toggleModule && toggleModule(currentTab, true)}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/30 transition flex items-center gap-2 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Enable This Module Now
+                </button>
+                <button
+                  onClick={() => setCurrentTab('dev_studio')}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition cursor-pointer"
+                >
+                  Open Module Manager
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+              <p className="text-xs text-slate-400">
+                Hman i duh a nih chuan School Principal emaw Vice Principal hnenah ngenna i thlen thei ang.
+              </p>
+              <button
+                onClick={() => setCurrentTab('dashboard')}
+                className="mt-3 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition cursor-pointer"
+              >
+                Dashboard-ah Let Rawh
+              </button>
+            </div>
+          )}
         </div>
       );
     }
@@ -337,7 +390,7 @@ function SchoolAppContent() {
       case 'analytics':
         return <AnalyticsDashboardView />;
       case 'dev_studio':
-        return <DevStudioView />;
+        return <DevStudioView setCurrentTab={setCurrentTab} />;
       default:
         return (
           <DashboardView 
