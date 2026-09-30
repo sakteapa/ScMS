@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   CreditCard,
   ShieldCheck,
@@ -24,7 +24,7 @@ import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
 
 export default function PaymentGatewayConfigModal({ isOpen, onClose, onTestCheckout }) {
-  const { paymentConfig, updatePaymentConfig, setActivePaymentGateway, updateGatewayDetails } = useSchool();
+  const { paymentConfig, updatePaymentConfig, setActivePaymentGateway, updateGatewayDetails, activeSchoolInfo, activeSchoolId } = useSchool();
   const { isPrincipal, isSuperAdmin } = useAuth();
 
   const [selectedGatewayId, setSelectedGatewayId] = useState(paymentConfig?.activeGateway || 'direct_upi');
@@ -33,6 +33,15 @@ export default function PaymentGatewayConfigModal({ isOpen, onClose, onTestCheck
 
   // Local form state mirror for editing
   const [gatewayData, setGatewayData] = useState(paymentConfig?.gateways || {});
+
+  useEffect(() => {
+    if (paymentConfig?.gateways) {
+      setGatewayData(paymentConfig.gateways);
+      if (paymentConfig.activeGateway) {
+        setSelectedGatewayId(paymentConfig.activeGateway);
+      }
+    }
+  }, [paymentConfig, isOpen]);
 
   if (!isOpen) return null;
 
@@ -84,16 +93,17 @@ export default function PaymentGatewayConfigModal({ isOpen, onClose, onTestCheck
               <CreditCard className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-base font-bold text-white font-['Outfit']">
                   Payment Gateway Integration &amp; Merchant Settings
                 </h3>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold uppercase tracking-wider border border-cyan-500/30">
-                  Admin &amp; Principal Only
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold uppercase tracking-wider border border-cyan-500/30 flex items-center gap-1">
+                  <Building2 className="w-3 h-3 text-cyan-400" />
+                  {activeSchoolInfo?.name || 'School Merchant Account'}
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Configure Razorpay, Cashfree, PhonePe, and Native NPCI UPI for institutional student billing.
+                School tin account a in-isolate vek: He school tana fee lut zawng zawng chu heta i setup account-ah chauh hian direct-in a lut ang.
               </p>
             </div>
           </div>
@@ -276,6 +286,15 @@ export default function PaymentGatewayConfigModal({ isOpen, onClose, onTestCheck
                   )}
                 </h4>
                 <p className="text-[11px] text-slate-400">{currentGw.description}</p>
+              </div>
+            </div>
+
+            {/* Direct School Settlement Guarantee Callout */}
+            <div className="p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 flex items-start gap-3">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <div className="text-[11px] text-slate-300 leading-relaxed">
+                <span className="font-bold text-emerald-300">Direct School Settlement Guarantee: </span>
+                He settings hi <strong className="text-white font-semibold">{activeSchoolInfo?.name || 'School'}</strong> tan bik liau liau a ni. Nu leh pa ten fee an chawi apiangin pawisa chu he school bank account / UPI-ah chauh direct-in a lut nghal char char ang (0% platform cut).
               </div>
             </div>
 

@@ -3327,11 +3327,7 @@ export function SchoolProvider({ children }) {
   const updatePaymentConfig = (updated) => {
     setPaymentConfig(prev => {
       const next = typeof updated === 'function' ? updated(prev) : { ...prev, ...updated };
-      try {
-        localStorage.setItem('zoxs_payment_config', JSON.stringify(next));
-      } catch (e) {
-        console.warn('Failed to persist payment config', e);
-      }
+      saveTenantItem('payment_config', next);
       return next;
     });
     return { success: true };
@@ -3350,11 +3346,7 @@ export function SchoolProvider({ children }) {
           }
         }
       };
-      try {
-        localStorage.setItem('zoxs_payment_config', JSON.stringify(next));
-      } catch (e) {
-        console.warn('Failed to persist payment config', e);
-      }
+      saveTenantItem('payment_config', next);
       return next;
     });
     return { success: true };
@@ -3372,11 +3364,7 @@ export function SchoolProvider({ children }) {
           }
         }
       };
-      try {
-        localStorage.setItem('zoxs_payment_config', JSON.stringify(next));
-      } catch (e) {
-        console.warn('Failed to persist payment config', e);
-      }
+      saveTenantItem('payment_config', next);
       return next;
     });
     return { success: true };
