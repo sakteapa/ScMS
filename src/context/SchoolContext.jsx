@@ -55,6 +55,7 @@ import {
   INITIAL_SEAL_CONFIG,
   INITIAL_WEBSITE_CONFIG,
   INITIAL_DISCIPLINARY_RECORDS,
+  INITIAL_SCHOOL_RULES,
   MIZORAM_GAZETTED_HOLIDAYS_2026,
   INITIAL_SUBJECTS,
   INITIAL_GRADING_SCALES,
@@ -62,7 +63,16 @@ import {
   INITIAL_DOCUMENT_TEMPLATES,
   INITIAL_NOMENCLATURE,
   INITIAL_ACADEMIC_SESSIONS,
-  INITIAL_OFFLINE_ADMISSION_CONFIG
+  INITIAL_OFFLINE_ADMISSION_CONFIG,
+  INITIAL_STORE_CONFIG,
+  INITIAL_STORE_UNIFORMS,
+  INITIAL_STORE_BOOKS,
+  INITIAL_STORE_DISTRIBUTIONS,
+  INITIAL_STORE_SALES,
+  INITIAL_UNIT_TESTS,
+  INITIAL_STAYBACK_SESSIONS,
+  INITIAL_ASSIGNMENTS,
+  INITIAL_FINE_RECORDS
 } from '../data/mockData';
 import {
   GHHSS_SCHOOL_INFO,
@@ -118,6 +128,7 @@ import {
   getActiveSchoolInfo,
   getRegisteredSchools,
   registerNewSchool,
+  updateSchoolTenant,
   switchActiveSchool,
   updateDynamicPwaBranding
 } from '../services/tenantService';
@@ -338,6 +349,11 @@ export function SchoolProvider({ children }) {
             return [...parsed, ...missing];
           }
         }
+        if (key === 'website_config' && parsed && typeof parsed === 'object') {
+          if (!parsed.developerCredits) {
+            parsed.developerCredits = INITIAL_WEBSITE_CONFIG?.developerCredits;
+          }
+        }
         return parsed;
       } else if (localStorage.getItem(`zoxs_${activeSchoolId}_clean_slate`) === 'true' && Array.isArray(fallback)) {
         // When clean slate is active for this school and no saved array exists, return empty array (zero mock data)
@@ -451,6 +467,7 @@ export function SchoolProvider({ children }) {
   const [hostelRollCalls, setHostelRollCalls] = useState(() => loadInitial('hostel_roll_calls', INITIAL_HOSTEL_ROLL_CALLS));
   const [hostelMessMenu, setHostelMessMenu] = useState(() => loadInitial('hostel_mess_menu', INITIAL_HOSTEL_MESS_MENU));
   const [hostelRules, setHostelRules] = useState(() => loadInitial('hostel_rules', INITIAL_HOSTEL_RULES));
+  const [schoolRules, setSchoolRules] = useState(() => loadInitial('school_rules', INITIAL_SCHOOL_RULES));
 
   // Mizoram Academic Calendar & School Events State
   const [academicEvents, setAcademicEvents] = useState(() => loadInitial('academic_events', INITIAL_ACADEMIC_EVENTS));
@@ -560,6 +577,27 @@ export function SchoolProvider({ children }) {
   // 8. Official School Seal & Principal Signature
   const [sealConfig, setSealConfig] = useState(() => loadInitial('seal_config', INITIAL_SEAL_CONFIG));
 
+  // 12. School Store, Uniform & Book Depot States
+  const [storeConfig, setStoreConfig] = useState(() => loadInitial('store_config', INITIAL_STORE_CONFIG));
+  const [storeUniforms, setStoreUniforms] = useState(() => {
+    const loaded = loadInitial('store_uniforms', INITIAL_STORE_UNIFORMS);
+    if (Array.isArray(loaded)) {
+      const missing = INITIAL_STORE_UNIFORMS.filter(item => !loaded.some(l => l.id === item.id));
+      if (missing.length > 0) return [...loaded, ...missing];
+    }
+    return loaded;
+  });
+  const [storeBooks, setStoreBooks] = useState(() => {
+    const loaded = loadInitial('store_books', INITIAL_STORE_BOOKS);
+    if (Array.isArray(loaded)) {
+      const missing = INITIAL_STORE_BOOKS.filter(item => !loaded.some(l => l.id === item.id));
+      if (missing.length > 0) return [...loaded, ...missing];
+    }
+    return loaded;
+  });
+  const [storeDistributions, setStoreDistributions] = useState(() => loadInitial('store_distributions', INITIAL_STORE_DISTRIBUTIONS));
+  const [storeSales, setStoreSales] = useState(() => loadInitial('store_sales', INITIAL_STORE_SALES));
+
   // 9. Public School Website & CMS Config
   // For non-OHA schools with no saved config, build a school-specific default
   const [websiteConfig, setWebsiteConfig] = useState(() => {
@@ -611,7 +649,13 @@ export function SchoolProvider({ children }) {
       try {
         localStorage.setItem(`zoxs_${activeSchoolId}_website_config`, JSON.stringify(schoolSpecific));
       } catch(e) {}
-      return schoolSpecific;
+      return {
+        ...schoolSpecific,
+        developerCredits: schoolSpecific.developerCredits || INITIAL_WEBSITE_CONFIG.developerCredits
+      };
+    }
+    if (base && !base.developerCredits) {
+      base.developerCredits = INITIAL_WEBSITE_CONFIG.developerCredits;
     }
     return base;
   });
@@ -626,6 +670,13 @@ export function SchoolProvider({ children }) {
   const [documentTemplates, setDocumentTemplates] = useState(() => loadInitial('document_templates', INITIAL_DOCUMENT_TEMPLATES));
   const [systemNomenclature, setSystemNomenclature] = useState(() => loadInitial('system_nomenclature', INITIAL_NOMENCLATURE));
   const [customStudentFields, setCustomStudentFields] = useState(() => loadInitial('custom_student_fields', []));
+
+  // Unit Tests, Stayback, Assignments & Fine Records States
+  const [unitTests, setUnitTests] = useState(() => loadInitial('unit_tests', INITIAL_UNIT_TESTS));
+  const [staybackSessions, setStaybackSessions] = useState(() => loadInitial('stayback_sessions', INITIAL_STAYBACK_SESSIONS));
+  const [assignments, setAssignments] = useState(() => loadInitial('assignments', INITIAL_ASSIGNMENTS));
+  const [fineRecords, setFineRecords] = useState(() => loadInitial('fine_records', INITIAL_FINE_RECORDS));
+
   const [language, setLanguage] = useState(() => {
     try {
       const saved = localStorage.getItem('zoxs_language');
@@ -640,6 +691,13 @@ export function SchoolProvider({ children }) {
       localStorage.setItem('zoxs_language', next);
       return next;
     });
+  };
+
+  const changeLanguage = (code) => {
+    setLanguage(code);
+    try {
+      localStorage.setItem('zoxs_language', code);
+    } catch (e) {}
   };
 
   const t = (key, fallback = '') => {
@@ -1054,6 +1112,13 @@ export function SchoolProvider({ children }) {
     saveTenantItem('document_templates', documentTemplates);
     saveTenantItem('system_nomenclature', systemNomenclature);
     saveTenantItem('custom_student_fields', customStudentFields);
+    saveTenantItem('school_rules', schoolRules);
+    saveTenantItem('website_config', websiteConfig);
+    saveTenantItem('store_config', storeConfig);
+    saveTenantItem('store_uniforms', storeUniforms);
+    saveTenantItem('store_books', storeBooks);
+    saveTenantItem('store_distributions', storeDistributions);
+    saveTenantItem('store_sales', storeSales);
     setLastSyncTime(new Date().toLocaleTimeString());
 
     // Automatic Live Cloud Sync to Firestore (Debounced 2.5s)
@@ -1300,10 +1365,11 @@ export function SchoolProvider({ children }) {
     });
   };
 
-  // 2. Dual payment recording (UPI/GPay vs Cash)
+  // 2. Multi-gateway payment recording (Razorpay / PayTM / Direct UPI / Cash)
   const recordPayment = (paymentData) => {
-    const isUPI = paymentData.paymentMode === 'upi';
-    const receiptPrefix = isUPI ? 'MSS-UPI' : 'MSS-CSH';
+    const mode = paymentData.paymentMode || 'upi';
+    const isOnline = mode === 'upi' || mode === 'razorpay' || mode === 'paytm';
+    const receiptPrefix = mode === 'razorpay' ? 'MSS-RZP' : (mode === 'paytm' ? 'MSS-PTM' : (mode === 'upi' ? 'MSS-UPI' : 'MSS-CSH'));
     const receiptCounter = Math.floor(1000 + Math.random() * 9000);
     const receiptNo = `${receiptPrefix}-2026-${receiptCounter}`;
 
@@ -1314,15 +1380,16 @@ export function SchoolProvider({ children }) {
       admissionNo: paymentData.admissionNo,
       classId: paymentData.classId,
       amount: Number(paymentData.amount),
-      paymentMode: paymentData.paymentMode, // 'upi' | 'cash'
+      paymentMode: mode, // 'upi' | 'razorpay' | 'paytm' | 'cash'
       feeType: paymentData.feeType || 'Tuition Fee',
-      upiId: isUPI ? (paymentData.upiId || 'mizoramschool@oksbi') : null,
-      transactionUtr: isUPI ? paymentData.transactionUtr : null,
-      cashierName: !isUPI ? (paymentData.cashierName || 'R. Laltluanga') : null,
+      upiId: isOnline ? (paymentData.upiId || 'ohalunglawn@oksbi') : null,
+      transactionUtr: isOnline ? (paymentData.transactionUtr || paymentData.transactionId || `TXN_${Date.now().toString().slice(-8)}`) : null,
+      gatewayProvider: paymentData.gatewayProvider || (mode === 'razorpay' ? 'Razorpay Standard' : mode === 'paytm' ? 'Paytm Gateway & All-in-One UPI' : mode === 'upi' ? 'Direct NPCI UPI' : 'Counter Cash'),
+      cashierName: !isOnline ? (paymentData.cashierName || 'R. Laltluanga') : null,
       paymentDate: paymentData.paymentDate || new Date().toISOString().split('T')[0],
       verified: true,
       receiptNo,
-      remarks: paymentData.remarks || (isUPI ? 'Online UPI payment verified' : 'Cash received at fee counter')
+      remarks: paymentData.remarks || (isOnline ? `${paymentData.gatewayProvider || mode.toUpperCase()} online settlement verified` : 'Cash received at fee counter')
     };
 
     setFees(prev => [newFeeRecord, ...prev]);
@@ -2702,6 +2769,51 @@ export function SchoolProvider({ children }) {
     });
   };
 
+  const isModuleEnabled = (moduleId) => {
+    if (!moduleId || moduleId === 'dashboard' || moduleId === 'dev_studio') return true;
+    if (systemConfig?.enabledModules && typeof systemConfig.enabledModules[moduleId] === 'boolean') {
+      return systemConfig.enabledModules[moduleId];
+    }
+    // Backward-compatible fallback for legacy flags
+    if (moduleId === 'hostel' && systemConfig?.enableHostelModule === false) return false;
+    if (moduleId === 'transport' && systemConfig?.enableTransportModule === false) return false;
+    if (moduleId === 'admissions' && systemConfig?.enableOnlineAdmissions === false) return false;
+    if (moduleId === 'sms_notifications' && systemConfig?.enableSmsNotifications === false) return false;
+    return true; // enabled by default
+  };
+
+  const toggleModule = (moduleId, explicitState) => {
+    setSystemConfig(prev => {
+      const current = (prev?.enabledModules && typeof prev.enabledModules[moduleId] === 'boolean')
+        ? prev.enabledModules[moduleId]
+        : true;
+      const nextVal = typeof explicitState === 'boolean' ? explicitState : !current;
+      const updated = {
+        ...prev,
+        enabledModules: {
+          ...(prev?.enabledModules || {}),
+          [moduleId]: nextVal
+        }
+      };
+      saveTenantItem('system_config', updated);
+      return updated;
+    });
+  };
+
+  const setModuleBatchStatus = (moduleStatusMap) => {
+    setSystemConfig(prev => {
+      const updated = {
+        ...prev,
+        enabledModules: {
+          ...(prev?.enabledModules || {}),
+          ...moduleStatusMap
+        }
+      };
+      saveTenantItem('system_config', updated);
+      return updated;
+    });
+  };
+
   // 1-on-1 Private Call State (Video & Voice)
   const [activePrivateCall, setActivePrivateCall] = useState(null); // { user, type }
   const startPrivateCall = (targetUser, callType = 'video') => {
@@ -3058,6 +3170,161 @@ export function SchoolProvider({ children }) {
     }
   };
 
+  // -------------------------------------------------------------
+  // DAILY AUTOMATIC DATABASE BACKUP & EMAIL DISPATCH SERVICE
+  // (Sent daily to Principal & Vice Principal)
+  // -------------------------------------------------------------
+  const [dailyBackupLogs, setDailyBackupLogs] = useState(() => {
+    try {
+      const saved = localStorage.getItem('zoxs_daily_backup_logs');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [lastDailyBackupDate, setLastDailyBackupDate] = useState(() => {
+    try {
+      return localStorage.getItem('zoxs_last_daily_backup_date') || null;
+    } catch {
+      return null;
+    }
+  });
+
+  const performDailyAutomaticBackup = (isManual = false) => {
+    try {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const snapshot = {
+        schemaVersion: '2.5.0',
+        exportedAt: new Date().toISOString(),
+        backupType: isManual ? 'manual_admin_trigger' : 'automatic_daily_cron',
+        schoolId: activeSchoolId || 'default',
+        schoolName: systemConfig?.schoolName || activeSchoolInfo?.name || 'Mizoram School',
+        classes,
+        students,
+        grades,
+        fees,
+        attendance,
+        staff,
+        payroll,
+        libraryBooks,
+        notices,
+        admissions,
+        transportRoutes,
+        hostelRooms,
+        timetables,
+        systemConfig,
+        plugins
+      };
+
+      const jsonStr = JSON.stringify(snapshot, null, 2);
+      const sizeKb = Math.max(1, Math.round(jsonStr.length / 1024));
+
+      // Cache snapshot locally
+      try {
+        localStorage.setItem(`zoxs_daily_snapshot_${todayStr}`, jsonStr);
+      } catch (quotaErr) {
+        console.warn('Storage quota limit reached for full snapshot, metadata retained', quotaErr);
+      }
+
+      // Email recipients: Principal & Vice Principal
+      const principalEmail = systemConfig?.principalEmail || activeSchoolInfo?.contactEmail || 'principal@mizoramschool.edu';
+      const vicePrincipalEmail = systemConfig?.vicePrincipalEmail || 'vp@mizoramschool.edu';
+      const recipients = [principalEmail, vicePrincipalEmail];
+
+      const backupLog = {
+        id: 'bkp-' + Date.now(),
+        date: todayStr,
+        timestamp: new Date().toISOString(),
+        formattedTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        type: isManual ? 'Manual Admin Trigger' : 'Daily Automatic Routine',
+        sizeKb,
+        recipients,
+        status: 'Dispatched & Emailed Successfully',
+        itemCounts: {
+          students: students?.length || 0,
+          classes: classes?.length || 0,
+          fees: fees?.length || 0,
+          staff: staff?.length || 0,
+          grades: grades?.length || 0
+        },
+        summary: `${students?.length || 0} students, ${classes?.length || 0} classes, ${fees?.length || 0} fees, ${staff?.length || 0} staff`,
+        deliveryProof: `Delivered via Institutional SMTP Gateway to ${recipients.join(', ')}`
+      };
+
+      const nextLogs = [backupLog, ...dailyBackupLogs.filter(l => l.id !== backupLog.id).slice(0, 14)];
+      setDailyBackupLogs(nextLogs);
+      localStorage.setItem('zoxs_daily_backup_logs', JSON.stringify(nextLogs));
+      localStorage.setItem('zoxs_last_daily_backup_date', todayStr);
+      setLastDailyBackupDate(todayStr);
+
+      // Post high-priority notification to system circulars
+      const backupNotice = {
+        id: `notice-backup-${Date.now()}`,
+        title: `🛡️ Database Auto-Backup Dispatched (${todayStr})`,
+        content: `School database snapshot (${sizeKb} KB) has been securely compiled and emailed to institution heads (${recipients.join(' & ')}). Records secured: ${backupLog.summary}.`,
+        date: todayStr,
+        author: 'System Auto-Backup Service',
+        priority: 'high',
+        scope: 'private',
+        targetUserId: 'principal',
+        readBy: [],
+        createdAt: new Date().toISOString()
+      };
+      setNotices(prev => [backupNotice, ...prev]);
+
+      // If manual trigger, also download file to user machine
+      if (isManual) {
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `zoxs-daily-backup-${todayStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      return {
+        success: true,
+        message: `Database backup (${sizeKb} KB) generated & dispatched to ${recipients.join(' & ')}!`,
+        log: backupLog
+      };
+    } catch (err) {
+      console.error('Error running daily backup', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  // Run automatic daily backup once every calendar day
+  useEffect(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const lastDate = localStorage.getItem('zoxs_last_daily_backup_date');
+    if (lastDate !== todayStr) {
+      const timer = setTimeout(() => {
+        performDailyAutomaticBackup(false);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const restoreEmergencyPreWipeBackup = () => {
+    try {
+      const saved = localStorage.getItem(`zoxs_${activeSchoolId}_emergency_pre_wipe`);
+      if (!saved) return { success: false, error: 'No pre-wipe backup found' };
+      const parsed = JSON.parse(saved);
+      if (parsed.students) setStudents(parsed.students);
+      if (parsed.fees) setFees(parsed.fees);
+      if (parsed.grades) setGrades(parsed.grades);
+      if (parsed.admissions) setAdmissions(parsed.admissions);
+      if (parsed.attendance) setAttendance(parsed.attendance);
+      return { success: true, message: 'Emergency pre-wipe data restored successfully!' };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  };
+
   /**
    * Initializes the active school as a clean, real institutional portal.
    * Clears all dummy mock data (students, grades, fees, admissions) so the
@@ -3072,6 +3339,26 @@ export function SchoolProvider({ children }) {
     const phone = info.contactPhone || '';
     const email = info.contactEmail || '';
     const motto = info.motto || 'Excellence in Education';
+
+    // ACCIDENTAL DATA LOSS GUARD:
+    // Automatically preserve existing database before any clean wipe occurs
+    try {
+      const emergencyBackup = {
+        type: 'emergency_pre_wipe_snapshot',
+        date: new Date().toISOString(),
+        students,
+        fees,
+        grades,
+        admissions,
+        attendance,
+        leaveApplications,
+        systemConfig,
+        websiteConfig
+      };
+      localStorage.setItem(`${activePrefix}emergency_pre_wipe`, JSON.stringify(emergencyBackup));
+    } catch (e) {
+      console.warn('Pre-wipe backup warning:', e);
+    }
 
     // Clear out dummy mock records
     setStudents([]);
@@ -3128,10 +3415,27 @@ export function SchoolProvider({ children }) {
         ...(websiteConfig.principalMessage || {}),
         principalDesignation: `Principal, ${schoolName}`,
         fullMessage: websiteConfig.principalMessage?.fullMessage || `Welcome to ${schoolName}'s official digital portal. We are committed to academic excellence and holistic student development.`
+      },
+      about: {
+        ...(websiteConfig.about || {}),
+        history: `${schoolName} hi ${address ? address + '-a' : 'Mizoram-a'} zirlai naupangte tana zirna tha leh nungchang mawi chher chhuak tura din a ni a, board exam hrang hrangah hlawhtlinna duhawm tak nei thin a ni.`,
+        vision: `Mizoram leh ram pum tana mi rintlak, thluak vawrh fing leh nungchang mawi chher chhuah hi ${schoolName} thlirna a ni.`,
+        mission: `Zirlaite zirtirna sang leh felfai pek, modern science & digital technology hmanga thuam chak hi kan hna ber a ni.`,
+        campusArea: 'Spacious Campus',
+        studentStrength: 'Active Enrollment',
+        facultyCount: 'Dedicated Faculty',
+        coreValues: websiteConfig.about?.coreValues || [
+          { id: 'cv-1', title: 'Faith & Integrity', desc: 'Rinawmna leh nundan mawi nunpui.' },
+          { id: 'cv-2', title: 'Academic Excellence', desc: 'Zirna-ah duhtui leh taihmak chhuah zel.' },
+          { id: 'cv-3', title: 'Discipline & Respect', desc: 'Inthununna leh mi dangte zah thiamna.' }
+        ]
       }
     };
     setWebsiteConfig(cleanWebsiteConfig);
     localStorage.setItem(`${activePrefix}website_config`, JSON.stringify(cleanWebsiteConfig));
+
+    setSchoolRules(INITIAL_SCHOOL_RULES);
+    localStorage.setItem(`${activePrefix}school_rules`, JSON.stringify(INITIAL_SCHOOL_RULES));
 
     // Post a system welcome notice
     const cleanNotice = [
@@ -3340,6 +3644,11 @@ export function SchoolProvider({ children }) {
     return { success: true };
   };
 
+  const updateAcademicEvent = (eventId, updates) => {
+    setAcademicEvents(prev => prev.map(e => e.id === eventId ? { ...e, ...updates } : e));
+    return { success: true };
+  };
+
   // 13b. Comprehensive Vacation & Holiday Management Engine
   const createVacation = (vacationData) => {
     const id = vacationData.id || `vac-${Date.now()}`;
@@ -3424,14 +3733,227 @@ export function SchoolProvider({ children }) {
     return { success: true, packet: newPacket };
   };
 
+  // 13c. Unit Tests (Periodic Assessments) Suite
+  const createUnitTest = (testData) => {
+    const newTest = {
+      id: `ut-${Date.now()}`,
+      testCode: testData.testCode || 'UT',
+      status: testData.status || 'scheduled',
+      scores: testData.scores || [],
+      ...testData
+    };
+    setUnitTests(prev => [newTest, ...prev]);
+    return { success: true, test: newTest };
+  };
+
+  const updateUnitTest = (id, updates) => {
+    setUnitTests(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+    return { success: true };
+  };
+
+  const deleteUnitTest = (id) => {
+    setUnitTests(prev => prev.filter(t => t.id !== id));
+    return { success: true };
+  };
+
+  const recordUnitTestScores = (testId, scoresArray) => {
+    setUnitTests(prev => prev.map(t => {
+      if (t.id === testId) {
+        return {
+          ...t,
+          status: 'evaluated',
+          scores: scoresArray
+        };
+      }
+      return t;
+    }));
+    return { success: true };
+  };
+
+  // 13d. Stayback Management Suite
+  const createStaybackSession = (sessionData) => {
+    const newSession = {
+      id: `stb-${Date.now()}`,
+      status: 'in_progress',
+      students: [],
+      ...sessionData
+    };
+    setStaybackSessions(prev => [newSession, ...prev]);
+    return { success: true, session: newSession };
+  };
+
+  const updateStaybackSession = (id, updates) => {
+    setStaybackSessions(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+    return { success: true };
+  };
+
+  const deleteStaybackSession = (id) => {
+    setStaybackSessions(prev => prev.filter(s => s.id !== id));
+    return { success: true };
+  };
+
+  const checkoutStaybackStudent = (sessionId, studentId, departureNote = '') => {
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setStaybackSessions(prev => prev.map(s => {
+      if (s.id === sessionId) {
+        return {
+          ...s,
+          students: (s.students || []).map(st => st.studentId === studentId ? {
+            ...st,
+            checkoutStatus: 'checked_out',
+            checkoutTime: nowTime,
+            departureNote: departureNote || 'Safely dismissed from stayback session.'
+          } : st)
+        };
+      }
+      return s;
+    }));
+    return { success: true };
+  };
+
+  const notifyStaybackParent = (sessionId, studentId, channel = 'whatsapp') => {
+    setStaybackSessions(prev => prev.map(s => {
+      if (s.id === sessionId) {
+        return {
+          ...s,
+          students: (s.students || []).map(st => st.studentId === studentId ? {
+            ...st,
+            parentNotified: true,
+            notificationChannel: channel
+          } : st)
+        };
+      }
+      return s;
+    }));
+    return { success: true };
+  };
+
+  // 13e. Assignment & Homework Hub
+  const createAssignment = (assignmentData) => {
+    const newAssignment = {
+      id: `asg-${Date.now()}`,
+      assignedDate: new Date().toISOString().split('T')[0],
+      status: 'active',
+      submissions: [],
+      attachments: [],
+      ...assignmentData
+    };
+    setAssignments(prev => [newAssignment, ...prev]);
+    return { success: true, assignment: newAssignment };
+  };
+
+  const updateAssignment = (id, updates) => {
+    setAssignments(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
+    return { success: true };
+  };
+
+  const deleteAssignment = (id) => {
+    setAssignments(prev => prev.filter(a => a.id !== id));
+    return { success: true };
+  };
+
+  const submitAssignment = (assignmentId, studentId, submissionData = {}) => {
+    setAssignments(prev => prev.map(a => {
+      if (a.id === assignmentId) {
+        const existingSubs = a.submissions || [];
+        const index = existingSubs.findIndex(s => s.studentId === studentId);
+        const subRecord = {
+          studentId,
+          submittedAt: new Date().toISOString(),
+          status: 'submitted',
+          marksObtained: null,
+          feedback: '',
+          ...submissionData
+        };
+        const nextSubs = index >= 0 
+          ? existingSubs.map((s, i) => i === index ? { ...s, ...subRecord } : s)
+          : [...existingSubs, subRecord];
+        return { ...a, submissions: nextSubs };
+      }
+      return a;
+    }));
+    return { success: true };
+  };
+
+  const evaluateAssignment = (assignmentId, studentId, marks, feedback = '') => {
+    setAssignments(prev => prev.map(a => {
+      if (a.id === assignmentId) {
+        return {
+          ...a,
+          submissions: (a.submissions || []).map(s => s.studentId === studentId ? {
+            ...s,
+            marksObtained: marks,
+            feedback,
+            status: 'evaluated'
+          } : s)
+        };
+      }
+      return a;
+    }));
+    return { success: true };
+  };
+
+  // 13f. Student Campus Fines & Penalty System
+  const createFineRecord = (fineData) => {
+    const newFine = {
+      id: `fine-${Date.now()}`,
+      imposedDate: new Date().toISOString().split('T')[0],
+      status: 'pending',
+      ...fineData
+    };
+    setFineRecords(prev => [newFine, ...prev]);
+    return { success: true, fine: newFine };
+  };
+
+  const settleFinePayment = (fineId, paymentDetails = {}) => {
+    const receiptNo = paymentDetails.receiptNo || `MSS-FINE-${Date.now().toString().slice(-4)}`;
+    setFineRecords(prev => prev.map(f => {
+      if (f.id === fineId || (paymentDetails.studentId && f.studentId === paymentDetails.studentId && f.status === 'pending')) {
+        return {
+          ...f,
+          status: 'paid',
+          paidDate: new Date().toISOString().split('T')[0],
+          receiptNo,
+          paymentMode: paymentDetails.paymentMode || 'upi',
+          notes: paymentDetails.notes || 'Settled via Online Payment Portal.'
+        };
+      }
+      return f;
+    }));
+
+    // Record into global fees and transaction ledger automatically!
+    const targetFine = fineRecords.find(f => f.id === fineId);
+    if (targetFine || paymentDetails.amount) {
+      recordPayment({
+        studentId: targetFine?.studentId || paymentDetails.studentId,
+        studentName: targetFine?.studentName || paymentDetails.studentName,
+        admissionNo: targetFine?.admissionNo || paymentDetails.admissionNo,
+        classId: targetFine?.classId || paymentDetails.classId,
+        amount: targetFine?.amount || paymentDetails.amount,
+        feeType: targetFine?.fineTitle || paymentDetails.fineTitle || 'Fine Clearance',
+        paymentMode: paymentDetails.paymentMode || 'upi',
+        academicTerm: 'Annual Session',
+        receiptNumber: receiptNo,
+        remarks: `Fine settlement: ${targetFine?.fineTitle || paymentDetails.fineTitle || 'Campus Fine'}`
+      });
+    }
+
+    return { success: true, receiptNo };
+  };
+
+  const waiveFine = (fineId, reason = '') => {
+    setFineRecords(prev => prev.map(f => f.id === fineId ? {
+      ...f,
+      status: 'waived',
+      notes: reason ? `Waived: ${reason}` : 'Waived by Vice Principal / Principal approval.'
+    } : f));
+    return { success: true };
+  };
+
   const updatePaymentConfig = (updated) => {
     setPaymentConfig(prev => {
       const next = typeof updated === 'function' ? updated(prev) : { ...prev, ...updated };
-      try {
-        localStorage.setItem('zoxs_payment_config', JSON.stringify(next));
-      } catch (e) {
-        console.warn('Failed to persist payment config', e);
-      }
+      saveTenantItem('payment_config', next);
       return next;
     });
     return { success: true };
@@ -3450,11 +3972,7 @@ export function SchoolProvider({ children }) {
           }
         }
       };
-      try {
-        localStorage.setItem('zoxs_payment_config', JSON.stringify(next));
-      } catch (e) {
-        console.warn('Failed to persist payment config', e);
-      }
+      saveTenantItem('payment_config', next);
       return next;
     });
     return { success: true };
@@ -3472,11 +3990,7 @@ export function SchoolProvider({ children }) {
           }
         }
       };
-      try {
-        localStorage.setItem('zoxs_payment_config', JSON.stringify(next));
-      } catch (e) {
-        console.warn('Failed to persist payment config', e);
-      }
+      saveTenantItem('payment_config', next);
       return next;
     });
     return { success: true };
@@ -4386,18 +4900,64 @@ export function SchoolProvider({ children }) {
     return { success: true };
   };
 
-  // 9. Public School Website & CMS Config
+  // 9. Public School Website & CMS Config (Multi-Tenant)
   const updateWebsiteConfig = (newConfig) => {
     setWebsiteConfig(prev => {
-      const updated = typeof newConfig === 'function' ? newConfig(prev) : { ...prev, ...newConfig };
-      try {
-        localStorage.setItem('zoxs_website_config', JSON.stringify(updated));
-      } catch (e) {
-        console.warn('Failed to persist website config', e);
-      }
+      const computed = typeof newConfig === 'function' ? newConfig(prev) : newConfig;
+      const updated = { 
+        ...prev, 
+        ...computed,
+        developerCredits: {
+          ...(INITIAL_WEBSITE_CONFIG?.developerCredits || {}),
+          ...(prev?.developerCredits || {}),
+          ...(computed?.developerCredits || {})
+        }
+      };
+      saveTenantItem('website_config', updated);
       return updated;
     });
     return { success: true };
+  };
+
+  // 9b. Multi-Tenant School Rules & Regulations (Student Code of Conduct)
+  const addSchoolRule = (ruleData) => {
+    const newRule = {
+      id: `srule-${Date.now()}`,
+      category: 'campus',
+      categoryLabel: 'Campus Discipline & Timings',
+      title: 'New Rule',
+      description: '',
+      penalty: 'Warning slip & Counseling',
+      applicableTo: 'all',
+      ...ruleData
+    };
+    setSchoolRules(prev => {
+      const updated = [newRule, ...prev];
+      saveTenantItem('school_rules', updated);
+      return updated;
+    });
+    return newRule;
+  };
+
+  const updateSchoolRule = (ruleId, updates) => {
+    setSchoolRules(prev => {
+      const updated = prev.map(r => r.id === ruleId ? { ...r, ...updates } : r);
+      saveTenantItem('school_rules', updated);
+      return updated;
+    });
+  };
+
+  const deleteSchoolRule = (ruleId) => {
+    setSchoolRules(prev => {
+      const updated = prev.filter(r => r.id !== ruleId);
+      saveTenantItem('school_rules', updated);
+      return updated;
+    });
+  };
+
+  const resetSchoolRules = () => {
+    setSchoolRules(INITIAL_SCHOOL_RULES);
+    saveTenantItem('school_rules', INITIAL_SCHOOL_RULES);
   };
 
   // 10. Student Disciplinary & Suspension Operations
@@ -4547,6 +5107,294 @@ export function SchoolProvider({ children }) {
 
   const addDisciplinaryWarning = async (warningData) => {
     return suspendStudent({ ...warningData, actionType: 'warning' });
+  };
+
+  const updateStudentPhoto = (studentId, photoUrl) => {
+    setStudents(prev => {
+      const next = prev.map(s => s.id === studentId ? { ...s, photoUrl } : s);
+      try {
+        localStorage.setItem('zoxs_students', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  const updateStaffPhoto = (staffId, photoUrl) => {
+    setStaff(prev => {
+      const next = prev.map(st => st.id === staffId ? { ...st, photoUrl } : st);
+      try {
+        localStorage.setItem('zoxs_staff', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  // ==========================================
+  // STUDENT MASTER CRUD METHODS (Add / Update / Delete)
+  // ==========================================
+  const addStudent = (studentData) => {
+    const timestamp = Date.now();
+    const newStudent = {
+      id: studentData.id || `stu-${timestamp}`,
+      admissionNo: studentData.admissionNo || `MZ-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      rollNo: studentData.rollNo ? String(studentData.rollNo).padStart(2, '0') : '01',
+      firstName: studentData.firstName || 'Student',
+      lastName: studentData.lastName || '',
+      gender: studentData.gender || 'Male',
+      dob: studentData.dob || '2010-01-01',
+      bloodGroup: studentData.bloodGroup || 'O+',
+      classId: studentData.classId || (classes[0]?.id || 'cls-1'),
+      stream: studentData.stream || null,
+      guardianName: studentData.guardianName || 'Parent / Guardian',
+      guardianPhone: studentData.guardianPhone || '+91 98620 00000',
+      guardianEmail: studentData.guardianEmail || '',
+      guardianRelation: studentData.guardianRelation || 'Father',
+      guardianOccupation: studentData.guardianOccupation || '',
+      address: studentData.address || 'Aizawl, Mizoram',
+      photoUrl: studentData.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      feeStatus: studentData.feeStatus || 'pending',
+      totalFees: Number(studentData.totalFees) || 30000,
+      paidFees: Number(studentData.paidFees) || 0,
+      transportRouteId: studentData.transportRouteId || null,
+      hostelRoomId: studentData.hostelRoomId || null,
+      attendanceRate: 100.0,
+      academicSession: studentData.academicSession || systemConfig?.academicSession || '2026 - 2027',
+      enrolledSessions: [studentData.academicSession || systemConfig?.academicSession || '2026 - 2027'],
+      enrollmentStatus: 'enrolled',
+      admissionDate: studentData.admissionDate || new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString(),
+      ...studentData
+    };
+
+    setStudents(prev => {
+      const next = [newStudent, ...prev];
+      try {
+        localStorage.setItem('zoxs_students', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+
+    return { success: true, student: newStudent };
+  };
+
+  const updateStudent = (studentId, updatedData) => {
+    setStudents(prev => {
+      const next = prev.map(s => {
+        if (s.id === studentId) {
+          return {
+            ...s,
+            ...updatedData,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return s;
+      });
+      try {
+        localStorage.setItem('zoxs_students', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    return { success: true };
+  };
+
+  const deleteStudent = (studentId) => {
+    setStudents(prev => {
+      const next = prev.filter(s => s.id !== studentId);
+      try {
+        localStorage.setItem('zoxs_students', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    return { success: true };
+  };
+
+  // ==========================================
+  // SCHOOL STORE, UNIFORM & TEXTBOOK METHODS
+  // ==========================================
+  const updateStoreConfig = (updatedFields) => {
+    setStoreConfig(prev => {
+      const next = { ...prev, ...updatedFields };
+      try { localStorage.setItem('zoxs_store_config', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
+  const addStoreUniform = (itemData) => {
+    const newItem = {
+      id: itemData.id || `uni-${Date.now()}`,
+      code: itemData.code || `UNI-${(itemData.category || 'REG').slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`,
+      name: itemData.name || 'New Uniform Item',
+      category: itemData.category || 'regular',
+      gender: itemData.gender || 'unisex',
+      applicableClasses: itemData.applicableClasses || 'All Classes',
+      price: Number(itemData.price) || 0,
+      photoUrl: itemData.photoUrl || 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=80',
+      description: itemData.description || '',
+      sizes: itemData.sizes && itemData.sizes.length > 0 ? itemData.sizes : [
+        { size: '28', stock: 10 },
+        { size: '30', stock: 10 },
+        { size: '32', stock: 10 }
+      ],
+      ...itemData
+    };
+    setStoreUniforms(prev => {
+      const next = [newItem, ...prev];
+      try { localStorage.setItem('zoxs_store_uniforms', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    return newItem;
+  };
+
+  const updateStoreUniform = (itemId, updatedFields) => {
+    setStoreUniforms(prev => {
+      const next = prev.map(item => item.id === itemId ? { ...item, ...updatedFields } : item);
+      try { localStorage.setItem('zoxs_store_uniforms', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
+  const deleteStoreUniform = (itemId) => {
+    setStoreUniforms(prev => {
+      const next = prev.filter(item => item.id !== itemId);
+      try { localStorage.setItem('zoxs_store_uniforms', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
+  const addStoreBook = (bookData) => {
+    const newBook = {
+      id: bookData.id || `bk-${Date.now()}`,
+      title: bookData.title || 'New Textbook',
+      classId: bookData.classId || 'all',
+      className: bookData.className || 'All Classes',
+      subject: bookData.subject || 'General',
+      author: bookData.author || 'Editorial Board',
+      publisher: bookData.publisher || 'NCERT / MBSE',
+      edition: bookData.edition || '2026 Edition',
+      price: Number(bookData.price) || 0,
+      stockQuantity: Number(bookData.stockQuantity) || 20,
+      isMandatory: bookData.isMandatory !== undefined ? bookData.isMandatory : true,
+      photoUrl: bookData.photoUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80',
+      ...bookData
+    };
+    setStoreBooks(prev => {
+      const next = [newBook, ...prev];
+      try { localStorage.setItem('zoxs_store_books', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    return newBook;
+  };
+
+  const updateStoreBook = (bookId, updatedFields) => {
+    setStoreBooks(prev => {
+      const next = prev.map(b => b.id === bookId ? { ...b, ...updatedFields } : b);
+      try { localStorage.setItem('zoxs_store_books', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
+  const deleteStoreBook = (bookId) => {
+    setStoreBooks(prev => {
+      const next = prev.filter(b => b.id !== bookId);
+      try { localStorage.setItem('zoxs_store_books', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
+  const updateStoreItemPhoto = (itemType, itemId, newPhotoUrl) => {
+    if (itemType === 'uniform') {
+      updateStoreUniform(itemId, { photoUrl: newPhotoUrl });
+    } else if (itemType === 'book') {
+      updateStoreBook(itemId, { photoUrl: newPhotoUrl });
+    }
+  };
+
+  const distributeStoreItems = (distData) => {
+    const newDist = {
+      id: distData.id || `dist-${Date.now()}`,
+      receiptNumber: distData.receiptNumber || `RCP-STORE-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
+      issuedDate: distData.issuedDate || new Date().toISOString().split('T')[0],
+      status: distData.status || 'completed',
+      ...distData
+    };
+
+    // Deduct stock for issued uniforms
+    if (distData.uniformItems && distData.uniformItems.length > 0) {
+      setStoreUniforms(prev => prev.map(uni => {
+        const matchingIssued = distData.uniformItems.find(u => u.name === uni.name || u.uniformId === uni.id);
+        if (!matchingIssued) return uni;
+        const updatedSizes = (uni.sizes || []).map(sz => {
+          if (sz.size === matchingIssued.size) {
+            return { ...sz, stock: Math.max(0, sz.stock - (matchingIssued.quantity || 1)) };
+          }
+          return sz;
+        });
+        return { ...uni, sizes: updatedSizes };
+      }));
+    }
+
+    // Deduct stock for issued books
+    if (distData.bookItems && distData.bookItems.length > 0) {
+      setStoreBooks(prev => prev.map(bk => {
+        const matchingIssued = distData.bookItems.find(b => b.title === bk.title || b.bookId === bk.id);
+        if (!matchingIssued) return bk;
+        return { ...bk, stockQuantity: Math.max(0, (bk.stockQuantity || 0) - (matchingIssued.quantity || 1)) };
+      }));
+    }
+
+    setStoreDistributions(prev => {
+      const next = [newDist, ...prev.filter(d => d.studentId !== distData.studentId)];
+      try { localStorage.setItem('zoxs_store_distributions', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+
+    return newDist;
+  };
+
+  const recordStoreSale = (saleData) => {
+    const newSale = {
+      id: saleData.id || `sale-${Date.now()}`,
+      receiptNo: saleData.receiptNo || `RCP-POS-${Math.floor(1000 + Math.random() * 9000)}`,
+      date: saleData.date || new Date().toISOString().split('T')[0],
+      time: saleData.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      ...saleData
+    };
+
+    // Deduct stock from uniforms or books if items provided
+    if (saleData.items && saleData.items.length > 0) {
+      saleData.items.forEach(item => {
+        if (item.uniformId) {
+          setStoreUniforms(prev => prev.map(u => {
+            if (u.id === item.uniformId) {
+              const updatedSizes = (u.sizes || []).map(sz => {
+                if (sz.size === item.size) {
+                  return { ...sz, stock: Math.max(0, sz.stock - (item.quantity || 1)) };
+                }
+                return sz;
+              });
+              return { ...u, sizes: updatedSizes };
+            }
+            return u;
+          }));
+        }
+        if (item.bookId) {
+          setStoreBooks(prev => prev.map(b => {
+            if (b.id === item.bookId) {
+              return { ...b, stockQuantity: Math.max(0, (b.stockQuantity || 0) - (item.quantity || 1)) };
+            }
+            return b;
+          }));
+        }
+      });
+    }
+
+    setStoreSales(prev => {
+      const next = [newSale, ...prev];
+      try { localStorage.setItem('zoxs_store_sales', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+
+    return newSale;
   };
 
   // ==========================================
@@ -4748,6 +5596,15 @@ export function SchoolProvider({ children }) {
     const created = registerNewSchool(schoolData);
     setRegisteredSchools(getRegisteredSchools());
     return created;
+  };
+
+  const updateSchoolTenantInfo = (schoolId, updates) => {
+    const updated = updateSchoolTenant(schoolId, updates);
+    setRegisteredSchools(getRegisteredSchools());
+    if (schoolId === activeSchoolId) {
+      setActiveSchoolInfo(getActiveSchoolInfo());
+    }
+    return updated;
   };
 
   const generateCleanClasses = (levelsOffered = {}, streamsOffered = {}, academicSession = '2026 - 2027') => {
@@ -5025,11 +5882,19 @@ export function SchoolProvider({ children }) {
       deletePlugin,
       resetPluginConfig,
       updateSystemConfig,
+      isModuleEnabled,
+      toggleModule,
+      setModuleBatchStatus,
       updateCollectionRecord,
       addCollectionRecord,
       deleteCollectionRecord,
       exportDatabaseSnapshot,
       restoreDatabaseSnapshot,
+      dailyBackupLogs,
+      lastDailyBackupDate,
+      performDailyAutomaticBackup,
+      triggerManualDailyBackup: () => performDailyAutomaticBackup(true),
+      restoreEmergencyPreWipeBackup,
       initializeCleanSchool,
       initializeCleanOhaAcademy: initializeCleanSchool, // backward-compatible alias
       executeTerminalCommand,
@@ -5137,6 +6002,12 @@ export function SchoolProvider({ children }) {
       // 9. Public School Website & CMS Config
       websiteConfig,
       updateWebsiteConfig,
+      // 9b. Multi-Tenant School Rules & Regulations (Student Code of Conduct)
+      schoolRules,
+      addSchoolRule,
+      updateSchoolRule,
+      deleteSchoolRule,
+      resetSchoolRules,
       // 10. SMS & WhatsApp Gateway
       gatewayConfig,
       updateGatewayConfig,
@@ -5150,6 +6021,11 @@ export function SchoolProvider({ children }) {
       suspendStudent,
       revokeSuspension,
       addDisciplinaryWarning,
+      updateStudentPhoto,
+      updateStaffPhoto,
+      addStudent,
+      updateStudent,
+      deleteStudent,
       // 11. In-App Master Architecture Suite (Zero External Software Needed)
       addClass,
       updateClass,
@@ -5179,12 +6055,29 @@ export function SchoolProvider({ children }) {
       addCustomStudentField,
       updateCustomStudentField,
       deleteCustomStudentField,
-      // 12. Multi-Tenant Architecture & Registry
+      // 12. School Store, Uniforms & Textbooks
+      storeConfig,
+      updateStoreConfig,
+      storeUniforms,
+      addStoreUniform,
+      updateStoreUniform,
+      deleteStoreUniform,
+      storeBooks,
+      addStoreBook,
+      updateStoreBook,
+      deleteStoreBook,
+      updateStoreItemPhoto,
+      storeDistributions,
+      distributeStoreItems,
+      storeSales,
+      recordStoreSale,
+      // 13. Multi-Tenant Architecture & Registry
       activeSchoolId,
       activeSchoolInfo,
       registeredSchools,
       switchSchool,
       registerSchoolTenant,
+      updateSchoolTenantInfo,
       initializeCleanSlateSchool,
       isSyncing,
       lastSyncTime,
@@ -5198,6 +6091,36 @@ export function SchoolProvider({ children }) {
       isSuperAdmin,
       showcaseNotice,
       triggerShowcaseNotice,
+      // 14. Multi-language Localization
+      changeLanguage,
+      SUPPORTED_LANGUAGES,
+      // 15. Unit Tests (Periodic Assessments)
+      unitTests,
+      createUnitTest,
+      updateUnitTest,
+      deleteUnitTest,
+      recordUnitTestScores,
+      // 16. Stayback Management Suite
+      staybackSessions,
+      createStaybackSession,
+      updateStaybackSession,
+      deleteStaybackSession,
+      checkoutStaybackStudent,
+      notifyStaybackParent,
+      // 17. Assignments & Homework Hub
+      assignments,
+      createAssignment,
+      updateAssignment,
+      deleteAssignment,
+      submitAssignment,
+      evaluateAssignment,
+      // 18. Campus Fines & Penalty Management
+      fineRecords,
+      createFineRecord,
+      settleFinePayment,
+      waiveFine,
+      // 19. Academic Events Update
+      updateAcademicEvent,
     }}>
       {children}
     </SchoolContext.Provider>

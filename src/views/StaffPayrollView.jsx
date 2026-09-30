@@ -41,13 +41,15 @@ import {
   AlertTriangle,
   Shield,
   Crown,
-  Star
+  Star,
+  UploadCloud
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
 import ClassLeaderModal from '../components/ClassLeaderModal';
 import OfficeStaffTab from '../components/OfficeStaffTab';
+import CloudPhotoStorageModal from '../components/CloudPhotoStorageModal';
 
 const STANDARD_COMMITTEES = [
   'Examination Cell & Assessment Board',
@@ -167,6 +169,7 @@ export default function StaffPayrollView() {
   const [editTab, setEditTab] = useState('duties'); // 'duties' | 'profile' | 'salary'
   const [deletingStaffId, setDeletingStaffId] = useState(null);
   const [quickClassAssignTarget, setQuickClassAssignTarget] = useState(null); // { classId, className }
+  const [isStaffCloudPhotoOpen, setIsStaffCloudPhotoOpen] = useState(false);
 
   // Form State for Add Staff
   const [newStaffForm, setNewStaffForm] = useState({
@@ -2288,13 +2291,31 @@ export default function StaffPayrollView() {
                   </div>
 
                   <div>
-                    <label className="text-slate-400 block mb-1">Profile Photo URL:</label>
-                    <input
-                      type="text"
-                      value={editingStaff.photoUrl || ''}
-                      onChange={(e) => setEditingStaff({ ...editingStaff, photoUrl: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-400 font-mono text-[11px]"
-                    />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-slate-400 block text-xs">Profile Photo:</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsStaffCloudPhotoOpen(true)}
+                        className="text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 cursor-pointer transition"
+                      >
+                        <UploadCloud className="w-3.5 h-3.5" />
+                        <span>Upload to Cloud</span>
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={editingStaff.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
+                        alt=""
+                        className="w-9 h-9 rounded-xl object-cover ring-1 ring-cyan-500/40 shrink-0"
+                      />
+                      <input
+                        type="text"
+                        value={editingStaff.photoUrl || ''}
+                        onChange={(e) => setEditingStaff({ ...editingStaff, photoUrl: e.target.value })}
+                        placeholder="https://... or upload from Cloudinary / Firebase"
+                        className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-400 font-mono text-[11px]"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -3655,6 +3676,21 @@ export default function StaffPayrollView() {
         onClose={() => setLeaderModalTarget(null)}
         targetClass={leaderModalTarget}
       />
+
+      {/* Cloud Photo & Media Storage Studio Modal for Staff */}
+      {isStaffCloudPhotoOpen && (
+        <CloudPhotoStorageModal
+          isOpen={isStaffCloudPhotoOpen}
+          onClose={() => setIsStaffCloudPhotoOpen(false)}
+          initialTargetType="staff"
+          initialTargetId={editingStaff?.id || null}
+          onSuccess={(newUrl) => {
+            if (editingStaff) {
+              setEditingStaff(prev => prev ? ({ ...prev, photoUrl: newUrl }) : null);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

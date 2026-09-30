@@ -59,7 +59,14 @@ import {
   PenTool,
   FileCheck,
   DollarSign,
-  Bot
+  Bot,
+  KeyRound,
+  ShieldAlert,
+  Unlock,
+  ArrowLeft,
+  MailCheck,
+  ShieldX,
+  History
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
@@ -69,8 +76,9 @@ import AcademicCenterSetupWizardModal from '../components/AcademicCenterSetupWiz
 import ExternalSoftwareApiHub from '../components/ExternalSoftwareApiHub';
 import InAppMasterConfigStudio from '../components/InAppMasterConfigStudio';
 import DevStudioAiCoPilot from '../components/DevStudioAiCoPilot';
+import ModuleManagerStudio from '../components/ModuleManagerStudio';
 
-export default function DevStudioView() {
+export default function DevStudioView({ setCurrentTab }) {
   const { currentUser, isSuperAdmin } = useAuth();
   const {
     customScripts,
@@ -97,6 +105,11 @@ export default function DevStudioView() {
     deleteCollectionRecord,
     exportDatabaseSnapshot,
     restoreDatabaseSnapshot,
+    dailyBackupLogs,
+    lastDailyBackupDate,
+    performDailyAutomaticBackup,
+    triggerManualDailyBackup,
+    restoreEmergencyPreWipeBackup,
     executeTerminalCommand,
     // Firebase Cloud Sync
     isSyncing,
@@ -147,7 +160,7 @@ export default function DevStudioView() {
     updateWebsiteConfig
   } = useSchool();
 
-  const [activeTab, setActiveTab] = useState('code'); // 'code', 'plugins', 'database', 'branding', 'terminal', 'cloud', 'gateways'
+  const [activeTab, setActiveTab] = useState('modules'); // 'modules', 'wizard', 'in_app_master', 'ai_copilot', 'code', 'plugins', 'database', 'branding', 'terminal', 'cloud', 'gateways', 'api_hub'
   const [configCategory, setConfigCategory] = useState('all');
   const [configSavedToast, setConfigSavedToast] = useState(false);
   const [isDevWebsiteEditorOpen, setIsDevWebsiteEditorOpen] = useState(false);
@@ -203,6 +216,65 @@ export default function DevStudioView() {
   // Terminal state
   const [terminalInput, setTerminalInput] = useState('// Access sandboxed db collections\nconsole.log("Total enrolled students:", db.students.length);\nconsole.log("Total classes:", db.classes.length);\n\n// Return a result to display\n({ activeStudents: db.students.filter(s => s.attendanceRate >= 90).length })');
   const [terminalHistory, setTerminalHistory] = useState([]);
+
+  // Developer Master PIN Gate (PIN: "1608")
+  const DEVELOPER_MASTER_PIN = '1608';
+  const [isDevUnlocked, setIsDevUnlocked] = useState(() => {
+    try {
+      return sessionStorage.getItem('zoxs_dev_studio_unlocked_1608') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState(null);
+  const [pinShake, setPinShake] = useState(false);
+  const [showPin, setShowPin] = useState(false);
+  const [manualBackupSuccessNotice, setManualBackupSuccessNotice] = useState(null);
+
+  const handleUnlockWithPin = (candidatePin) => {
+    const val = candidatePin !== undefined ? candidatePin : pinInput;
+    if (val.trim() === DEVELOPER_MASTER_PIN) {
+      setIsDevUnlocked(true);
+      try {
+        sessionStorage.setItem('zoxs_dev_studio_unlocked_1608', 'true');
+      } catch (e) {}
+      setPinError(null);
+      setPinInput('');
+    } else {
+      setPinError('Master Developer PIN a dik lo! (PIN dik chiah "1608" hman tur a ni).');
+      setPinShake(true);
+      setTimeout(() => setPinShake(false), 600);
+    }
+  };
+
+  const handleKeypadPress = (val) => {
+    if (val === 'clear') {
+      setPinInput('');
+      setPinError(null);
+    } else if (val === 'backspace') {
+      setPinInput(prev => prev.slice(0, -1));
+      setPinError(null);
+    } else {
+      if (pinInput.length < 4) {
+        const next = pinInput + val;
+        setPinInput(next);
+        setPinError(null);
+        if (next.length === 4) {
+          handleUnlockWithPin(next);
+        }
+      }
+    }
+  };
+
+  const handleLockStudio = () => {
+    try {
+      sessionStorage.removeItem('zoxs_dev_studio_unlocked_1608');
+    } catch (e) {}
+    setIsDevUnlocked(false);
+    setPinInput('');
+    setPinError(null);
+  };
 
   // Cloud Sync — Firebase Credentials (top-level state, NOT inside JSX)
   const [localFirebaseCfg, setLocalFirebaseCfg] = useState(() => {
@@ -301,10 +373,30 @@ export default function DevStudioView() {
   };
 
   const handleDeleteRecord = (id) => {
-    if (window.confirm(`Are you sure you want to delete record ${id}?`)) {
+    if (window.confirm(`⚠️ ACCIDENTAL LOSS PROTECTION:\nRecord "${id}" hi delete hlen i tum em?\n\nHe record hi collection atangin a bo hlen dawn a ni.`)) {
       deleteCollectionRecord(selectedCollection, id);
       setDbMessage({ type: 'success', text: `Record ${id} removed.` });
       setTimeout(() => setDbMessage(null), 3000);
+    }
+  };
+
+  const handleTriggerBackupNow = () => {
+    const res = triggerManualDailyBackup();
+    if (res && res.success) {
+      setManualBackupSuccessNotice(res.message);
+      setTimeout(() => setManualBackupSuccessNotice(null), 6000);
+    }
+  };
+
+  const handleRestoreEmergency = () => {
+    if (window.confirm('⚠️ ACCIDENTAL DATA LOSS RECOVERY:\nClean wipe hma a system-in automatic-a backup a lo siam that (emergency pre-wipe snapshot) kha restore i duh em?\n\nTun a awm sa records te hi a restore leh dawn a ni.')) {
+      const res = restoreEmergencyPreWipeBackup();
+      if (res && res.success) {
+        setManualBackupSuccessNotice(res.message);
+        setTimeout(() => setManualBackupSuccessNotice(null), 6000);
+      } else {
+        alert(res?.error || 'No emergency backup found in storage.');
+      }
     }
   };
 
@@ -343,16 +435,166 @@ export default function DevStudioView() {
     ]);
   };
 
-  if (!isSuperAdmin && currentUser?.role !== 'superadmin') {
+  const isAuthorizedAdmin = isSuperAdmin || 
+    currentUser?.role === 'superadmin' || 
+    currentUser?.role === 'principal' || 
+    currentUser?.role === 'vice_principal';
+
+  if (!isAuthorizedAdmin) {
     return (
       <div className="py-24 text-center space-y-4 font-sans max-w-lg mx-auto">
         <div className="w-16 h-16 rounded-3xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center mx-auto shadow-xl">
           <ShieldCheck className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-bold text-white font-['Outfit']">Access Restricted: Super Admin Only</h2>
+        <h2 className="text-xl font-bold text-white font-['Outfit']">Access Restricted: Administration Only</h2>
         <p className="text-sm text-slate-400 leading-relaxed">
-          Developer Studio leh AI System Co-Pilot hi Super Admin (System Architect) chauhvin an khawih thei a ni. Principal, Staff, emaw Zirlai tan luh theih a ni lo.
+          System Control Center leh Module Manager hi Principal, Vice Principal, leh Super Admin chauhvin an khawih thei a ni.
         </p>
+      </div>
+    );
+  }
+
+  // Master Developer PIN Gate (PIN: "1608")
+  if (!isDevUnlocked) {
+    return (
+      <div className="min-h-[75vh] flex items-center justify-center p-4">
+        <div className={`w-full max-w-md bg-gradient-to-b from-slate-900 via-slate-950 to-slate-950 border border-purple-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-purple-950/40 relative overflow-hidden ${pinShake ? 'animate-bounce' : ''}`}>
+          {/* Ambient Glow */}
+          <div className="absolute -top-20 -right-20 w-44 h-44 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-44 h-44 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 space-y-6 text-center">
+            {/* Top Shield Icon */}
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 p-0.5 shadow-lg shadow-purple-500/25 flex items-center justify-center">
+              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+                <KeyRound className="w-8 h-8 text-purple-400" />
+              </div>
+            </div>
+
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30 mb-2">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Developer Master Gate
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-white font-['Outfit']">
+                Developer Studio Security Lock
+              </h2>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Developer tools, raw database, code scripts, terminal sandbox, leh system credentials te hi venhim a ni a. Hman chhunzawm turin Master Developer PIN (1608) chhut luh a ngai.
+              </p>
+            </div>
+
+            {/* PIN Code Dots Preview */}
+            <div className="flex items-center justify-center gap-3 py-1">
+              {[0, 1, 2, 3].map((idx) => {
+                const filled = pinInput.length > idx;
+                return (
+                  <div
+                    key={idx}
+                    className={`w-4 h-4 rounded-full transition-all duration-200 ${
+                      filled
+                        ? 'bg-purple-400 scale-125 shadow-lg shadow-purple-500/50 border border-purple-300'
+                        : 'bg-slate-800 border border-slate-700'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Input Form */}
+            <form onSubmit={(e) => { e.preventDefault(); handleUnlockWithPin(); }} className="space-y-4">
+              <div className="relative">
+                <input
+                  type={showPin ? 'text' : 'password'}
+                  maxLength={4}
+                  value={pinInput}
+                  onChange={(e) => {
+                    const clean = e.target.value.replace(/\D/g, '').slice(0, 4);
+                    setPinInput(clean);
+                    setPinError(null);
+                    if (clean.length === 4) {
+                      handleUnlockWithPin(clean);
+                    }
+                  }}
+                  placeholder="Enter 4-Digit Master PIN"
+                  autoFocus
+                  className="w-full bg-slate-900 border border-slate-800 focus:border-purple-500 rounded-2xl py-3 px-4 text-center font-mono text-xl tracking-[0.5em] text-white placeholder-slate-600 focus:outline-none transition shadow-inner"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs font-semibold"
+                >
+                  {showPin ? 'Hide' : 'Show'}
+                </button>
+              </div>
+
+              {pinError && (
+                <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs flex items-center justify-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <span>{pinError}</span>
+                </div>
+              )}
+
+              {/* Touch Keypad */}
+              <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto pt-2">
+                {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
+                  <button
+                    key={digit}
+                    type="button"
+                    onClick={() => handleKeypadPress(digit)}
+                    className="h-12 rounded-xl bg-slate-900/80 hover:bg-purple-950/60 border border-slate-800 hover:border-purple-500/40 text-white font-mono text-lg font-bold transition flex items-center justify-center active:scale-95 cursor-pointer"
+                  >
+                    {digit}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => handleKeypadPress('clear')}
+                  className="h-12 rounded-xl bg-slate-900/40 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white text-xs font-semibold transition flex items-center justify-center active:scale-95 cursor-pointer"
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleKeypadPress('0')}
+                  className="h-12 rounded-xl bg-slate-900/80 hover:bg-purple-950/60 border border-slate-800 hover:border-purple-500/40 text-white font-mono text-lg font-bold transition flex items-center justify-center active:scale-95 cursor-pointer"
+                >
+                  0
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleKeypadPress('backspace')}
+                  className="h-12 rounded-xl bg-slate-900/40 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white text-xs font-semibold transition flex items-center justify-center active:scale-95 cursor-pointer"
+                >
+                  ⌫
+                </button>
+              </div>
+
+              <div className="space-y-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={pinInput.length === 0}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2 transition disabled:opacity-40 cursor-pointer"
+                >
+                  <Unlock className="w-4 h-4" />
+                  <span>Unlock Developer Studio</span>
+                </button>
+
+                {setCurrentTab && (
+                  <button
+                    type="button"
+                    onClick={() => setCurrentTab('dashboard')}
+                    className="w-full py-2.5 px-4 rounded-xl bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-xs font-semibold border border-slate-800 flex items-center justify-center gap-2 transition cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back to School Dashboard</span>
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     );
   }
@@ -367,18 +609,23 @@ export default function DevStudioView() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5" /> Super Admin / Software Architect
+                <ShieldCheck className="w-3.5 h-3.5" />
+                {currentUser?.role === 'principal' ? 'Principal Control Center' : currentUser?.role === 'vice_principal' ? 'Vice Principal Control Center' : 'Super Admin / System Architect'}
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                In-App IDE Active
+                Institutional Studio Active
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+                <KeyRound className="w-3 h-3" />
+                PIN 1608 Verified
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-              <Code2 className="w-8 h-8 text-purple-400" />
-              Developer & Script Studio
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-3 font-['Outfit']">
+              <Sliders className="w-8 h-8 text-indigo-400" />
+              Control Center &amp; Module Studio
             </h1>
             <p className="text-slate-400 text-sm mt-1">
-              Khawvela external software (VS Code, Antigravity IDE) ngai tawh lovin browser chhung atangin software pumpui, CSS, JavaScript, plugins, database, leh resources khawih danglam zung zung rawh le.
+              School module zawng zawng on/off theihna, plugins, extensions, academic setup, branding, gateway, leh system configurations khawih danglamna hmunpui.
             </p>
           </div>
 
@@ -404,11 +651,36 @@ export default function DevStudioView() {
               <span>Restore Backup</span>
               <input type="file" accept=".json" onChange={handleFileUpload} className="hidden" />
             </label>
+            <button
+              onClick={handleLockStudio}
+              className="px-3.5 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 text-sm font-semibold border border-rose-500/40 flex items-center gap-1.5 transition shadow-lg shadow-rose-950/40 cursor-pointer"
+              title="Lock Developer Studio with PIN 1608"
+            >
+              <Lock className="w-4 h-4 text-rose-400" />
+              <span>Lock Studio</span>
+            </button>
           </div>
         </div>
 
         {/* Tab Navigation */}
         <div className="flex items-center gap-2 overflow-x-auto mt-6 pt-4 border-t border-slate-800/80 scrollbar-none">
+          <button
+            onClick={() => setActiveTab('modules')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition shrink-0 ${
+              activeTab === 'modules'
+                ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white shadow-lg shadow-teal-600/25 font-bold'
+                : 'text-emerald-300 hover:text-white hover:bg-slate-800/50 border border-emerald-500/30'
+            }`}
+          >
+            <Sliders className="w-4 h-4 text-emerald-400" />
+            <span>Modules &amp; Feature Flags</span>
+            <span className="px-1.5 py-0.2 rounded-full text-xs bg-emerald-500/30 text-emerald-200">
+              {Object.values(systemConfig?.enabledModules || {}).filter(v => v === false).length > 0 
+                ? `${Object.values(systemConfig?.enabledModules || {}).filter(v => v === false).length} Disabled` 
+                : 'All Active'}
+            </span>
+          </button>
+
           <button
             onClick={() => setActiveTab('wizard')}
             className={`px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition shrink-0 ${
@@ -560,6 +832,11 @@ export default function DevStudioView() {
           </button>
         </div>
       </div>
+
+      {/* TAB: MODULES & FEATURE FLAGS MANAGER */}
+      {activeTab === 'modules' && (
+        <ModuleManagerStudio onNavigateTab={setCurrentTab} />
+      )}
 
       {/* TAB: ACADEMIC CENTER STEP-BY-STEP SETUP WIZARD */}
       {activeTab === 'wizard' && (
@@ -1447,6 +1724,144 @@ export default function DevStudioView() {
       {/* TAB 3: DATABASE & COLLECTIONS EXPLORER */}
       {activeTab === 'database' && (
         <div className="space-y-6">
+          {/* DAILY AUTOMATIC DATABASE BACKUP & LEADERSHIP EMAIL DISPATCH HUB */}
+          <div className="bg-gradient-to-r from-indigo-950/40 via-purple-950/40 to-slate-900 border border-indigo-500/30 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    Daily Automatic Backup Active
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    Cron: Every 24h
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Last Run: {lastDailyBackupDate || 'Today (Scheduled)'}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2 font-['Outfit']">
+                  <MailCheck className="w-5 h-5 text-indigo-400" />
+                  Daily Database Auto-Backup &amp; Leadership Email Dispatch
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed max-w-3xl">
+                  School database pum pui (students, classes, fees, staff, marks, payroll, timetables) hi ni tin a in-backup ziah a, Principal leh Vice Principal email-ah automatic-a thawn ziah a ni. Accidental loss venhim nan pre-wipe backup a in-save bawk.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleTriggerBackupNow}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/25 flex items-center gap-1.5 transition cursor-pointer active:scale-95"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Trigger Backup &amp; Email Now</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRestoreEmergency}
+                  className="px-3.5 py-2 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 text-xs font-semibold border border-rose-500/30 flex items-center gap-1.5 transition cursor-pointer"
+                  title="Restore safety snapshot taken prior to clean wipes"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Restore Pre-Wipe Backup</span>
+                </button>
+              </div>
+            </div>
+
+            {manualBackupSuccessNotice && (
+              <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                <span>{manualBackupSuccessNotice}</span>
+              </div>
+            )}
+
+            {/* Email Recipients & Dispatch Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+              <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center shrink-0">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Principal / Admin Email</div>
+                  <div className="text-xs font-mono text-white truncate font-medium">
+                    {systemConfig?.principalEmail || activeSchoolInfo?.contactEmail || 'principal@mizoramschool.edu'}
+                  </div>
+                  <div className="text-[10px] text-emerald-400 flex items-center gap-1 mt-0.5">
+                    <Check className="w-3 h-3" /> Verified Daily Snapshot Recipient
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center shrink-0">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Vice Principal Email</div>
+                  <div className="text-xs font-mono text-white truncate font-medium">
+                    {systemConfig?.vicePrincipalEmail || 'vp@mizoramschool.edu'}
+                  </div>
+                  <div className="text-[10px] text-emerald-400 flex items-center gap-1 mt-0.5">
+                    <Check className="w-3 h-3" /> Verified Daily Snapshot Recipient
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Backup Logs */}
+            {dailyBackupLogs && dailyBackupLogs.length > 0 && (
+              <div className="pt-2">
+                <div className="text-xs font-semibold text-slate-400 mb-2 flex items-center gap-1.5">
+                  <History className="w-3.5 h-3.5 text-indigo-400" />
+                  Recent Daily Backup &amp; Email Dispatch Logs ({dailyBackupLogs.length})
+                </div>
+                <div className="overflow-x-auto rounded-xl border border-slate-800/80 bg-slate-950/50">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-500 uppercase text-[10px] bg-slate-900/60">
+                        <th className="py-2 px-3">Date / Time</th>
+                        <th className="py-2 px-3">Trigger Type</th>
+                        <th className="py-2 px-3">Size</th>
+                        <th className="py-2 px-3">Recipients</th>
+                        <th className="py-2 px-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 text-slate-300 font-mono text-[11px]">
+                      {dailyBackupLogs.slice(0, 5).map((log) => (
+                        <tr key={log.id} className="hover:bg-slate-900/40">
+                          <td className="py-2 px-3 whitespace-nowrap text-white font-semibold">
+                            {log.date} <span className="text-slate-500 font-normal">({log.formattedTime})</span>
+                          </td>
+                          <td className="py-2 px-3 whitespace-nowrap">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
+                              log.type?.includes('Manual') 
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            }`}>
+                              {log.type}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 whitespace-nowrap text-indigo-300">
+                            {log.sizeKb} KB
+                          </td>
+                          <td className="py-2 px-3 whitespace-nowrap text-slate-400">
+                            {Array.isArray(log.recipients) ? log.recipients.join(', ') : 'Principal, VP'}
+                          </td>
+                          <td className="py-2 px-3 whitespace-nowrap text-emerald-400 font-semibold">
+                            ✓ {log.status || 'Emailed & Dispatched'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -1754,6 +2169,7 @@ export default function DevStudioView() {
               { id: 'lms', label: 'Academic LMS Vault', icon: BookOpen },
               { id: 'media', label: 'Live Video Gateway', icon: Video },
               { id: 'website', label: 'Public Website CMS', icon: Globe },
+              { id: 'developer', label: 'Developer & Tech Support', icon: Code2 },
             ].map(cat => {
               const Icon = cat.icon;
               const isActive = configCategory === cat.id;
@@ -3155,6 +3571,257 @@ export default function DevStudioView() {
                     >
                       <span>Customise streams, photos, contacts & social links &rarr;</span>
                     </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SECTION 14: DEVELOPER IDENTITY, DIRECT SUPPORT & INSTITUTIONAL SLA SETUP */}
+            {(configCategory === 'all' || configCategory === 'developer' || configCategory === 'website') && (
+              <div className="bg-slate-900 border border-purple-500/30 rounded-2xl p-6 shadow-xl space-y-5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+                
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                      <Code2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <span>14. Developer Identity, Direct Contact &amp; 24/7 SLA Hub</span>
+                        <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                          Super Admin Managed
+                        </span>
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        Main web front page leh portal chhunga software developer detail, direct WhatsApp support leh emergency hotline edit-na.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xs font-mono text-purple-400 bg-purple-950/40 px-2.5 py-1 rounded-md border border-purple-800/40">
+                      websiteConfig.developerCredits
+                    </span>
+                    <button
+                      onClick={() => setIsDevWebsiteEditorOpen(true)}
+                      className="px-3.5 py-1.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Full Studio Editor</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Status & Quick Preview Banner */}
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold font-mono">
+                      DEV
+                    </div>
+                    <div>
+                      <div className="font-bold text-white flex items-center gap-2">
+                        <span>{websiteConfig?.developerCredits?.name || 'Samuel (Lead Architect)'}</span>
+                        <span className="text-[10px] text-slate-400 font-normal">({websiteConfig?.developerCredits?.company || 'Zoxs Technologies'})</span>
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        Hotline: <span className="text-emerald-400 font-mono font-semibold">{websiteConfig?.developerCredits?.phone || '+91 94361 22000'}</span> • WhatsApp: <span className="text-emerald-400 font-mono font-semibold">{websiteConfig?.developerCredits?.whatsapp || '+91 94361 22000'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={websiteConfig?.developerCredits?.showOnFrontPage !== false}
+                        onChange={(e) => updateWebsiteConfig({
+                          developerCredits: {
+                            ...(websiteConfig?.developerCredits || {}),
+                            showOnFrontPage: e.target.checked
+                          }
+                        })}
+                        className="rounded text-purple-600 focus:ring-0 cursor-pointer"
+                      />
+                      <span className="text-xs text-slate-300 font-medium">Show on Web Front Page</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={websiteConfig?.developerCredits?.showInPortalHelp !== false}
+                        onChange={(e) => updateWebsiteConfig({
+                          developerCredits: {
+                            ...(websiteConfig?.developerCredits || {}),
+                            showInPortalHelp: e.target.checked
+                          }
+                        })}
+                        className="rounded text-purple-600 focus:ring-0 cursor-pointer"
+                      />
+                      <span className="text-xs text-slate-300 font-medium">Show in Portal Navigation</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Form Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Developer / Architect Name</label>
+                    <input
+                      type="text"
+                      value={websiteConfig?.developerCredits?.name || ''}
+                      onChange={(e) => updateWebsiteConfig({
+                        developerCredits: {
+                          ...(websiteConfig?.developerCredits || {}),
+                          name: e.target.value
+                        }
+                      })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500 text-sm"
+                      placeholder="e.g. Samuel (Lead Architect)"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Designation / Title</label>
+                    <input
+                      type="text"
+                      value={websiteConfig?.developerCredits?.title || ''}
+                      onChange={(e) => updateWebsiteConfig({
+                        developerCredits: {
+                          ...(websiteConfig?.developerCredits || {}),
+                          title: e.target.value
+                        }
+                      })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500 text-sm"
+                      placeholder="e.g. Lead Software Architect & Systems Engineer"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Studio / Company Name</label>
+                    <input
+                      type="text"
+                      value={websiteConfig?.developerCredits?.company || ''}
+                      onChange={(e) => updateWebsiteConfig({
+                        developerCredits: {
+                          ...(websiteConfig?.developerCredits || {}),
+                          company: e.target.value
+                        }
+                      })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500 text-sm"
+                      placeholder="e.g. Zoxs Technologies Mizoram"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-emerald-400 uppercase mb-1.5">WhatsApp Direct Number</label>
+                    <input
+                      type="text"
+                      value={websiteConfig?.developerCredits?.whatsapp || ''}
+                      onChange={(e) => updateWebsiteConfig({
+                        developerCredits: {
+                          ...(websiteConfig?.developerCredits || {}),
+                          whatsapp: e.target.value
+                        }
+                      })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 text-sm font-mono"
+                      placeholder="e.g. +91 94361 22000"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-indigo-400 uppercase mb-1.5">Voice Hotline Phone</label>
+                    <input
+                      type="text"
+                      value={websiteConfig?.developerCredits?.phone || ''}
+                      onChange={(e) => updateWebsiteConfig({
+                        developerCredits: {
+                          ...(websiteConfig?.developerCredits || {}),
+                          phone: e.target.value
+                        }
+                      })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 text-sm font-mono"
+                      placeholder="e.g. +91 94361 22000"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-purple-400 uppercase mb-1.5">Support Email Address</label>
+                    <input
+                      type="email"
+                      value={websiteConfig?.developerCredits?.email || ''}
+                      onChange={(e) => updateWebsiteConfig({
+                        developerCredits: {
+                          ...(websiteConfig?.developerCredits || {}),
+                          email: e.target.value
+                        }
+                      })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500 text-sm font-mono"
+                      placeholder="e.g. dev.samuel@mizoramschool.edu"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Operating Location / Base</label>
+                    <input
+                      type="text"
+                      value={websiteConfig?.developerCredits?.location || ''}
+                      onChange={(e) => updateWebsiteConfig({
+                        developerCredits: {
+                          ...(websiteConfig?.developerCredits || {}),
+                          location: e.target.value
+                        }
+                      })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500 text-sm"
+                      placeholder="e.g. Aizawl & Lunglei, Mizoram"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Website / Portfolio Link</label>
+                    <input
+                      type="text"
+                      value={websiteConfig?.developerCredits?.website || ''}
+                      onChange={(e) => updateWebsiteConfig({
+                        developerCredits: {
+                          ...(websiteConfig?.developerCredits || {}),
+                          website: e.target.value
+                        }
+                      })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-purple-500 text-sm font-mono"
+                      placeholder="e.g. https://zoxs.dev"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-cyan-400 uppercase mb-1.5">Support Availability Hours (SLA)</label>
+                    <input
+                      type="text"
+                      value={websiteConfig?.developerCredits?.supportHours || ''}
+                      onChange={(e) => updateWebsiteConfig({
+                        developerCredits: {
+                          ...(websiteConfig?.developerCredits || {}),
+                          supportHours: e.target.value
+                        }
+                      })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 text-sm"
+                      placeholder="e.g. Mon - Sat: 8:00 AM - 8:00 PM (24/7 Alerts)"
+                    />
+                  </div>
+
+                  <div className="md:col-span-3">
+                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Developer Tagline / Technical Mission Statement</label>
+                    <textarea
+                      rows={2}
+                      value={websiteConfig?.developerCredits?.tagline || ''}
+                      onChange={(e) => updateWebsiteConfig({
+                        developerCredits: {
+                          ...(websiteConfig?.developerCredits || {}),
+                          tagline: e.target.value
+                        }
+                      })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-purple-500 text-sm"
+                      placeholder="Engineering robust, next-gen digital infrastructure & academic management systems for educational institutions across Mizoram."
+                    />
                   </div>
                 </div>
               </div>

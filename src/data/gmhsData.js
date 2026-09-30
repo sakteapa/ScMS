@@ -426,5 +426,27 @@ export const GMHS_WEBSITE_CONFIG = {
     enabled: true,
     badgeText: 'GMHS ADMISSIONS 2026',
     text: '🎉 Online Admissions for Academic Session 2026 - 2027 at Govt. Mizo HSS, Zarkawt are officially open! Apply online for High School and Class 11 & 12 Science/Arts.'
+  },
+  developerCredits: {
+    enabled: true,
+    showOnFrontPage: true,
+    showInPortalHelp: true,
+    name: 'Samuel (Lead Software Architect)',
+    title: 'Lead Software Architect & Full-Stack Systems Engineer',
+    company: 'Zoxs Technologies Mizoram',
+    phone: '+91 94361 22000',
+    whatsapp: '+91 94361 22000',
+    email: 'samuel.developer@mizoramschool.edu',
+    location: 'Aizawl & Lunglei, Mizoram',
+    website: 'https://zoxs.dev',
+    tagline: 'Engineering robust, next-gen digital infrastructure & academic management systems for educational institutions across Mizoram.',
+    services: [
+      '24/7 Priority Emergency Technical Support & Bug Resolving',
+      'Custom Academic Modules, Class Tests & Examination Tools',
+      'Cloud Firestore Sync & Daily Automated Database Backups',
+      'Campus Hardware, Biometrics & Audio Bell Infrastructure'
+    ],
+    supportHours: 'Mon - Sat: 8:00 AM - 8:00 PM (24/7 Critical System Alerts)',
+    badgeText: 'Verified Institutional Developer'
   }
 };

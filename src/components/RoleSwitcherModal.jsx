@@ -51,6 +51,7 @@ export default function RoleSwitcherModal({ isOpen, onClose }) {
   const [adminPasswordPrompt, setAdminPasswordPrompt] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [adminPasswordError, setAdminPasswordError] = useState('');
+  const [pendingTargetRole, setPendingTargetRole] = useState(null);
 
   if (!isOpen) return null;
 
@@ -121,7 +122,9 @@ export default function RoleSwitcherModal({ isOpen, onClose }) {
   ];
 
   const handleFastSwitch = (roleKey) => {
-    if (roleKey === 'superadmin' && currentUser?.role !== 'superadmin') {
+    // Only superadmin can switch roles directly. Non-superadmins must authenticate with Master PIN (1608) or Password.
+    if (currentUser?.role !== 'superadmin') {
+      setPendingTargetRole(roleKey);
       setAdminPasswordPrompt(true);
       setAdminPassword('');
       setAdminPasswordError('');
@@ -135,12 +138,14 @@ export default function RoleSwitcherModal({ isOpen, onClose }) {
     e.preventDefault();
     const superAdminUser = DEFAULT_USERS.find(u => u.role === 'superadmin');
     const validPassword = superAdminUser?.password || 'Srenthlei16#';
-    if (adminPassword === validPassword) {
-      switchRole('superadmin');
+    if (adminPassword === validPassword || adminPassword === '1608') {
+      const target = pendingTargetRole || 'superadmin';
+      switchRole(target);
       setAdminPasswordPrompt(false);
+      setPendingTargetRole(null);
       onClose();
     } else {
-      setAdminPasswordError('Master password dik lo a ni. (Incorrect password).');
+      setAdminPasswordError('Super Admin PIN (1608) emaw Password dik lo a ni.');
     }
   };
 
@@ -403,19 +408,19 @@ export default function RoleSwitcherModal({ isOpen, onClose }) {
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-white">Super Admin Master Authentication</h4>
-                      <p className="text-xs text-slate-400">Enter master password for <strong>Samuel Lalrinfela</strong> to unlock live modification mode.</p>
+                      <p className="text-xs text-slate-400">Super Admin chauh lo chu role inthlak theih a ni lo. Super Admin PIN (<strong>1608</strong>) emaw password chhu lut rawh le.</p>
                     </div>
                   </div>
 
                   <form onSubmit={handleVerifySuperAdminPassword} className="space-y-3">
                     <div className="space-y-1">
-                      <label className="text-xs text-slate-300 font-medium">Master Password</label>
+                      <label className="text-xs text-slate-300 font-medium">Master PIN or Password</label>
                       <input
                         type="password"
                         autoFocus
                         value={adminPassword}
                         onChange={(e) => setAdminPassword(e.target.value)}
-                        placeholder="Enter Super Admin password"
+                        placeholder="Enter PIN (1608) or Password"
                         className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-violet-500"
                         required
                       />

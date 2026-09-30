@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SchoolProvider, useSchool } from './context/SchoolContext';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, Sliders, CheckCircle2 } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import RoleSwitcherModal from './components/RoleSwitcherModal';
@@ -55,15 +55,20 @@ const WebsiteEditorModal = lazy(() => import('./components/WebsiteEditorModal'))
 function SchoolAppContent() {
   const { center_id } = useParams();
   const { currentUser, isPrincipal, isVicePrincipal, isTeacher, isWarden, isStudent, isParent, isSuperAdmin } = useAuth();
-  const { staff = [], showcaseNotice, activeSchoolId, switchSchool } = useSchool();
+  const { staff = [], showcaseNotice, activeSchoolId, switchSchool, isModuleEnabled, toggleModule } = useSchool();
   const userRole = currentUser?.role || 'principal';
 
   // Automatically sync academic center if specified in URL route (e.g. /:center_id)
   useEffect(() => {
-    if (center_id && center_id.toLowerCase() !== (activeSchoolId || '').toLowerCase() && typeof switchSchool === 'function') {
-      switchSchool(center_id);
+    if (!center_id) return;
+    const cleanCenter = center_id.toLowerCase().trim();
+    if (RESERVED_ROUTES.includes(cleanCenter)) {
+      return;
     }
-  }, [center_id]);
+    if (cleanCenter !== (activeSchoolId || '').toLowerCase() && typeof switchSchool === 'function') {
+      switchSchool(cleanCenter);
+    }
+  }, [center_id, activeSchoolId]);
 
   const isAllowedTab = (tab, role) => {
     if (role === 'superadmin') return true;
@@ -89,6 +94,8 @@ function SchoolAppContent() {
       case 'class_admin_live':
       case 'report_cards':
       case 'attendance':
+      case 'id_card_studio':
+      case 'sms_notifications':
       case 'inventory':
       case 'group_conference':
       case 'live_broadcast':
@@ -101,6 +108,7 @@ function SchoolAppContent() {
       case 'routine':
       case 'calendar':
       case 'notices':
+      case 'school_rules':
       case 'alumni':
         return true;
       case 'leave_management':
@@ -108,6 +116,7 @@ function SchoolAppContent() {
         return ['principal', 'vice_principal', 'warden', 'teacher'].includes(role);
       case 'hostel':
         return ['principal', 'vice_principal', 'warden'].includes(role);
+      case 'fees':
       case 'financials':
         return ['principal'].includes(role);
       case 'students':
@@ -117,11 +126,12 @@ function SchoolAppContent() {
       case 'staff_chat':
         return ['principal', 'vice_principal', 'warden', 'teacher'].includes(role);
       case 'library':
+      case 'school_store':
       case 'transport':
       case 'transport_hostel':
         return ['principal', 'vice_principal', 'teacher'].includes(role);
       case 'dev_studio':
-        return role === 'superadmin';
+        return ['superadmin', 'principal', 'vice_principal'].includes(role);
       default:
         return false;
     }
@@ -137,8 +147,34 @@ function SchoolAppContent() {
   const [isMobileAppModalOpen, setIsMobileAppModalOpen] = useState(false);
   const [isWebsiteEditorOpen, setIsWebsiteEditorOpen] = useState(false);
   const [isPublicAdmissionModalOpen, setIsPublicAdmissionModalOpen] = useState(false);
+  const [isSmsHubOpen, setIsSmsHubOpen] = useState(false);
+  const [isSchoolRulesModalOpen, setIsSchoolRulesModalOpen] = useState(false);
+  const [isCloudStorageModalOpen, setIsCloudStorageModalOpen] = useState(false);
+  const [isUniversalQrScannerOpen, setIsUniversalQrScannerOpen] = useState(false);
+  const [scannedStudentForIdCard, setScannedStudentForIdCard] = useState(null);
+  const [isIdCardFromScannerOpen, setIsIdCardFromScannerOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [selectedStudentForReport, setSelectedStudentForReport] = useState(null);
+
+  // Requirement: front page hi vice principal chin chunglam chauhin an edit/config thei tur ani.
+  const canEditWebsite = Boolean(
+    currentUser?.role === 'superadmin' || 
+    currentUser?.role === 'principal' || 
+    currentUser?.role === 'vice_principal' || 
+    currentUser?.role === 'viceprincipal' || 
+    currentUser?.role === 'admin' ||
+    isPrincipal ||
+    isVicePrincipal ||
+    isSuperAdmin
+  );
+
+  const handleOpenWebsiteEditor = () => {
+    if (!canEditWebsite) {
+      alert('Access Restricted: Front page website configuration can only be edited by the Vice Principal, Principal, or Super Admin (Vice Principal chin chunglam).');
+      return;
+    }
+    setIsWebsiteEditorOpen(true);
+  };
   
   const { 
     activePrivateCall, 
@@ -199,12 +235,66 @@ function SchoolAppContent() {
       );
     }
 
+    const isModuleActive = isModuleEnabled ? isModuleEnabled(currentTab) : true;
+    if (!isModuleActive && currentTab !== 'dashboard' && currentTab !== 'dev_studio' && currentTab !== 'public_website') {
+      const isAdmin = ['superadmin', 'principal', 'vice_principal'].includes(userRole);
+      return (
+        <div className="py-20 px-6 max-w-xl mx-auto text-center space-y-6">
+          <div className="w-20 h-20 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto shadow-2xl">
+            <Sliders className="w-10 h-10" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-white font-['Outfit']">Module Inactive / Hman Theih Rih Lo</h2>
+            <p className="text-sm text-slate-300 leading-relaxed">
+              He module (<span className="text-amber-400 font-mono font-semibold">{currentTab}</span>) hi School Administration in an disable rih a ni.
+            </p>
+          </div>
+
+          {isAdmin ? (
+            <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3 shadow-xl">
+              <p className="text-xs text-slate-400">
+                Principal / Vice Principal i nihna angin he module hi 1-click hmangin i ti nung (enable) leh nghal thei e:
+              </p>
+              <div className="flex items-center justify-center gap-3 pt-1">
+                <button
+                  onClick={() => toggleModule && toggleModule(currentTab, true)}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-lg shadow-emerald-600/30 transition flex items-center gap-2 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Enable This Module Now
+                </button>
+                <button
+                  onClick={() => setCurrentTab('dev_studio')}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition cursor-pointer"
+                >
+                  Open Module Manager
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+              <p className="text-xs text-slate-400">
+                Hman i duh a nih chuan School Principal emaw Vice Principal hnenah ngenna i thlen thei ang.
+              </p>
+              <button
+                onClick={() => setCurrentTab('dashboard')}
+                className="mt-3 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition cursor-pointer"
+              >
+                Dashboard-ah Let Rawh
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     switch (currentTab) {
       case 'dashboard':
         return (
           <DashboardView 
             setCurrentTab={setCurrentTab} 
             openRoleSwitcher={() => setIsRoleModalOpen(true)} 
+            onOpenMobileApp={() => setIsMobileAppModalOpen(true)}
           />
         );
       case 'class_admin_live':
@@ -230,9 +320,20 @@ function SchoolAppContent() {
         return <CalendarView />;
       case 'attendance':
         return <AttendanceView setCurrentTab={setCurrentTab} />;
+      case 'id_card_studio':
+        return <IdCardStudioView />;
+      case 'sms_notifications':
+        return (
+          <SmsWhatsAppNotificationHubModal
+            isOpen={true}
+            onClose={() => setCurrentTab('dashboard')}
+            initialTab="attendance"
+          />
+        );
       case 'leave_management':
       case 'leave':
         return <LeaveManagementView />;
+      case 'fees':
       case 'financials':
         return (
           <FinancialsView 
@@ -266,6 +367,13 @@ function SchoolAppContent() {
         return <TransportHostelView />;
       case 'notices':
         return <NoticesView setCurrentTab={setCurrentTab} />;
+      case 'school_rules':
+        return (
+          <SchoolRulesModal 
+            isOpen={true} 
+            onClose={() => setCurrentTab((userRole === 'student' || userRole === 'parent') ? 'portal' : 'dashboard')} 
+          />
+        );
       case 'clinic':
         return <ClinicView />;
       case 'visitors':
@@ -276,6 +384,8 @@ function SchoolAppContent() {
         return <AlumniView />;
       case 'canteen':
         return <CanteenView />;
+      case 'school_store':
+        return <SchoolStoreView setCurrentTab={setCurrentTab} />;
       case 'group_conference':
         return <GroupConferenceView />;
       case 'live_broadcast':
@@ -285,12 +395,13 @@ function SchoolAppContent() {
       case 'analytics':
         return <AnalyticsDashboardView />;
       case 'dev_studio':
-        return <DevStudioView />;
+        return <DevStudioView setCurrentTab={setCurrentTab} />;
       default:
         return (
           <DashboardView 
             setCurrentTab={setCurrentTab} 
             openRoleSwitcher={() => setIsRoleModalOpen(true)} 
+            onOpenMobileApp={() => setIsMobileAppModalOpen(true)}
           />
         );
     }
@@ -300,13 +411,14 @@ function SchoolAppContent() {
   if (!currentUser) {
     if (currentTab === 'public_website') {
       return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
-          <PublicWebsiteView
-            onEnterPortal={() => setCurrentTab('login')}
-            onOpenAdmissions={() => setIsPublicAdmissionModalOpen(true)}
-            onOpenEditor={() => setIsWebsiteEditorOpen(true)}
-            onOpenMobileApp={() => setIsMobileAppModalOpen(true)}
-          />
+        <Suspense fallback={<ViewFallback />}>
+          <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
+            <PublicWebsiteView
+              onEnterPortal={() => setCurrentTab('login')}
+              onOpenAdmissions={() => setIsPublicAdmissionModalOpen(true)}
+              onOpenEditor={handleOpenWebsiteEditor}
+              onOpenMobileApp={() => setIsMobileAppModalOpen(true)}
+            />
 
           {/* Dedicated Public Online Admission Application Portal */}
           <PublicAdmissionPortalModal
@@ -321,40 +433,44 @@ function SchoolAppContent() {
             }}
           />
 
-          <WebsiteEditorModal
-            isOpen={isWebsiteEditorOpen}
-            onClose={() => setIsWebsiteEditorOpen(false)}
-            onViewWebsite={() => setCurrentTab('public_website')}
-          />
+            <WebsiteEditorModal
+              isOpen={isWebsiteEditorOpen}
+              onClose={() => setIsWebsiteEditorOpen(false)}
+              onViewWebsite={() => setCurrentTab('public_website')}
+            />
 
-          <MobileAppDownloadModal
-            isOpen={isMobileAppModalOpen}
-            onClose={() => setIsMobileAppModalOpen(false)}
-            deferredPrompt={deferredPrompt}
-            onDirectInstall={handleDirectInstall}
-          />
-        </div>
+            <MobileAppDownloadModal
+              isOpen={isMobileAppModalOpen}
+              onClose={() => setIsMobileAppModalOpen(false)}
+              deferredPrompt={deferredPrompt}
+              onDirectInstall={handleDirectInstall}
+            />
+          </div>
+        </Suspense>
       );
     }
 
     return (
-      <LoginView
-        onLoginSuccess={(loggedInUser) => {
-          const role = loggedInUser?.role || 'principal';
-          setCurrentTab((role === 'student' || role === 'parent') ? 'portal' : 'dashboard');
-        }}
-        onViewWebsite={() => setCurrentTab('public_website')}
-      />
+      <Suspense fallback={<ViewFallback />}>
+        <LoginView
+          onLoginSuccess={(loggedInUser) => {
+            const role = loggedInUser?.role || 'principal';
+            setCurrentTab((role === 'student' || role === 'parent') ? 'portal' : 'dashboard');
+          }}
+          onViewWebsite={() => setCurrentTab('public_website')}
+        />
+      </Suspense>
     );
   }
 
   if (currentTab === 'public_website') {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
-        <PublicWebsiteView
-          onEnterPortal={() => setCurrentTab((isStudent || isParent) ? 'portal' : 'dashboard')}
+      <Suspense fallback={<ViewFallback />}>
+        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
+          <PublicWebsiteView
+            onEnterPortal={() => setCurrentTab((isStudent || isParent) ? 'portal' : 'dashboard')}
           onOpenAdmissions={() => setIsPublicAdmissionModalOpen(true)}
-          onOpenEditor={() => setIsWebsiteEditorOpen(true)}
+          onOpenEditor={handleOpenWebsiteEditor}
           onOpenMobileApp={() => setIsMobileAppModalOpen(true)}
         />
 
@@ -384,7 +500,8 @@ function SchoolAppContent() {
           onDirectInstall={handleDirectInstall}
         />
       </div>
-    );
+    </Suspense>
+  );
   }
 
   return (
@@ -429,12 +546,14 @@ function SchoolAppContent() {
               </span>
             </div>
             <div className="flex items-center gap-2 shrink-0 text-[11px]">
-              <button
-                onClick={() => setIsRoleModalOpen(true)}
-                className="text-amber-400 hover:text-amber-300 font-semibold underline text-[11px] cursor-pointer"
-              >
-                Switch Demo Role
-              </button>
+              {currentUser?.role === 'superadmin' && (
+                <button
+                  onClick={() => setIsRoleModalOpen(true)}
+                  className="text-amber-400 hover:text-amber-300 font-semibold underline text-[11px] cursor-pointer"
+                >
+                  Switch Demo Role
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -447,12 +566,18 @@ function SchoolAppContent() {
           openFirebaseModal={() => setIsFirebaseModalOpen(true)}
           openExportModal={() => setIsExportModalOpen(true)}
           openMobileAppModal={() => setIsMobileAppModalOpen(true)}
-          openWebsiteEditor={() => setIsWebsiteEditorOpen(true)}
+          openWebsiteEditor={handleOpenWebsiteEditor}
+          openSmsHubModal={() => setIsSmsHubOpen(true)}
+          openSchoolRulesModal={() => setIsSchoolRulesModalOpen(true)}
+          openCloudStorageModal={() => setIsCloudStorageModalOpen(true)}
+          openQrScannerModal={() => setIsUniversalQrScannerOpen(true)}
           onViewWebsite={() => setCurrentTab('public_website')}
         />
 
         <main className="flex-1 p-3.5 sm:p-6 lg:p-8 pb-24 sm:pb-28 lg:pb-8 max-w-7xl w-full mx-auto min-w-0">
-          {renderActiveView()}
+          <Suspense fallback={<ViewFallback />}>
+            {renderActiveView()}
+          </Suspense>
         </main>
       </div>
 
@@ -492,6 +617,30 @@ function SchoolAppContent() {
         onDirectInstall={handleDirectInstall}
       />
 
+      {/* Global Cloud Photo & Media Storage Studio Modal */}
+      {isCloudStorageModalOpen && (
+        <CloudPhotoStorageModal
+          isOpen={isCloudStorageModalOpen}
+          onClose={() => setIsCloudStorageModalOpen(false)}
+        />
+      )}
+
+      {/* Global SMS & WhatsApp Notification Hub Modal */}
+      {isSmsHubOpen && (
+        <SmsWhatsAppNotificationHubModal
+          isOpen={isSmsHubOpen}
+          onClose={() => setIsSmsHubOpen(false)}
+        />
+      )}
+
+      {/* Global School Rules & Code of Conduct Modal */}
+      {isSchoolRulesModalOpen && (
+        <SchoolRulesModal
+          isOpen={isSchoolRulesModalOpen}
+          onClose={() => setIsSchoolRulesModalOpen(false)}
+        />
+      )}
+
       {/* Global 1-on-1 Private Call Modal */}
       {activePrivateCall && (
         <PrivateCallModal
@@ -499,6 +648,31 @@ function SchoolAppContent() {
           onClose={endPrivateCall}
           targetUser={activePrivateCall.user}
           initialType={activePrivateCall.type || 'video'}
+        />
+      )}
+
+      {/* Global Universal Student QR Scanner Modal */}
+      {isUniversalQrScannerOpen && (
+        <UniversalQrScannerModal
+          isOpen={isUniversalQrScannerOpen}
+          onClose={() => setIsUniversalQrScannerOpen(false)}
+          onOpenIdCard={(student) => {
+            setScannedStudentForIdCard(student);
+            setIsIdCardFromScannerOpen(true);
+          }}
+        />
+      )}
+
+      {/* ID Card Modal invoked from Universal QR Scanner */}
+      {isIdCardFromScannerOpen && (
+        <StudentIdCardModal
+          isOpen={isIdCardFromScannerOpen}
+          onClose={() => {
+            setIsIdCardFromScannerOpen(false);
+            setScannedStudentForIdCard(null);
+          }}
+          initialStudent={scannedStudentForIdCard}
+          selectedClassId={scannedStudentForIdCard?.classId}
         />
       )}
 
@@ -536,10 +710,12 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <SchoolProvider>
-          <Routes>
-            <Route path="/" element={<PlatformLandingView />} />
-            <Route path="/:center_id/*" element={<SchoolAppContent />} />
-          </Routes>
+          <Suspense fallback={<ViewFallback />}>
+            <Routes>
+              <Route path="/" element={<PlatformLandingView />} />
+              <Route path="/:center_id/*" element={<SchoolAppContent />} />
+            </Routes>
+          </Suspense>
         </SchoolProvider>
       </AuthProvider>
     </BrowserRouter>

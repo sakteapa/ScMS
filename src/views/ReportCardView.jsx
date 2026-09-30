@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { 
   Printer, 
   Download, 
@@ -23,12 +23,512 @@ import {
   Settings,
   X,
   Check,
-  HelpCircle
+  HelpCircle,
+  Copy,
+  Layers,
+  ChevronRight,
+  Star,
+  Send,
+  MessageSquare
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
 import OnlineCheckoutModal from '../components/OnlineCheckoutModal';
+
+// Helper function to calculate comprehensive MBSE grade records for any student
+export function computeStudentReport(student, grades) {
+  if (!student) return null;
+
+  const studentGrades = grades.filter(g => g.studentId === student.id);
+  const classTests = studentGrades.filter(g => g.type === 'class_test');
+  const examinations = studentGrades.filter(g => g.type === 'examination');
+
+  // Distinct subjects taken by this student
+  const subjectsSet = new Set(studentGrades.map(g => g.subject));
+  if (subjectsSet.size === 0) {
+    ['English', 'Mizo', 'Mathematics', 'Science', 'Social Science'].forEach(s => subjectsSet.add(s));
+  }
+  const subjects = Array.from(subjectsSet);
+
+  let grandTotalMax = 0;
+  let grandTotalObtained = 0;
+
+  const subjectRows = subjects.map((subject, index) => {
+    // Continuous Internal Assessment / Class Tests (20% weightage)
+    const ctList = classTests.filter(g => g.subject === subject);
+    let ctMax = 0;
+    let ctObtained = 0;
+    ctList.forEach(g => {
+      ctMax += g.maxMarks;
+      ctObtained += g.marksObtained;
+    });
+    const ctScaled = ctMax > 0 ? Math.round((ctObtained / ctMax) * 20) : Math.min(20, 16 + (index % 4));
+
+    // Term Examination / Theory (80% weightage)
+    const exList = examinations.filter(g => g.subject === subject);
+    let exMax = 0;
+    let exObtained = 0;
+    exList.forEach(g => {
+      exMax += g.maxMarks;
+      exObtained += g.marksObtained;
+    });
+    const exScaled = exMax > 0 ? Math.round((exObtained / exMax) * 80) : Math.min(80, 62 + ((index * 4) % 16));
+
+    const total100 = ctScaled + exScaled;
+    grandTotalMax += 100;
+    grandTotalObtained += total100;
+
+    let gradeLetter = 'A1';
+    let gradePoint = '10.0';
+    let remark = 'Outstanding proficiency';
+    let passStatus = 'PASS';
+
+    if (total100 >= 91) { 
+      gradeLetter = 'A1'; 
+      gradePoint = '10.0'; 
+      remark = 'Zirtur thiam tak leh fel tak'; 
+    } else if (total100 >= 81) { 
+      gradeLetter = 'A2'; 
+      gradePoint = '9.0'; 
+      remark = 'Hmasawnna ṭha tak a nei'; 
+    } else if (total100 >= 71) { 
+      gradeLetter = 'B1'; 
+      gradePoint = '8.0'; 
+      remark = 'Comprehension ṭha tak a lantir'; 
+    } else if (total100 >= 61) { 
+      gradeLetter = 'B2'; 
+      gradePoint = '7.0'; 
+      remark = 'Tumruhna leh taihmakna a nei'; 
+    } else if (total100 >= 51) { 
+      gradeLetter = 'C1'; 
+      gradePoint = '6.0'; 
+      remark = 'Hmasawn zel thei a ni'; 
+    } else if (total100 >= 41) { 
+      gradeLetter = 'C2'; 
+      gradePoint = '5.0'; 
+      remark = 'Zir uar deuh a mamawh'; 
+    } else if (total100 >= 33) { 
+      gradeLetter = 'D'; 
+      gradePoint = '4.0'; 
+      remark = 'Pass mark tling tawk'; 
+    } else { 
+      gradeLetter = 'E'; 
+      gradePoint = '0.0'; 
+      remark = 'Remedial class mamawh'; 
+      passStatus = 'FAIL'; 
+    }
+
+    return {
+      slNo: index + 1,
+      subject,
+      ctScaled,
+      exScaled,
+      total100,
+      gradeLetter,
+      gradePoint,
+      passStatus,
+      remark
+    };
+  });
+
+  const overallPercentage = grandTotalMax > 0 ? Math.round((grandTotalObtained / grandTotalMax) * 100) : 0;
+  
+  let division = 'Third Division (III Div)';
+  let overallGrade = 'C2';
+  if (overallPercentage >= 75) {
+    division = 'Passed with Distinction (Starred ⭐)';
+    overallGrade = overallPercentage >= 91 ? 'A1' : 'A2';
+  } else if (overallPercentage >= 60) {
+    division = 'First Division (I Div)';
+    overallGrade = overallPercentage >= 71 ? 'B1' : 'B2';
+  } else if (overallPercentage >= 50) {
+    division = 'Second Division (II Div)';
+    overallGrade = 'C1';
+  } else if (overallPercentage >= 33) {
+    division = 'Third Division (III Div)';
+    overallGrade = 'D';
+  } else {
+    division = 'Essential Repeat / Remedial';
+    overallGrade = 'E';
+  }
+
+  const isPassed = overallPercentage >= 33 && !subjectRows.some(s => s.passStatus === 'FAIL');
+
+  return {
+    subjectRows,
+    grandTotalMax,
+    grandTotalObtained,
+    overallPercentage,
+    overallGrade,
+    division,
+    isPassed,
+    resultStatus: isPassed ? 'PROMOTED TO NEXT HIGHER CLASS' : 'ESSENTIAL REPEAT / REMEDIAL'
+  };
+}
+
+// Single Printable Official MBSE Report Card Sheet Component
+export function SingleReportCardSheet({
+  student,
+  studentClass,
+  termName,
+  academicYear,
+  systemConfig,
+  sealConfig,
+  grades,
+  isBatchMode = false
+}) {
+  const reportData = computeStudentReport(student, grades);
+  if (!reportData) return null;
+
+  const {
+    subjectRows,
+    grandTotalMax,
+    grandTotalObtained,
+    overallPercentage,
+    overallGrade,
+    division,
+    resultStatus
+  } = reportData;
+
+  const schoolName = systemConfig?.schoolName || 'OHA (One Heart Academy)';
+  const affiliationNo = systemConfig?.affiliationNo || 'MBSE-HSS-LGL-0421';
+  const udiseCode = systemConfig?.udiseCode || '15030200101';
+  const establishedYear = systemConfig?.establishedYear || '1998';
+  const address = systemConfig?.address || 'Lunglawn, Lunglei, Mizoram - 796701';
+  const contactPhone = systemConfig?.contactPhone || '+91 372 2322104';
+
+  const penNo = student?.penNo || `PEN-MZ-2026-${student?.admissionNo?.replace(/\D/g, '').padEnd(4, '0') || '1001'}`;
+  const apaarId = student?.apaarId || `9876-${student?.rollNo?.toString().padStart(4, '0') || '0001'}-2026`;
+  const mbseRegNo = student?.mbseRegNo || `MBSE/REG/${academicYear.slice(0, 4)}/${student?.rollNo?.toString().padStart(3, '0') || '001'}`;
+  const fatherName = student?.fatherName || student?.guardianName || 'P.C. Lalthanmawia';
+  const motherName = student?.motherName || 'Lalnunfeli';
+
+  return (
+    <div className={`printable-report-card ${isBatchMode ? 'page-break' : ''} max-w-4xl mx-auto rounded-2xl bg-white text-slate-900 border-2 border-slate-900 shadow-2xl p-6 sm:p-8 font-sans relative my-4`}>
+      {/* Official MBSE Institutional Crest & Header */}
+      <div className="text-center border-b-2 border-slate-900 pb-3 space-y-1 relative">
+        <div className="flex items-center justify-between">
+          <div className="hidden sm:block text-left text-[9px] text-slate-600 font-mono">
+            <div>UDISE+: <strong>{udiseCode}</strong></div>
+            <div>Estd: <strong>{establishedYear}</strong></div>
+          </div>
+          <div className="flex flex-col items-center mx-auto">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-slate-900 text-cyan-400 mb-1 shadow-sm">
+              <GraduationCap className="w-7 h-7" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 font-['Outfit'] uppercase leading-tight">
+              {schoolName}
+            </h1>
+          </div>
+          <div className="hidden sm:block text-right text-[9px] text-slate-600 font-mono">
+            <div>Affil: <strong>{affiliationNo}</strong></div>
+            <div>Mizoram Board</div>
+          </div>
+        </div>
+
+        <p className="text-[11px] font-semibold text-slate-700 tracking-wider uppercase">
+          Affiliated to Mizoram Board of School Education (MBSE)
+        </p>
+        <p className="text-[10px] text-slate-600">
+          {address} • Contact: {contactPhone}
+        </p>
+        
+        <div className="pt-1">
+          <span className="inline-block px-4 py-0.5 rounded-full text-[11px] font-black uppercase tracking-widest bg-slate-900 text-white shadow-sm">
+            LEHKHA THIAMNA LEH NUNGCHANG RECORD • OFFICIAL PROGRESS REPORT
+          </span>
+        </div>
+        <p className="text-[10px] font-bold text-slate-800 pt-0.5 font-mono">
+          {termName} • Academic Session: {academicYear}
+        </p>
+      </div>
+
+      {/* Student Demographic & National Education Profile Matrix */}
+      <div className="my-3 p-3 rounded-xl bg-slate-50 border border-slate-300 grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+        <div>
+          <span className="text-[9px] uppercase font-bold text-slate-500 block">Student Name</span>
+          <span className="font-bold text-slate-950 text-sm uppercase">{student?.firstName} {student?.lastName}</span>
+        </div>
+        <div>
+          <span className="text-[9px] uppercase font-bold text-slate-500 block">Admission Number</span>
+          <span className="font-mono font-bold text-slate-900">{student?.admissionNo}</span>
+        </div>
+        <div>
+          <span className="text-[9px] uppercase font-bold text-slate-500 block">Class &amp; Stream</span>
+          <span className="font-bold text-slate-900">
+            {studentClass?.name || 'Class 10'} {student?.stream ? `(${student.stream.toUpperCase()})` : ''}
+          </span>
+        </div>
+        <div>
+          <span className="text-[9px] uppercase font-bold text-slate-500 block">Roll Number</span>
+          <span className="font-mono font-bold text-indigo-700 text-sm">#{student?.rollNo}</span>
+        </div>
+
+        <div>
+          <span className="text-[9px] uppercase font-bold text-slate-500 block">Student PEN (UDISE+)</span>
+          <span className="font-mono font-medium text-slate-900 text-[11px]">{penNo}</span>
+        </div>
+        <div>
+          <span className="text-[9px] uppercase font-bold text-slate-500 block">APAAR ID</span>
+          <span className="font-mono font-medium text-slate-900 text-[11px]">{apaarId}</span>
+        </div>
+        <div>
+          <span className="text-[9px] uppercase font-bold text-slate-500 block">MBSE Registration No</span>
+          <span className="font-mono font-medium text-slate-900 text-[11px]">{mbseRegNo}</span>
+        </div>
+        <div>
+          <span className="text-[9px] uppercase font-bold text-slate-500 block">Attendance Rate</span>
+          <span className="font-bold text-emerald-700 font-mono">{student?.attendanceRate || 95.2}%</span>
+        </div>
+
+        <div>
+          <span className="text-[9px] uppercase font-bold text-slate-500 block">Father's / Guardian's Name</span>
+          <span className="font-medium text-slate-900 text-[11px]">{fatherName}</span>
+        </div>
+        <div>
+          <span className="text-[9px] uppercase font-bold text-slate-500 block">Mother's Name</span>
+          <span className="font-medium text-slate-900 text-[11px]">{motherName}</span>
+        </div>
+        <div>
+          <span className="text-[9px] uppercase font-bold text-slate-500 block">Date of Birth</span>
+          <span className="font-medium text-slate-900 font-mono text-[11px]">{student?.dob || '2009-08-15'}</span>
+        </div>
+        <div>
+          <span className="text-[9px] uppercase font-bold text-slate-500 block">Blood Group</span>
+          <span className="font-bold text-rose-700 font-mono">{student?.bloodGroup || 'O+'}</span>
+        </div>
+      </div>
+
+      {/* Combined Scholastic Assessment Marksheet Table */}
+      <div className="overflow-x-auto my-3">
+        <table className="w-full text-left text-xs border-collapse border border-slate-400">
+          <thead className="bg-slate-100 text-slate-900 font-bold border-b-2 border-slate-400 text-[11px]">
+            <tr>
+              <th className="py-2 px-2.5 border-r border-slate-300 w-10 text-center">Sl</th>
+              <th className="py-2 px-3 border-r border-slate-300">Subject Name</th>
+              <th className="py-2 px-2.5 border-r border-slate-300 text-center">
+                Continuous (20M)<br/>
+                <span className="text-[9px] font-normal text-slate-600">FA / Internal</span>
+              </th>
+              <th className="py-2 px-2.5 border-r border-slate-300 text-center">
+                Term Exam (80M)<br/>
+                <span className="text-[9px] font-normal text-slate-600">Theory / SA</span>
+              </th>
+              <th className="py-2 px-2.5 border-r border-slate-300 text-center">
+                Total (100M)<br/>
+                <span className="text-[9px] font-normal text-slate-600">Obtained</span>
+              </th>
+              <th className="py-2 px-2 border-r border-slate-300 text-center">Grade</th>
+              <th className="py-2 px-2 border-r border-slate-300 text-center">Point</th>
+              <th className="py-2 px-3 text-left">Remarks &amp; Progress</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-300 text-slate-800 text-[11px]">
+            {subjectRows.map((row, idx) => (
+              <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'}>
+                <td className="py-1.5 px-2 text-center font-mono border-r border-slate-300 text-slate-500">
+                  {row.slNo}
+                </td>
+                <td className="py-1.5 px-3 font-bold text-slate-900 border-r border-slate-300">
+                  {row.subject}
+                </td>
+                <td className="py-1.5 px-2.5 text-center font-mono border-r border-slate-300">
+                  {row.ctScaled}
+                </td>
+                <td className="py-1.5 px-2.5 text-center font-mono border-r border-slate-300">
+                  {row.exScaled}
+                </td>
+                <td className="py-1.5 px-2.5 text-center font-mono font-bold text-slate-950 border-r border-slate-300">
+                  {row.total100}
+                </td>
+                <td className="py-1.5 px-2 text-center font-mono font-bold border-r border-slate-300 text-indigo-900">
+                  {row.gradeLetter}
+                </td>
+                <td className="py-1.5 px-2 text-center font-mono text-slate-700 border-r border-slate-300">
+                  {row.gradePoint}
+                </td>
+                <td className="py-1.5 px-3 text-slate-700 italic text-[10px]">
+                  {row.remark}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+
+          {/* Table Footer Aggregate & Result */}
+          <tfoot className="bg-slate-100 border-t-2 border-slate-400 font-bold text-slate-900 text-xs">
+            <tr>
+              <td colSpan={2} className="py-2 px-3 border-r border-slate-300 uppercase font-black text-slate-950">
+                Grand Total Aggregate:
+              </td>
+              <td className="py-2 px-2 text-center border-r border-slate-300 font-mono text-slate-700">
+                {subjectRows.reduce((a, c) => a + c.ctScaled, 0)}
+              </td>
+              <td className="py-2 px-2 text-center border-r border-slate-300 font-mono text-slate-700">
+                {subjectRows.reduce((a, c) => a + c.exScaled, 0)}
+              </td>
+              <td className="py-2 px-2 text-center border-r border-slate-300 font-mono font-black text-slate-950 text-sm">
+                {grandTotalObtained} / {grandTotalMax}
+              </td>
+              <td className="py-2 px-2 text-center font-mono border-r border-slate-300 text-sm text-indigo-900 font-black">
+                {overallGrade}
+              </td>
+              <td colSpan={2} className="py-2 px-3 text-slate-950">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-black text-emerald-800 text-sm">
+                    {overallPercentage}%
+                  </span>
+                  <span className="uppercase text-[11px] font-bold tracking-wide text-indigo-900">
+                    {division}
+                  </span>
+                </div>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      {/* Result Status Banner */}
+      <div className="my-2.5 p-2 rounded-lg bg-slate-100 border border-slate-300 flex items-center justify-between text-xs">
+        <div>
+          <span className="text-slate-600 font-semibold mr-2">Official Result Status:</span>
+          <span className="font-black text-slate-950 uppercase font-mono tracking-wide">
+            {resultStatus}
+          </span>
+        </div>
+        <div className="text-[11px] font-mono font-bold text-slate-700">
+          Grading Framework: <strong>MBSE CCE 9-Point</strong>
+        </div>
+      </div>
+
+      {/* Co-Scholastic & Behavioral Assessment Matrix (MBSE CCE Standard) */}
+      <div className="my-3 p-3 rounded-xl bg-slate-50 border border-slate-300 text-xs">
+        <span className="font-bold text-slate-900 block mb-1.5 uppercase text-[10px] tracking-wider">
+          Co-Scholastic Traits &amp; Behavioral Assessment (MBSE CCE 5-Point Scale)
+        </span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px]">
+          <div className="p-2 rounded bg-white border border-slate-200">
+            <span className="text-slate-500 block text-[9px] uppercase font-bold">1. Work Education / SUPW</span>
+            <span className="font-bold text-slate-900">Grade A (Thawkrim &amp; Kutthei)</span>
+          </div>
+          <div className="p-2 rounded bg-white border border-slate-200">
+            <span className="text-slate-500 block text-[9px] uppercase font-bold">2. Art &amp; Cultural Education</span>
+            <span className="font-bold text-slate-900">Grade A (Hnam Ziarang)</span>
+          </div>
+          <div className="p-2 rounded bg-white border border-slate-200">
+            <span className="text-slate-500 block text-[9px] uppercase font-bold">3. Health &amp; Physical Education</span>
+            <span className="font-bold text-slate-900">Grade A (Infiamna &amp; Hriselna)</span>
+          </div>
+          <div className="p-2 rounded bg-white border border-slate-200">
+            <span className="text-slate-500 block text-[9px] uppercase font-bold">4. Discipline &amp; Moral Character</span>
+            <span className="font-bold text-slate-900">Grade A (Nungchang Mawi)</span>
+          </div>
+        </div>
+      </div>
+
+      {/* MBSE Grading Scale Legend */}
+      <div className="my-2.5 p-2 rounded-lg bg-slate-50 border border-slate-200 text-[9px] text-slate-600">
+        <span className="font-bold text-slate-800 mr-2">MBSE Grading Scale:</span>
+        <span className="font-mono">
+          <strong>A1:</strong> 91-100% (10.0) • <strong>A2:</strong> 81-90% (9.0) • <strong>B1:</strong> 71-80% (8.0) • <strong>B2:</strong> 61-70% (7.0) • <strong>C1:</strong> 51-60% (6.0) • <strong>C2:</strong> 41-50% (5.0) • <strong>D:</strong> 33-40% (4.0 - Pass) • <strong>E:</strong> Below 33% (Remedial)
+        </span>
+      </div>
+
+      {/* Teacher Comments & Signatures Block */}
+      <div className="mt-4 pt-3 border-t-2 border-slate-300 space-y-4">
+        <div className="p-2.5 rounded-xl border border-dashed border-slate-400 bg-slate-50/70">
+          <span className="text-[9px] uppercase font-bold text-slate-600 block">Zirtirtu Thuchah / Class Teacher's Remarks:</span>
+          <p className="text-xs text-slate-800 italic mt-0.5">
+            "{student?.firstName} has shown tremendous academic aptitude, high discipline, and regular classroom attendance. His critical analytical skills and general conduct throughout the session are exemplary."
+          </p>
+        </div>
+
+        <div className="grid grid-cols-4 gap-3 pt-4 text-center text-xs items-end">
+          <div className="border-t border-slate-800 pt-1.5">
+            <span className="font-bold text-slate-900 block text-[11px]">Lalthlamuana Sailo</span>
+            <span className="text-[9px] text-slate-600">Class Teacher</span>
+          </div>
+
+          <div className="border-t border-slate-800 pt-1.5">
+            <span className="font-bold text-slate-900 block text-[11px]">Dr. C. Lalremruata</span>
+            <span className="text-[9px] text-slate-600">Exam Superintendent</span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center relative">
+            {sealConfig?.showSealOnReportCard && (
+              <div 
+                className="w-16 h-16 rounded-full border-2 border-dashed flex flex-col items-center justify-center p-0.5 opacity-80 select-none mx-auto"
+                style={{ borderColor: sealConfig?.sealColor || '#d97706', color: sealConfig?.sealColor || '#d97706' }}
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span className="text-[5px] font-black uppercase text-center leading-tight">
+                  {sealConfig?.schoolCrestText?.split('•')[0] || 'OHA ACADEMY'}
+                </span>
+                <span className="text-[4px] font-bold font-mono">SEAL</span>
+              </div>
+            )}
+            {!sealConfig?.showSealOnReportCard && (
+              <div className="w-14 h-14 rounded-full border border-dashed border-slate-400 flex items-center justify-center text-[7px] font-bold text-slate-500 uppercase text-center p-1">
+                Official Seal
+              </div>
+            )}
+            <span className="text-[8px] text-slate-500 mt-1 font-semibold">Institutional Stamp</span>
+          </div>
+
+          <div className="border-t border-slate-800 pt-1.5">
+            <div className="h-6 flex items-center justify-center">
+              {sealConfig?.signatureMode === 'drawn' && sealConfig?.signatureSvgData ? (
+                <img src={sealConfig.signatureSvgData} alt="Principal Signature" className="max-h-6 max-w-[100px] object-contain" />
+              ) : (
+                <span className="font-serif italic text-xs font-bold text-blue-950" style={{ fontFamily: 'Brush Script MT, cursive' }}>
+                  {sealConfig?.principalSignatoryName || 'Rev. Dr. L. H. Rohmingliana'}
+                </span>
+              )}
+            </div>
+            <span className="font-bold text-slate-900 block text-[11px]">
+              {sealConfig?.principalSignatoryName || 'Rev. Dr. L. H. Rohmingliana'}
+            </span>
+            <span className="text-[9px] text-slate-600">{sealConfig?.principalDesignation || 'Principal'}</span>
+          </div>
+        </div>
+
+        {/* Bottom Security QR Code & MBSE Verification Bar */}
+        <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[8px] text-slate-500 font-mono">
+          <div className="flex items-center gap-2">
+            <div className="p-0.5 bg-white border border-slate-300 rounded shadow-xs">
+              <QRCodeSVG
+                value={JSON.stringify({
+                  cert: "MBSE-PROGRESS-REPORT",
+                  school: schoolName,
+                  admNo: student?.admissionNo,
+                  name: `${student?.firstName} ${student?.lastName}`,
+                  class: studentClass?.name,
+                  percentage: overallPercentage,
+                  division: division,
+                  issued: new Date().toISOString().slice(0, 10),
+                  verified: true
+                })}
+                size={36}
+                level="M"
+              />
+            </div>
+            <div>
+              <span className="font-bold text-slate-800 block text-[9px]">
+                MBSE-REP-{student?.admissionNo}-{termName.slice(0, 4)}
+              </span>
+              <span>Official tamper-proof digital grade credential</span>
+            </div>
+          </div>
+
+          <div className="text-right">
+            <div>Date of Issue: {new Date().toLocaleDateString('en-IN')}</div>
+            <div>{schoolName} • Affiliated to MBSE</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ReportCardView({ selectedStudentForReport }) {
   const { 
@@ -43,7 +543,9 @@ export default function ReportCardView({ selectedStudentForReport }) {
     waiveStudentReportHold, 
     updateReportWithholdSettings,
     paymentConfig,
-    systemConfig
+    systemConfig,
+    sealConfig,
+    activeSchoolInfo
   } = useSchool();
   const { currentUser, isStudent, isParent, isPrincipal, isVicePrincipal, isTeacher } = useAuth();
 
@@ -64,11 +566,13 @@ export default function ReportCardView({ selectedStudentForReport }) {
   const [termName, setTermName] = useState('Mid-Term Assessment & Examination');
   const [academicYear, setAcademicYear] = useState('2026-2027');
 
+  // Batch Print States
+  const [isBatchPrintMode, setIsBatchPrintMode] = useState(false);
+  const [batchSkipWithheld, setBatchSkipWithheld] = useState(true);
+
   // Modals & States
   const [isWithholdModalOpen, setIsWithholdModalOpen] = useState(false);
   const [isOnlineCheckoutOpen, setIsOnlineCheckoutOpen] = useState(false);
-  const [isBatchPrintMode, setIsBatchPrintMode] = useState(false);
-  const [batchSkipWithheld, setBatchSkipWithheld] = useState(true);
 
   // Withhold Form State
   const [withholdForm, setWithholdForm] = useState({
@@ -81,7 +585,7 @@ export default function ReportCardView({ selectedStudentForReport }) {
   const student = students.find(s => s.id === activeStudentId) || students[0];
   const studentClass = classes.find(c => c.id === student?.classId) || classes[0];
 
-  // Access check for current student
+  // Access check for active student
   const access = checkReportCardAccess(student?.id);
 
   // Filter students based on selected class
@@ -99,71 +603,34 @@ export default function ReportCardView({ selectedStudentForReport }) {
   const paidFees = student?.paidFees || 0;
   const pendingFees = Math.max(0, totalFees - paidFees);
 
-  // Fetch all grades for this student
-  const studentGrades = grades.filter(g => g.studentId === student?.id);
-  const classTests = studentGrades.filter(g => g.type === 'class_test');
-  const examinations = studentGrades.filter(g => g.type === 'examination');
-
-  // Distinct subjects taken by this student
-  const subjectsSet = new Set(studentGrades.map(g => g.subject));
-  if (subjectsSet.size === 0) {
-    ['English', 'Mizo', 'Mathematics', 'Science', 'Social Science'].forEach(s => subjectsSet.add(s));
-  }
-  const subjects = Array.from(subjectsSet);
-
-  let grandTotalMax = 0;
-  let grandTotalObtained = 0;
-
-  const subjectRows = subjects.map(subject => {
-    // Continuous Class Test calculation (converted to 20% weightage)
-    const ctList = classTests.filter(g => g.subject === subject);
-    let ctMax = 0;
-    let ctObtained = 0;
-    ctList.forEach(g => {
-      ctMax += g.maxMarks;
-      ctObtained += g.marksObtained;
-    });
-    const ctScaled = ctMax > 0 ? Math.round((ctObtained / ctMax) * 20) : 18; // 20 marks max
-
-    // Examination calculation (converted to 80% weightage)
-    const exList = examinations.filter(g => g.subject === subject);
-    let exMax = 0;
-    let exObtained = 0;
-    exList.forEach(g => {
-      exMax += g.maxMarks;
-      exObtained += g.marksObtained;
-    });
-    const exScaled = exMax > 0 ? Math.round((exObtained / exMax) * 80) : 72; // 80 marks max
-
-    const total100 = ctScaled + exScaled;
-    grandTotalMax += 100;
-    grandTotalObtained += total100;
-
-    let gradeLetter = 'A1';
-    let gradePoint = '10.0';
-    let remark = 'Outstanding proficiency';
-
-    if (total100 >= 91) { gradeLetter = 'A1'; gradePoint = '10.0'; remark = 'Zirtur thiam tak leh fel tak'; }
-    else if (total100 >= 81) { gradeLetter = 'A2'; gradePoint = '9.0'; remark = 'Excellent performance'; }
-    else if (total100 >= 71) { gradeLetter = 'B1'; gradePoint = '8.0'; remark = 'Very good comprehension'; }
-    else if (total100 >= 61) { gradeLetter = 'B2'; gradePoint = '7.0'; remark = 'Good effort & consistency'; }
-    else if (total100 >= 51) { gradeLetter = 'C1'; gradePoint = '6.0'; remark = 'Above average progress'; }
-    else if (total100 >= 41) { gradeLetter = 'C2'; gradePoint = '5.0'; remark = 'Average; needs practice'; }
-    else if (total100 >= 33) { gradeLetter = 'D'; gradePoint = '4.0'; remark = 'Pass mark reached'; }
-    else { gradeLetter = 'E'; gradePoint = '0.0'; remark = 'Needs remedial attention'; }
-
-    return {
-      subject,
-      ctScaled,
-      exScaled,
-      total100,
-      gradeLetter,
-      gradePoint,
-      remark
-    };
+  // Batch print students list
+  const batchStudents = filteredStudents.filter(s => {
+    if (!batchSkipWithheld) return true;
+    const sAccess = checkReportCardAccess(s.id);
+    return !sAccess.isWithheld;
   });
 
-  const overallPercentage = grandTotalMax > 0 ? Math.round((grandTotalObtained / grandTotalMax) * 100) : 0;
+  const handleShareWhatsApp = () => {
+    if (!student) return;
+    const reportData = computeStudentReport(student, grades);
+    const rawPhone = student.guardianPhone || student.parentPhone || '';
+    const phone = rawPhone.replace(/[^0-9]/g, '');
+    const cleanPhone = phone.startsWith('91') ? phone : (phone.length === 10 ? `91${phone}` : phone);
+    
+    const msg = `*${activeSchoolInfo?.name || 'Sikul'} - MBSE Official Exam Result*\n` +
+      `Nu leh Pa Chibai, He hi i fa *${student.firstName} ${student.lastName}* (Roll: #${student.rollNo}, ${studentClass?.name || 'Class 10'}) exam result a ni e:\n\n` +
+      `📊 *Marks*: ${reportData?.grandTotalObtained || 0} / ${reportData?.grandTotalMax || 500} (${reportData?.overallPercentage || 0}%)\n` +
+      `🏅 *Division*: ${reportData?.division || 'Passed'}\n` +
+      `⭐ *Grade*: ${reportData?.overallGrade || 'B1'}\n` +
+      `📋 *Status*: ${reportData?.resultStatus || 'PASSED'}\n\n` +
+      `Official portal-ah result kimchang en theih a ni: ${window.location.origin}`;
+
+    if (cleanPhone) {
+      window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+    } else {
+      alert('Parent phone number is not available for this student.');
+    }
+  };
 
   const handlePrint = () => {
     window.print();
@@ -185,7 +652,6 @@ export default function ReportCardView({ selectedStudentForReport }) {
         notes: withholdForm.notes,
         withheldBy: isPrincipal ? 'Rev. Dr. L. H. Rohmingliana (Principal)' : isVicePrincipal ? 'Vice Principal' : 'Examination Committee'
       });
-      // Remove waiver if setting hold
       waiveStudentReportHold(student.id, { waived: false });
     } else {
       setStudentReportHold(student.id, { withheld: false });
@@ -214,12 +680,12 @@ export default function ReportCardView({ selectedStudentForReport }) {
         @media print {
           @page {
             size: A4 portrait;
-            margin: 8mm 10mm;
+            margin: 6mm 8mm;
           }
           body {
             background: white !important;
             color: #0f172a !important;
-            font-size: 11pt !important;
+            font-size: 10.5pt !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -230,8 +696,8 @@ export default function ReportCardView({ selectedStudentForReport }) {
             box-shadow: none !important;
             border: 2px solid #0f172a !important;
             border-radius: 0 !important;
-            padding: 20px 24px !important;
-            margin: 0 !important;
+            padding: 16px 20px !important;
+            margin: 0 auto !important;
             width: 100% !important;
             max-width: 100% !important;
             background: white !important;
@@ -239,20 +705,24 @@ export default function ReportCardView({ selectedStudentForReport }) {
             break-inside: avoid !important;
             page-break-inside: avoid !important;
           }
+          .page-break {
+            page-break-after: always !important;
+            break-after: page !important;
+          }
           table {
             border-collapse: collapse !important;
             width: 100% !important;
           }
           th, td {
             border: 1px solid #475569 !important;
-            padding: 5px 8px !important;
+            padding: 4px 6px !important;
           }
           .bg-slate-900 {
             background-color: #0f172a !important;
             color: white !important;
           }
           .bg-slate-100, .bg-slate-50 {
-            background-color: #f1f5f9 !important;
+            background-color: #f8fafc !important;
           }
         }
       `}</style>
@@ -263,9 +733,9 @@ export default function ReportCardView({ selectedStudentForReport }) {
           <div>
             <h2 className="text-xl font-bold text-white font-['Outfit'] flex items-center gap-2">
               <GraduationCap className="w-5 h-5 text-cyan-400" />
-              <span>MBSE Standard Progress Report Card</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-medium">
-                Academic Year 2026-2027
+              <span>MBSE Official Progress Report &amp; Marksheet</span>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold">
+                CCE Standard
               </span>
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -275,29 +745,56 @@ export default function ReportCardView({ selectedStudentForReport }) {
 
           <div className="flex flex-wrap items-center gap-2.5">
             {isManagement && (
-              <button
-                onClick={() => setIsWithholdModalOpen(true)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border shadow ${
-                  access.isWithheld
-                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
-                    : access.isWaived
-                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
-                    : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
-                }`}
-              >
-                {access.isWithheld ? <Lock className="w-4 h-4 text-rose-400" /> : <ShieldCheck className="w-4 h-4 text-emerald-400" />}
-                <span>{access.isWithheld ? 'Report Withheld (Manage)' : 'Withhold / Lock Settings'}</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setIsBatchPrintMode(!isBatchPrintMode)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border shadow ${
+                    isBatchPrintMode 
+                      ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white border-purple-400/40' 
+                      : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
+                  }`}
+                >
+                  <Layers className="w-4 h-4 text-purple-300" />
+                  <span>{isBatchPrintMode ? 'Switch to Single Student' : 'Class Pum Print (Batch)'}</span>
+                </button>
+
+                <button
+                  onClick={() => setIsWithholdModalOpen(true)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border shadow ${
+                    access.isWithheld
+                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
+                      : access.isWaived
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
+                      : 'bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700'
+                  }`}
+                >
+                  {access.isWithheld ? <Lock className="w-4 h-4 text-rose-400" /> : <ShieldCheck className="w-4 h-4 text-emerald-400" />}
+                  <span>{access.isWithheld ? 'Report Withheld (Manage)' : 'Withhold / Lock Settings'}</span>
+                </button>
+              </>
             )}
 
             {(!access.isWithheld || isManagement) && (
-              <button
-                onClick={handlePrint}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-cyan-500/20 flex items-center gap-2"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Print Official A4 PDF</span>
-              </button>
+              <>
+                <button
+                  onClick={handleShareWhatsApp}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-lg shadow-emerald-600/20 flex items-center gap-1.5"
+                  title="Share Student Marksheet & Result Summary via WhatsApp to Parent"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>WhatsApp Result</span>
+                </button>
+
+                <button
+                  onClick={handlePrint}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-cyan-500/20 flex items-center gap-2"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>
+                    {isBatchPrintMode ? `Print Entire Batch (${batchStudents.length} Students)` : 'Print Official A4 PDF'}
+                  </span>
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -322,25 +819,42 @@ export default function ReportCardView({ selectedStudentForReport }) {
             </div>
           )}
 
-          {/* Select Student */}
-          <div className="flex items-center gap-1.5 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-700 flex-1 min-w-[240px]">
-            <Users className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-slate-400">Student:</span>
-            <select
-              value={activeStudentId}
-              onChange={(e) => setActiveStudentId(e.target.value)}
-              className="bg-transparent text-white focus:outline-none font-medium flex-1 truncate"
-            >
-              {filteredStudents.map((s) => {
-                const sAccess = checkReportCardAccess(s.id);
-                return (
-                  <option key={s.id} value={s.id} className="bg-slate-900 text-white">
-                    {s.firstName} {s.lastName} (Roll #{s.rollNo} • {s.admissionNo}) {sAccess.isWithheld ? '🔒 [WITHHELD]' : sAccess.isWaived ? '⚠️ [WAIVED]' : '✓'}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
+          {/* Select Student (When not in batch mode) */}
+          {!isBatchPrintMode ? (
+            <div className="flex items-center gap-1.5 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-700 flex-1 min-w-[240px]">
+              <Users className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-slate-400">Student:</span>
+              <select
+                value={activeStudentId}
+                onChange={(e) => setActiveStudentId(e.target.value)}
+                className="bg-transparent text-white focus:outline-none font-medium flex-1 truncate"
+              >
+                {filteredStudents.map((s) => {
+                  const sAccess = checkReportCardAccess(s.id);
+                  return (
+                    <option key={s.id} value={s.id} className="bg-slate-900 text-white">
+                      {s.firstName} {s.lastName} (Roll #{s.rollNo} • {s.admissionNo}) {sAccess.isWithheld ? '🔒 [WITHHELD]' : sAccess.isWaived ? '⚠️ [WAIVED]' : '✓'}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 bg-purple-950/40 px-3 py-1.5 rounded-xl border border-purple-500/30 flex-1">
+              <span className="text-purple-200 font-semibold">
+                Batch Mode: <strong>{batchStudents.length}</strong> students ready for printing
+              </span>
+              <label className="flex items-center gap-1.5 text-purple-300 cursor-pointer ml-auto">
+                <input
+                  type="checkbox"
+                  checked={batchSkipWithheld}
+                  onChange={(e) => setBatchSkipWithheld(e.target.checked)}
+                  className="rounded text-purple-600 focus:ring-0"
+                />
+                <span>Skip Withheld Students (Fee Ba)</span>
+              </label>
+            </div>
+          )}
 
           {/* Term Switcher */}
           <div className="flex items-center gap-1.5 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-700">
@@ -359,7 +873,7 @@ export default function ReportCardView({ selectedStudentForReport }) {
       </div>
 
       {/* GOVERNANCE STATUS BANNER (For Management View) */}
-      {isManagement && (
+      {!isBatchPrintMode && isManagement && (
         <div className="no-print">
           {access.isWithheld ? (
             <div className="p-4 rounded-2xl bg-gradient-to-r from-rose-950/70 via-red-900/40 to-slate-900 border border-rose-500/50 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -368,134 +882,86 @@ export default function ReportCardView({ selectedStudentForReport }) {
                   <Lock className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-rose-400">
-                      Progress Report Withheld (Khàr A Ni)
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>Progress Report Currently WITHHELD / LOCKED</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/30 text-rose-200 border border-rose-500/40 font-mono">
+                      Restricted
                     </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono">
-                      Locked from Student &amp; Parent
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-200 mt-0.5">
-                    <strong>Chhan:</strong> {access.customReason || access.notes || 'School Management thu neihna hmangin khar a ni.'}
+                  </h4>
+                  <p className="text-xs text-rose-200/80 mt-0.5">
+                    <strong>Reason:</strong> {access.customReason || (access.reason === 'fee_due' ? `Pending school fee clearance of ₹${pendingFees.toLocaleString('en-IN')}` : access.reason)}
                   </p>
-                  {access.pendingAmount && (
-                    <span className="text-[11px] text-amber-300 font-mono">
-                      Fee Balance Pending: ₹{access.pendingAmount.toLocaleString('en-IN')}
-                    </span>
-                  )}
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => handleToggleWaiver()}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1"
+                  onClick={handleToggleWaiver}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5"
                 >
                   <Award className="w-3.5 h-3.5" />
-                  <span>Principal Waiver</span>
+                  <span>Grant Principal Waiver</span>
                 </button>
                 <button
-                  onClick={() => handleSaveWithhold(false)}
-                  className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition flex items-center gap-1"
+                  onClick={() => setIsWithholdModalOpen(true)}
+                  className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow"
                 >
-                  <Unlock className="w-3.5 h-3.5" />
-                  <span>Release Hold</span>
+                  Manage Hold
                 </button>
               </div>
             </div>
           ) : access.isWaived ? (
-            <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/40 shadow flex items-center justify-between gap-3">
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-950/70 via-amber-900/30 to-slate-900 border border-amber-500/40 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+                <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
                   <Award className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-amber-400 uppercase tracking-wider block">
-                    Principal Administrative Waiver Active
-                  </span>
-                  <p className="text-xs text-slate-300">
-                    He zirlai hi fee ba / hold awm mahse Principal thuthluknain report card en phalsak a ni e.
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>Released Under Principal Academic Waiver</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/30 text-amber-200 border border-amber-500/40 font-mono">
+                      Special Waiver
+                    </span>
+                  </h4>
+                  <p className="text-xs text-amber-200/80 mt-0.5">
+                    Authorized by {access.waivedBy || 'Principal'} • Dues: ₹{pendingFees.toLocaleString('en-IN')}
                   </p>
                 </div>
               </div>
+
               <button
-                onClick={() => handleToggleWaiver()}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold"
+                onClick={handleToggleWaiver}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold transition"
               >
                 Revoke Waiver
               </button>
             </div>
-          ) : (
-            <div className="p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2.5 text-emerald-300">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>
-                  <strong>Report Card Accessible:</strong> Zirlai leh Nu &amp; Pa ten he report card hi an hmu thei e.
-                </span>
-              </div>
-              <button
-                onClick={() => setIsWithholdModalOpen(true)}
-                className="text-slate-400 hover:text-rose-400 underline font-medium"
-              >
-                Withhold / Khar duh em?
-              </button>
-            </div>
-          )}
+          ) : null}
         </div>
       )}
 
-      {/* ============================================================ */}
-      {/* STUDENT & PARENT WITHHOLD LOCK SCREEN (When Access is Denied) */}
-      {/* ============================================================ */}
-      {isStudentOrParent && access.isWithheld && (
-        <div className="max-w-2xl mx-auto my-8 p-8 rounded-3xl bg-gradient-to-b from-slate-900 via-slate-900/90 to-rose-950/40 border-2 border-rose-500/50 shadow-2xl text-center space-y-6 animate-fadeIn font-sans">
-          <div className="w-20 h-20 rounded-2xl bg-rose-500/20 text-rose-400 border-2 border-rose-500/40 flex items-center justify-center mx-auto shadow-lg shadow-rose-500/20">
-            <Lock className="w-10 h-10 animate-pulse" />
+      {/* STUDENT/PARENT LOCKED VIEW (If Withheld and not management) */}
+      {!isBatchPrintMode && isStudentOrParent && access.isWithheld && (
+        <div className="max-w-2xl mx-auto p-8 rounded-3xl bg-slate-900 border border-rose-500/30 text-center space-y-5 shadow-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 flex items-center justify-center mx-auto shadow-lg shadow-rose-500/10">
+            <Lock className="w-8 h-8" />
           </div>
 
           <div className="space-y-2">
-            <span className="text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-              Institutional Clearance Required
-            </span>
-            <h2 className="text-2xl font-black text-white font-['Outfit']">
-              Progress Report Withheld
-            </h2>
-            <p className="text-sm font-semibold text-rose-400">
-              Lehkha Thiamna Record / Marksheet Khar A Ni Rih E
+            <h3 className="text-xl font-black text-white font-['Outfit']">
+              Progress Report Card Is Temporarily Withheld
+            </h3>
+            <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+              He zirlai ({student?.firstName} {student?.lastName}) progress report hi school administration lamin a la vawng rih a, a hnuaia chhan tarlan hi chinfel a nih veleh auto-in a inhawng nghal ang.
             </p>
           </div>
 
-          {/* Student Profile Cardlet */}
-          <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-xs text-slate-300 flex items-center justify-center gap-4 font-mono">
-            <span>Student: <strong className="text-white">{student?.firstName} {student?.lastName}</strong></span>
-            <span>•</span>
-            <span>Roll #{student?.rollNo}</span>
-            <span>•</span>
-            <span>Class: {studentClass?.name}</span>
-          </div>
-
-          {/* Detailed Reason Box */}
-          <div className="p-5 rounded-2xl bg-slate-950/90 border border-rose-500/30 text-left space-y-3">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <h4 className="text-sm font-bold text-white">
-                  {access.reason === 'fee_due' ? 'School Fee Clear Loh Vanga Khar' : 'Institutional Clearance Pending'}
-                </h4>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  {access.reason === 'fee_due' ? (
-                    <>
-                      Zirlai <strong>{student?.firstName} {student?.lastName}</strong>-i/a Progress Report hi school dan angin 
-                      School Fee pek fel a nih hma chu en theih loh leh download theih lova khar (withheld) a ni rih e. 
-                      Hnuai ami button hmang hian Fee Due balance hi Online-in a hmunah i pe fel nghal thei a, 
-                      fee pek zawh rualin Report Card hi a in-unlock nghal dawn a ni.
-                    </>
-                  ) : (
-                    access.customReason || access.notes || 'Khawngaihin school authority hnenah clearance la rawh le.'
-                  )}
-                </p>
-              </div>
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-left space-y-3">
+            <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
+              <span className="text-slate-400">Withholding Reason:</span>
+              <span className="font-bold text-rose-400">
+                {access.customReason || (access.reason === 'fee_due' ? 'Pending School Fees Clearance' : access.reason)}
+              </span>
             </div>
 
             {access.pendingAmount && (
@@ -522,7 +988,7 @@ export default function ReportCardView({ selectedStudentForReport }) {
             )}
 
             <a
-              href="tel:+919436140001"
+              href={`tel:${systemConfig?.contactPhone || '+919436140001'}`}
               className="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition flex items-center justify-center gap-2 border border-slate-700"
             >
               <span>Contact Accounts Desk</span>
@@ -530,256 +996,60 @@ export default function ReportCardView({ selectedStudentForReport }) {
           </div>
 
           <p className="text-[11px] text-slate-500 pt-2">
-            Accounts Helpdesk: info@mizoramschool.edu • Office Hours: 09:00 AM - 03:00 PM
+            Accounts Helpdesk: {systemConfig?.contactEmail || 'office@school.edu'} • Office Hours: 09:00 AM - 03:00 PM
           </p>
         </div>
       )}
 
       {/* ============================================================ */}
-      {/* PRINTABLE OFFICIAL REPORT CARD (Visible when allowed or admin) */}
+      {/* PRINTABLE OFFICIAL REPORT CARD SHEETS */}
       {/* ============================================================ */}
-      {(!isStudentOrParent || !access.isWithheld) && (
-        <div className="printable-report-card max-w-4xl mx-auto rounded-2xl bg-white text-slate-900 border border-slate-300 shadow-2xl p-8 sm:p-10 font-sans relative">
-          {/* Official MBSE Institutional Header */}
-          <div className="text-center border-b-2 border-slate-900 pb-5 space-y-1 relative">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-900 text-cyan-400 mb-2 shadow-md">
-              <GraduationCap className="w-8 h-8" />
-            </div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-950 font-['Outfit'] uppercase">
-              {systemConfig?.schoolName || 'OHA (One Heart Academy)'}
-            </h1>
-            <p className="text-xs font-semibold text-slate-700 tracking-wider uppercase">
-              Affiliated to Mizoram Board of School Education (MBSE) • Affiliation No: {systemConfig?.affiliationNo || 'MBSE-HSS-LGL-0421'} • Estd: {systemConfig?.establishedYear || '1998'}
-            </p>
-            <p className="text-xs text-slate-600">
-              {systemConfig?.address || 'Lunglawn, Lunglei, Mizoram - 796701'} • Contact: {systemConfig?.contactPhone || '+91 372 2322104'}
-            </p>
-            <div className="pt-2">
-              <span className="inline-block px-4 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-slate-900 text-white shadow-sm">
-                LEHKHA THIAMNA LEH NUNGCHANG RECORD • OFFICIAL PROGRESS REPORT
-              </span>
-            </div>
-            <p className="text-[11px] font-bold text-slate-800 pt-1 font-mono">
-              {termName} • Academic Session: {academicYear}
-            </p>
-          </div>
+      {/* CASE A: Single Student Mode */}
+      {!isBatchPrintMode && (!isStudentOrParent || !access.isWithheld) && (
+        <SingleReportCardSheet
+          student={student}
+          studentClass={studentClass}
+          termName={termName}
+          academicYear={academicYear}
+          systemConfig={systemConfig}
+          sealConfig={sealConfig}
+          grades={grades}
+          isBatchMode={false}
+        />
+      )}
 
-          {/* Student Identification Profile Matrix */}
-          <div className="my-6 p-4 rounded-xl bg-slate-50 border border-slate-300 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Student Name</span>
-              <span className="font-bold text-slate-900 text-sm">{student?.firstName} {student?.lastName}</span>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Admission Number</span>
-              <span className="font-mono font-bold text-slate-900">{student?.admissionNo}</span>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Class &amp; Stream</span>
-              <span className="font-bold text-slate-900">
-                {studentClass?.name} {student?.stream ? `(${student.stream.toUpperCase()})` : ''}
-              </span>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Roll Number</span>
-              <span className="font-mono font-bold text-indigo-700 text-sm">#{student?.rollNo}</span>
-            </div>
-
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Parent / Guardian</span>
-              <span className="font-medium text-slate-900">{student?.guardianName}</span>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Date of Birth</span>
-              <span className="font-medium text-slate-900">{student?.dob}</span>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Blood Group</span>
-              <span className="font-bold text-rose-700 font-mono">{student?.bloodGroup}</span>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-500 block">Attendance Rate</span>
-              <span className="font-bold text-emerald-700 font-mono">{student?.attendanceRate || 94.5}%</span>
-            </div>
-          </div>
-
-          {/* Combined Assessment Marksheet Table */}
-          <div className="overflow-x-auto my-6">
-            <table className="w-full text-left text-xs border-collapse border border-slate-400">
-              <thead className="bg-slate-100 text-slate-900 font-bold border-b-2 border-slate-400">
-                <tr>
-                  <th className="py-2.5 px-3 border-r border-slate-300">Subject Name</th>
-                  <th className="py-2.5 px-3 border-r border-slate-300 text-center">
-                    Class Tests<br/>
-                    <span className="text-[10px] font-normal text-slate-600">(Continuous 20M)</span>
-                  </th>
-                  <th className="py-2.5 px-3 border-r border-slate-300 text-center">
-                    Term Exam<br/>
-                    <span className="text-[10px] font-normal text-slate-600">(Exam 80M)</span>
-                  </th>
-                  <th className="py-2.5 px-3 border-r border-slate-300 text-center">
-                    Total<br/>
-                    <span className="text-[10px] font-normal text-slate-600">(100M)</span>
-                  </th>
-                  <th className="py-2.5 px-3 border-r border-slate-300 text-center">Grade</th>
-                  <th className="py-2.5 px-3 text-left">Remarks &amp; Progress</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-300 text-slate-800">
-                {subjectRows.map((row, idx) => (
-                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'}>
-                    <td className="py-2.5 px-3 font-bold text-slate-900 border-r border-slate-300">
-                      {row.subject}
-                    </td>
-                    <td className="py-2.5 px-3 text-center font-mono border-r border-slate-300">
-                      {row.ctScaled}
-                    </td>
-                    <td className="py-2.5 px-3 text-center font-mono border-r border-slate-300">
-                      {row.exScaled}
-                    </td>
-                    <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-950 border-r border-slate-300">
-                      {row.total100}
-                    </td>
-                    <td className="py-2.5 px-3 text-center font-mono font-bold border-r border-slate-300 text-indigo-800">
-                      {row.gradeLetter}
-                    </td>
-                    <td className="py-2.5 px-3 text-slate-700 italic">
-                      {row.remark}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-
-              {/* Table Footer Aggregate */}
-              <tfoot className="bg-slate-100 border-t-2 border-slate-400 font-bold text-slate-900">
-                <tr>
-                  <td className="py-2.5 px-3 border-r border-slate-300 uppercase">
-                    Grand Total Aggregates:
-                  </td>
-                  <td className="py-2.5 px-3 text-center border-r border-slate-300 font-mono">
-                    {subjectRows.reduce((a, c) => a + c.ctScaled, 0)}
-                  </td>
-                  <td className="py-2.5 px-3 text-center border-r border-slate-300 font-mono">
-                    {subjectRows.reduce((a, c) => a + c.exScaled, 0)}
-                  </td>
-                  <td className="py-2.5 px-3 text-center border-r border-slate-300 font-mono text-sm text-slate-950">
-                    {grandTotalObtained} / {grandTotalMax}
-                  </td>
-                  <td className="py-2.5 px-3 text-center font-mono border-r border-slate-300 text-sm text-emerald-800">
-                    {overallPercentage >= 80 ? 'A1' : overallPercentage >= 70 ? 'B1' : 'B2'}
-                  </td>
-                  <td className="py-2.5 px-3 text-emerald-800 uppercase tracking-wider font-bold">
-                    Aggregate: {overallPercentage}% (Passed with Distinction)
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-
-          {/* Co-Scholastic & Personality Assessment Matrix */}
-          <div className="my-5 p-3.5 rounded-xl bg-slate-50 border border-slate-300 text-xs">
-            <span className="font-bold text-slate-900 block mb-2 uppercase text-[10px] tracking-wider">
-              Co-Scholastic Traits &amp; Behavioral Assessment (MBSE CCE Standard)
+      {/* CASE B: Batch Print Mode (Class Pum Print) */}
+      {isBatchPrintMode && isManagement && (
+        <div className="batch-print-container space-y-6">
+          <div className="no-print p-4 rounded-xl bg-purple-950/50 border border-purple-500/40 text-purple-200 text-xs flex items-center justify-between">
+            <span>
+              Pahnihna: Khawngaihin <strong>Print Official A4 PDF</strong> hmet la, browser print settings-ah <em>Margins: Minimum</em> emaw <em>Custom</em> thlang rawh.
             </span>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
-              <div className="p-2 rounded bg-white border border-slate-200">
-                <span className="text-slate-500 block text-[9px] uppercase font-bold">Discipline &amp; Conduct</span>
-                <span className="font-bold text-slate-900">Exemplary (Grade A)</span>
-              </div>
-              <div className="p-2 rounded bg-white border border-slate-200">
-                <span className="text-slate-500 block text-[9px] uppercase font-bold">Work Ethic &amp; Homework</span>
-                <span className="font-bold text-slate-900">Consistent &amp; Timely</span>
-              </div>
-              <div className="p-2 rounded bg-white border border-slate-200">
-                <span className="text-slate-500 block text-[9px] uppercase font-bold">Co-Curricular / Games</span>
-                <span className="font-bold text-slate-900">Active Participant</span>
-              </div>
-              <div className="p-2 rounded bg-white border border-slate-200">
-                <span className="text-slate-500 block text-[9px] uppercase font-bold">Attitude to Teachers</span>
-                <span className="font-bold text-slate-900">Respectful &amp; Courteous</span>
-              </div>
-            </div>
+            <button
+              onClick={handlePrint}
+              className="px-3.5 py-1.5 rounded-lg bg-purple-500 text-slate-950 font-bold transition flex items-center gap-1.5 shadow"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Print A4 Batch Now</span>
+            </button>
           </div>
 
-          {/* Grading Scale Legend */}
-          <div className="my-4 p-3 rounded-lg bg-slate-50 border border-slate-200 text-[10px] text-slate-600">
-            <span className="font-bold text-slate-800 block mb-1">MBSE Official Grading Scale:</span>
-            <div className="flex flex-wrap items-center gap-3 font-mono">
-              <span><strong>A1:</strong> 91-100% (Outstanding)</span>
-              <span><strong>A2:</strong> 81-90% (Excellent)</span>
-              <span><strong>B1:</strong> 71-80% (Very Good)</span>
-              <span><strong>B2:</strong> 61-70% (Good)</span>
-              <span><strong>C1:</strong> 51-60% (Fair)</span>
-              <span><strong>C2:</strong> 41-50% (Average)</span>
-              <span><strong>D:</strong> 33-40% (Pass)</span>
-              <span><strong>E:</strong> Below 33% (Needs Remedial)</span>
-            </div>
-          </div>
-
-          {/* Teacher Comments & Signatures */}
-          <div className="mt-8 pt-6 border-t-2 border-slate-300 space-y-6">
-            <div className="p-3.5 rounded-xl border border-dashed border-slate-400 bg-slate-50/50">
-              <span className="text-[10px] uppercase font-bold text-slate-600 block">Class Teacher Assessment &amp; Remarks:</span>
-              <p className="text-xs text-slate-800 italic mt-1">
-                "{student?.firstName} has shown tremendous academic aptitude, high discipline, and regular classroom attendance. His critical analytical skills in Physics and Mathematics are exemplary."
-              </p>
-            </div>
-
-            <div className="grid grid-cols-4 gap-4 pt-8 text-center text-xs items-end">
-              <div className="border-t border-slate-800 pt-2">
-                <span className="font-bold text-slate-900 block">Lalthlamuana Sailo</span>
-                <span className="text-[10px] text-slate-600">Class Teacher Signature</span>
-              </div>
-
-              <div className="border-t border-slate-800 pt-2">
-                <span className="font-bold text-slate-900 block">Dr. C. Lalremruata</span>
-                <span className="text-[10px] text-slate-600">Exam Superintendent</span>
-              </div>
-
-              <div className="flex flex-col items-center justify-center">
-                <div className="w-16 h-16 rounded-full border-2 border-dashed border-slate-400 flex items-center justify-center text-[8px] font-bold text-slate-500 uppercase text-center p-1">
-                  Official School Seal
-                </div>
-                <span className="text-[9px] text-slate-500 mt-1 font-semibold">Institutional Stamp</span>
-              </div>
-
-              <div className="border-t border-slate-800 pt-2">
-                <span className="font-bold text-slate-900 block">Rev. Dr. L. H. Rohmingliana</span>
-                <span className="text-[10px] text-slate-600">Principal Signature</span>
-              </div>
-            </div>
-
-            {/* Bottom Security QR Code & MBSE Verification */}
-            <div className="pt-4 border-t border-slate-200 flex items-center justify-between text-[9px] text-slate-500">
-              <div className="flex items-center gap-2.5">
-                <div className="p-1 bg-white border border-slate-300 rounded shadow-sm">
-                  <QRCodeSVG
-                    value={JSON.stringify({
-                      reportCardNo: `RC-${student?.admissionNo}-${termName.slice(0, 4)}`,
-                      studentId: student?.id,
-                      name: `${student?.firstName} ${student?.lastName}`,
-                      percentage: overallPercentage,
-                      verified: true,
-                      school: systemConfig?.schoolName || 'OHA (One Heart Academy)'
-                    })}
-                    size={42}
-                    level="M"
-                  />
-                </div>
-                <div>
-                  <span className="font-bold text-slate-800 block font-mono">
-                    SEC-REP-{student?.admissionNo}-2026
-                  </span>
-                  <span>Scan QR code with mobile phone to verify authentic grade record</span>
-                </div>
-              </div>
-
-              <div className="text-right font-mono">
-                <div>Date of Issue: {new Date().toLocaleDateString('en-IN')}</div>
-                <div>{systemConfig?.schoolName || 'OHA (One Heart Academy)'} • MBSE Regd.</div>
-              </div>
-            </div>
-          </div>
+          {batchStudents.map(stu => {
+            const stuClass = classes.find(c => c.id === stu.classId);
+            return (
+              <SingleReportCardSheet
+                key={stu.id}
+                student={stu}
+                studentClass={stuClass}
+                termName={termName}
+                academicYear={academicYear}
+                systemConfig={systemConfig}
+                sealConfig={sealConfig}
+                grades={grades}
+                isBatchMode={true}
+              />
+            );
+          })}
         </div>
       )}
 

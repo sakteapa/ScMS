@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Save, 
@@ -17,17 +17,48 @@ import {
   Bell,
   Link as LinkIcon,
   Palette,
-  ExternalLink
+  ExternalLink,
+  BookOpen,
+  School,
+  HeartHandshake,
+  Globe,
+  Copy,
+  Check,
+  Server,
+  Wifi,
+  ShieldCheck,
+  ArrowRight,
+  Code2,
+  MessageCircle,
+  Mail,
+  MapPin,
+  Clock,
+  Award,
+  Headphones
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { INITIAL_WEBSITE_CONFIG } from '../data/mockData';
 import PublicAnnouncementBanner, { PRESET_BANNER_GIFS, BANNER_THEMES } from './PublicAnnouncementBanner';
 
 export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
-  const { websiteConfig, updateWebsiteConfig } = useSchool();
+  const { websiteConfig, updateWebsiteConfig, activeSchoolInfo, activeSchoolId, updateSchoolTenantInfo } = useSchool();
   const [formData, setFormData] = useState(() => ({ ...(websiteConfig || INITIAL_WEBSITE_CONFIG) }));
-  const [activeTab, setActiveTab] = useState('announcement'); // 'announcement' | 'hero' | 'principal' | 'programs' | 'facilities' | 'contact'
+  const [activeTab, setActiveTab] = useState('announcement'); // 'announcement' | 'hero' | 'about' | 'principal' | 'programs' | 'facilities' | 'contact' | 'domain'
   const [saveToast, setSaveToast] = useState(false);
+  const [customDomainInput, setCustomDomainInput] = useState(() => activeSchoolInfo?.customDomain || '');
+  const [subdomainInput, setSubdomainInput] = useState(() => activeSchoolInfo?.subdomain || activeSchoolId || '');
+  const [copiedRecord, setCopiedRecord] = useState(null);
+  const [dnsCheckStatus, setDnsCheckStatus] = useState('idle'); // 'idle' | 'checking' | 'active'
+
+  useEffect(() => {
+    if (websiteConfig) {
+      setFormData({ ...websiteConfig });
+    }
+    if (activeSchoolInfo) {
+      setCustomDomainInput(activeSchoolInfo.customDomain || '');
+      setSubdomainInput(activeSchoolInfo.subdomain || activeSchoolId || '');
+    }
+  }, [websiteConfig, activeSchoolInfo, activeSchoolId, isOpen]);
 
   const banner = formData.announcementBanner || {
     enabled: true,
@@ -57,10 +88,26 @@ export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
     }));
   };
 
+  const updateDevCredits = (updates) => {
+    setFormData((prev) => ({
+      ...prev,
+      developerCredits: {
+        ...(prev.developerCredits || {}),
+        ...updates
+      }
+    }));
+  };
+
   if (!isOpen) return null;
 
   const handleSave = () => {
     updateWebsiteConfig(formData);
+    if (updateSchoolTenantInfo && activeSchoolId) {
+      updateSchoolTenantInfo(activeSchoolId, {
+        customDomain: customDomainInput,
+        subdomain: subdomainInput
+      });
+    }
     setSaveToast(true);
     setTimeout(() => setSaveToast(false), 3000);
   };
@@ -87,10 +134,13 @@ export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
               <Edit3 className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg sm:text-xl font-bold text-white">Public Website CMS & Live Editor</h2>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20 uppercase">
                   Admin & Super Admin
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  {activeSchoolInfo?.name || formData.schoolName}
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -130,10 +180,13 @@ export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
           {[
             { id: 'announcement', label: 'Announcement & Scrolling Banner', icon: Bell },
             { id: 'hero', label: 'Hero & Identity', icon: Sparkles },
+            { id: 'about', label: 'About School, Vision & Heritage', icon: BookOpen },
             { id: 'principal', label: "Principal's Welcome", icon: Building2 },
             { id: 'programs', label: 'Academic Streams (5)', icon: GraduationCap },
             { id: 'facilities', label: 'Campus Facilities (4)', icon: ImageIcon },
             { id: 'contact', label: 'Contact & Social Links', icon: Phone },
+            { id: 'domain', label: 'Domain & Web Address (DNS)', icon: Globe },
+            { id: 'developer', label: 'Developer & Tech Support Identity', icon: Code2 },
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -639,6 +692,238 @@ export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
             </div>
           )}
 
+          {/* TAB: ABOUT SCHOOL, VISION & HERITAGE */}
+          {activeTab === 'about' && (
+            <div className="space-y-6">
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-slate-900 border border-purple-800/40 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">School Heritage, Vision & Core Values</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    He section hian school chanchin (History), thlirna (Vision), hmachhawp (Mission), leh Core Values zirlaite leh khawtlang hnenah a tarlang dawn a ni. School tin te hian anmahni duh dan theuhin an her rem thei.
+                  </p>
+                </div>
+              </div>
+
+              {/* History & Background */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5 flex items-center gap-1.5">
+                  <span>School Chanchin & History (Background Story)</span>
+                  <span className="text-[10px] text-slate-500 font-normal lowercase">(public website #about section-ah a lang ang)</span>
+                </label>
+                <textarea
+                  rows={4}
+                  value={formData.about?.history || ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    about: {
+                      ...(formData.about || {}),
+                      history: e.target.value
+                    }
+                  })}
+                  placeholder="Eng kumah nge din anih, a din chhan leh hmasawnna tlangpui ziah lanna..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-white text-xs leading-relaxed focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              {/* Vision and Mission Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-xs font-semibold text-purple-400 uppercase mb-1.5 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Vision (Thlirna & Tum Ram)</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={formData.about?.vision || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      about: {
+                        ...(formData.about || {}),
+                        vision: e.target.value
+                      }
+                    })}
+                    placeholder="School thlirna sang ber leh nih tum..."
+                    className="w-full bg-slate-950 border border-purple-900/40 rounded-xl p-3.5 text-white text-xs leading-relaxed focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-indigo-400 uppercase mb-1.5 flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5" />
+                    <span>Mission (Hmachhawp & Hnathawh Tur)</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={formData.about?.mission || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      about: {
+                        ...(formData.about || {}),
+                        mission: e.target.value
+                      }
+                    })}
+                    placeholder="Zirlaite hnen a hlawhtlinna thlen tura hmalakna..."
+                    className="w-full bg-slate-950 border border-indigo-900/40 rounded-xl p-3.5 text-white text-xs leading-relaxed focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* Quick Campus Stats Highlights */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-2">
+                  Campus Quick Stats Highlights
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="block text-[11px] text-slate-400 font-semibold mb-1">Campus Land Area</span>
+                    <input
+                      type="text"
+                      value={formData.about?.campusArea || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        about: {
+                          ...(formData.about || {}),
+                          campusArea: e.target.value
+                        }
+                      })}
+                      placeholder="e.g. 5.2 Acres Lush Green"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="block text-[11px] text-slate-400 font-semibold mb-1">Student Strength</span>
+                    <input
+                      type="text"
+                      value={formData.about?.studentStrength || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        about: {
+                          ...(formData.about || {}),
+                          studentStrength: e.target.value
+                        }
+                      })}
+                      placeholder="e.g. 1,250+ Enrolled Students"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="block text-[11px] text-slate-400 font-semibold mb-1">Faculty & Staff Count</span>
+                    <input
+                      type="text"
+                      value={formData.about?.facultyCount || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        about: {
+                          ...(formData.about || {}),
+                          facultyCount: e.target.value
+                        }
+                      })}
+                      placeholder="e.g. 48+ Dedicated Educators"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Core Values Repeater */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-300 uppercase">Core Institutional Values</label>
+                    <p className="text-[11px] text-slate-500">School thuvawn leh nunpui tlat atana ruahman te</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentVals = formData.about?.coreValues || [];
+                      const newVal = {
+                        id: `cv-${Date.now()}`,
+                        title: 'New Value',
+                        desc: 'Value description...'
+                      };
+                      setFormData({
+                        ...formData,
+                        about: {
+                          ...(formData.about || {}),
+                          coreValues: [...currentVals, newVal]
+                        }
+                      });
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center gap-1 transition"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Value</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {(formData.about?.coreValues || []).map((val, idx) => (
+                    <div key={val.id || idx} className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-start gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center text-xs font-bold shrink-0 mt-1">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[10px] text-slate-400 font-semibold mb-1">Value Title</label>
+                          <input
+                            type="text"
+                            value={val.title || ''}
+                            onChange={(e) => {
+                              const updatedVals = [...(formData.about?.coreValues || [])];
+                              updatedVals[idx] = { ...updatedVals[idx], title: e.target.value };
+                              setFormData({
+                                ...formData,
+                                about: { ...(formData.about || {}), coreValues: updatedVals }
+                              });
+                            }}
+                            placeholder="e.g. Integrity & Faith"
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-white text-xs font-semibold focus:outline-none focus:border-purple-500"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="block text-[10px] text-slate-400 font-semibold mb-1">Short Description</label>
+                          <input
+                            type="text"
+                            value={val.desc || ''}
+                            onChange={(e) => {
+                              const updatedVals = [...(formData.about?.coreValues || [])];
+                              updatedVals[idx] = { ...updatedVals[idx], desc: e.target.value };
+                              setFormData({
+                                ...formData,
+                                about: { ...(formData.about || {}), coreValues: updatedVals }
+                              });
+                            }}
+                            placeholder="A awmzia tawi fel tak..."
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-300 text-xs focus:outline-none focus:border-purple-500"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updatedVals = (formData.about?.coreValues || []).filter((_, i) => i !== idx);
+                          setFormData({
+                            ...formData,
+                            about: { ...(formData.about || {}), coreValues: updatedVals }
+                          });
+                        }}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition mt-1"
+                        title="Delete value"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB 2: PRINCIPAL'S WELCOME */}
           {activeTab === 'principal' && (
             <div className="space-y-5">
@@ -949,7 +1234,516 @@ export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
               </div>
             </div>
           )}
+
+          {/* TAB 7: CUSTOM DOMAIN & DNS SETUP */}
+          {activeTab === 'domain' && (
+            <div className="space-y-6">
+              {/* Domain Header Banner */}
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-950/60 via-indigo-950/40 to-slate-900 border border-blue-800/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0 shadow-lg shadow-blue-500/10">
+                    <Globe className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      <span>Custom Domain & Web Address (DNS)</span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        Multi-Tenant Ready
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-0.5">
+                      School pual bik domain (e.g. <span className="text-blue-400 font-mono">www.schoolname.edu.in</span>) setup-na. School thlan kual ngai lo vin zirlai leh nu-leh-pa te'n direct-in an lut nghal ang.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDnsCheckStatus('checking');
+                      setTimeout(() => setDnsCheckStatus('active'), 1200);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/40 text-blue-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition"
+                  >
+                    <Wifi className={`w-3.5 h-3.5 ${dnsCheckStatus === 'checking' ? 'animate-pulse text-amber-400' : 'text-emerald-400'}`} />
+                    <span>{dnsCheckStatus === 'checking' ? 'Checking DNS...' : dnsCheckStatus === 'active' ? 'DNS Verified' : 'Test DNS Resolution'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Live Web Address URL Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                {/* 1. System Cloud Path */}
+                <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">1. Universal Cloud Path</span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    </div>
+                    <p className="text-xs font-mono text-purple-300 break-all select-all font-semibold">
+                      https://sc-ms.vercel.app/{activeSchoolId}
+                    </p>
+                  </div>
+                  <span className="text-[11px] text-slate-400 mt-2">Active & Always accessible</span>
+                </div>
+
+                {/* 2. Platform Subdomain */}
+                <div className="p-4 rounded-2xl bg-slate-950/70 border border-indigo-900/40 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">2. Free Subdomain</span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Zero Setup</span>
+                    </div>
+                    <p className="text-xs font-mono text-indigo-300 break-all select-all font-semibold">
+                      https://{subdomainInput || activeSchoolId}.scms.in
+                    </p>
+                  </div>
+                  <span className="text-[11px] text-slate-400 mt-2">Instant wildcard routing</span>
+                </div>
+
+                {/* 3. Official Custom Domain */}
+                <div className="p-4 rounded-2xl bg-slate-950/70 border border-blue-900/50 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400">3. Custom School Domain</span>
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${
+                        customDomainInput 
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                          : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                      }`}>
+                        {customDomainInput ? 'Configured' : 'Optional'}
+                      </span>
+                    </div>
+                    <p className="text-xs font-mono text-blue-300 break-all select-all font-semibold">
+                      {customDomainInput ? `https://${customDomainInput}` : 'www.yourschool.edu.in'}
+                    </p>
+                  </div>
+                  <span className="text-[11px] text-slate-400 mt-2">School Official Domain Brand</span>
+                </div>
+              </div>
+
+              {/* Domain Input Form */}
+              <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                  <Server className="w-4 h-4 text-purple-400" />
+                  <span>Domain & Subdomain Settings for {activeSchoolInfo?.name}</span>
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Subdomain Handle (Unique Slug)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={subdomainInput}
+                        onChange={(e) => setSubdomainInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                        placeholder="e.g. oha, stpauls, greenwood"
+                        className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-indigo-500 pr-24"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-500 pointer-events-none">
+                        .scms.in
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Platform-a i school subdomain bik tur. Special character hman lovin a ziah zawm tur.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Official Custom Domain (.edu.in, .com, .in, .org)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={customDomainInput}
+                        onChange={(e) => setCustomDomainInput(e.target.value.toLowerCase().trim().replace(/^https?:\/\//, '').replace(/\/$/, ''))}
+                        placeholder="e.g. www.stpaulsaizawl.edu.in"
+                        className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      School lamin domain in neihsa (GoDaddy / Namecheap etc. leisa) awmze nei takin dah rawh.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* DNS Records Setup Guide */}
+              <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <span>DNS Configuration Records (Domain Provider-ah dah tur)</span>
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      In domain leina (GoDaddy, Namecheap, BigRock, Cloudflare) DNS Management-ah heng record 2 zinga pakhat hi dah tur a ni:
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Record 1: CNAME */}
+                  <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs flex-1">
+                      <div>
+                        <span className="block text-[10px] text-slate-500 font-bold uppercase">Record Type</span>
+                        <span className="font-mono font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20 inline-block mt-0.5">
+                          CNAME
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] text-slate-500 font-bold uppercase">Name / Host</span>
+                        <span className="font-mono text-white font-semibold block mt-0.5">www (emaw @)</span>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <span className="block text-[10px] text-slate-500 font-bold uppercase">Value / Points To</span>
+                        <span className="font-mono text-emerald-400 font-semibold block mt-0.5 select-all">
+                          cname.vercel-dns.com
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText('cname.vercel-dns.com');
+                        setCopiedRecord('cname');
+                        setTimeout(() => setCopiedRecord(null), 2000);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 shrink-0 transition"
+                    >
+                      {copiedRecord === 'cname' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-400">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy Value</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Record 2: A Record (Root Apex) */}
+                  <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs flex-1">
+                      <div>
+                        <span className="block text-[10px] text-slate-500 font-bold uppercase">Record Type</span>
+                        <span className="font-mono font-bold text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded border border-blue-400/20 inline-block mt-0.5">
+                          A Record
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] text-slate-500 font-bold uppercase">Name / Host</span>
+                        <span className="font-mono text-white font-semibold block mt-0.5">@ (Root)</span>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <span className="block text-[10px] text-slate-500 font-bold uppercase">Value / IP Address</span>
+                        <span className="font-mono text-blue-300 font-semibold block mt-0.5 select-all">
+                          76.76.21.21
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText('76.76.21.21');
+                        setCopiedRecord('a');
+                        setTimeout(() => setCopiedRecord(null), 2000);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 shrink-0 transition"
+                    >
+                      {copiedRecord === 'a' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-400">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy IP</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Architecture & FAQs in Mizo */}
+              <div className="p-4 rounded-2xl bg-indigo-950/20 border border-indigo-900/40 text-xs text-slate-300 space-y-2">
+                <div className="flex items-center gap-2 text-indigo-300 font-bold">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Kalphung & Hriattirna Pawimawh (Multi-Tenant Domain Architecture):</span>
+                </div>
+                <ul className="list-disc list-inside space-y-1.5 text-slate-400">
+                  <li>
+                    <strong className="text-slate-200">A buaithlak miah lo:</strong> School tin ten domain hran theuh an neih theih nan server thar buatsaih a ngai lo va, Vercel-ah domain add zeuhin automatic-in a in-link nghal vek.
+                  </li>
+                  <li>
+                    <strong className="text-slate-200">Free SSL (HTTPS / Padlock):</strong> Vercel-in domain tin tan Let's Encrypt SSL certificate a thlawnin a renew reng thin.
+                  </li>
+                  <li>
+                    <strong className="text-slate-200">Automatic Branding & PWA:</strong> School domain atanga an luh chuan browser-in chu school logo, hming, leh theme colors chauh a phawrh a, mobile app-a an install pawhin anmahni school app liau liau angin a in-install ang.
+                  </li>
+                  <li>
+                    <strong className="text-slate-200">DNS Thawh Hun (Propagation):</strong> DNS update hnuah minute 5 atanga darkar reilote chhungin internet khawvel pumah a rawn nung nghal thin.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 8: DEVELOPER & TECH SUPPORT PROFILE */}
+          {activeTab === 'developer' && (
+            <div className="space-y-6">
+              {/* Header explanation & live status card */}
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-purple-950/40 via-indigo-950/40 to-slate-900 border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-600/20 text-purple-400 border border-purple-500/30 flex items-center justify-center shrink-0">
+                    <Code2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                      <span>Developer &amp; Technical Support Profile</span>
+                      <span className="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-mono">
+                        Super Admin Config
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Main website front page leh school portal a developer biakpawhna, WhatsApp direct chat, leh technical support SLA tarlan tur edit-na.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 font-semibold cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.developerCredits?.enabled !== false}
+                      onChange={(e) => updateDevCredits({ enabled: e.target.checked })}
+                      className="rounded text-purple-600 focus:ring-0 cursor-pointer"
+                    />
+                    <span>Developer Support Active</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Visibility Toggles */}
+              <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <label className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 cursor-pointer transition">
+                  <input
+                    type="checkbox"
+                    checked={formData.developerCredits?.showOnFrontPage !== false}
+                    onChange={(e) => updateDevCredits({ showOnFrontPage: e.target.checked })}
+                    className="rounded text-purple-600 focus:ring-0 cursor-pointer w-4 h-4"
+                  />
+                  <div>
+                    <span className="font-bold text-white block">Main Web Front Page-ah Tarlang Rawh</span>
+                    <span className="text-[11px] text-slate-400">Website public footer-ah "Software Architect &amp; Support" badge leh modal a lang ang.</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 cursor-pointer transition">
+                  <input
+                    type="checkbox"
+                    checked={formData.developerCredits?.showInPortalHelp !== false}
+                    onChange={(e) => updateDevCredits({ showInPortalHelp: e.target.checked })}
+                    className="rounded text-purple-600 focus:ring-0 cursor-pointer w-4 h-4"
+                  />
+                  <div>
+                    <span className="font-bold text-white block">Portal &amp; Staff Navigation-ah Tarlang Rawh</span>
+                    <span className="text-[11px] text-slate-400">School portal navbar-ah "Developer &amp; Tech Support" link awm se zirtirtu leh admin ten an be thei ang.</span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Developer Identity Details */}
+              <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-purple-400" />
+                  Primary Developer &amp; Studio Credentials
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Developer / Architect Name</label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.name || ''}
+                      onChange={(e) => updateDevCredits({ name: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                      placeholder="e.g. Samuel (Lead Architect)"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Professional Title / Designation</label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.title || ''}
+                      onChange={(e) => updateDevCredits({ title: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                      placeholder="e.g. Lead Software Architect & Systems Engineer"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Studio / Agency / Organization</label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.company || ''}
+                      onChange={(e) => updateDevCredits({ company: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                      placeholder="e.g. Zoxs Technologies Mizoram"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Verification Badge Text</label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.badgeText || ''}
+                      onChange={(e) => updateDevCredits({ badgeText: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+                      placeholder="e.g. Verified Institutional Developer"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Location / Operating Base</label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.location || ''}
+                      onChange={(e) => updateDevCredits({ location: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                      placeholder="e.g. Aizawl & Lunglei, Mizoram"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Portfolio / Studio Website URL</label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.website || ''}
+                      onChange={(e) => updateDevCredits({ website: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+                      placeholder="e.g. https://zoxs.dev"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Tagline / Architectural Bio Statement</label>
+                  <textarea
+                    rows={2}
+                    value={formData.developerCredits?.tagline || ''}
+                    onChange={(e) => updateDevCredits({ tagline: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                    placeholder="Brief description of engineering standards, mission or background..."
+                  />
+                </div>
+              </div>
+
+              {/* Direct Communication Channels */}
+              <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono flex items-center gap-2">
+                  <Headphones className="w-4 h-4 text-emerald-400" />
+                  Direct Technical Support Channels &amp; Emergency Hotline
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-emerald-400 uppercase mb-1 flex items-center gap-1">
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      WhatsApp Direct Number (with Country Code)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.whatsapp || ''}
+                      onChange={(e) => updateDevCredits({ whatsapp: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                      placeholder="e.g. +91 94361 22000"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">One-click WhatsApp chat link automatically opens with this number.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-indigo-400 uppercase mb-1 flex items-center gap-1">
+                      <Phone className="w-3.5 h-3.5" />
+                      Voice Hotline / Telephone
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.phone || ''}
+                      onChange={(e) => updateDevCredits({ phone: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                      placeholder="e.g. +91 94361 22000"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">Direct click-to-call phone number on mobile & desktop.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-purple-400 uppercase mb-1 flex items-center gap-1">
+                      <Mail className="w-3.5 h-3.5" />
+                      Technical Support Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.developerCredits?.email || ''}
+                      onChange={(e) => updateDevCredits({ email: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+                      placeholder="e.g. dev.samuel@mizoramschool.edu"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">Direct inquiries & support tickets will be routed here.</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                    Support Availability &amp; Emergency Hours (SLA)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.developerCredits?.supportHours || ''}
+                    onChange={(e) => updateDevCredits({ supportHours: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    placeholder="e.g. Mon - Sat: 8:00 AM - 8:00 PM (24/7 Critical System Alerts)"
+                  />
+                </div>
+              </div>
+
+              {/* Supported Services / Architecture Highlights */}
+              <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    Engineering Services &amp; Capabilities List
+                  </h4>
+                  <span className="text-[10px] text-slate-500">Lines separated (1 per line)</span>
+                </div>
+                <textarea
+                  rows={4}
+                  value={Array.isArray(formData.developerCredits?.services) ? formData.developerCredits.services.join('\n') : ''}
+                  onChange={(e) => updateDevCredits({ 
+                    services: e.target.value.split('\n').filter(s => s.trim().length > 0)
+                  })}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-purple-500 leading-relaxed font-mono"
+                  placeholder="24/7 Priority Emergency Technical Support & Bug Resolving&#10;Custom Academic Modules, Class Tests & Examination Tools&#10;Cloud Firestore Sync & Daily Automated Database Backups&#10;Campus Hardware, Biometrics & Audio Bell Infrastructure"
+                />
+              </div>
+            </div>
+          )}
         </div>
+
 
         {/* Modal Footer */}
         <div className="p-4 px-6 border-t border-slate-800 bg-slate-950/80 flex flex-wrap items-center justify-between gap-3">

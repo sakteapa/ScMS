@@ -26,24 +26,54 @@ import {
   X,
   HeartHandshake,
   School,
-  ChevronDown
+  ChevronDown,
+  Laptop,
+  AlertTriangle,
+  Shirt,
+  Printer,
+  CreditCard,
+  Store,
+  Code2,
+  MessageCircle
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
+import { INITIAL_WEBSITE_CONFIG } from '../data/mockData';
 import PublicAnnouncementBanner from '../components/PublicAnnouncementBanner';
+import SchoolRulesModal from '../components/SchoolRulesModal';
+import PublicFineFeeClearanceModal from '../components/PublicFineFeeClearanceModal';
+import DeveloperSupportModal from '../components/DeveloperSupportModal';
 
-export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onOpenEditor, onOpenMobileApp }) {
+export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onOpenEditor, onOpenMobileApp, onOpenRules }) {
   const { 
     websiteConfig, 
+    schoolRules = [],
     notices = [], 
     activeSchoolInfo, 
     registeredSchools = [], 
     activeSchoolId, 
-    switchSchool 
+    switchSchool,
+    storeUniforms = [],
+    storeConfig = {} 
   } = useSchool();
-  const { currentUser, isPrincipal } = useAuth();
+  const { currentUser, isPrincipal, isVicePrincipal, isSuperAdmin } = useAuth();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isSchoolMenuOpen, setIsSchoolMenuOpen] = useState(false);
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+  const [isFineModalOpen, setIsFineModalOpen] = useState(false);
+  const [isDevSupportModalOpen, setIsDevSupportModalOpen] = useState(false);
+
+  // Requirement: front page hi vice principal chin chunglam chauhin an edit/config thei tur ani.
+  const canEditFrontPage = Boolean(
+    currentUser?.role === 'superadmin' || 
+    currentUser?.role === 'principal' || 
+    currentUser?.role === 'vice_principal' || 
+    currentUser?.role === 'viceprincipal' || 
+    currentUser?.role === 'admin' ||
+    isPrincipal ||
+    isVicePrincipal ||
+    isSuperAdmin
+  );
 
   const cfg = websiteConfig || {};
   const hero = cfg.hero || {};
@@ -52,6 +82,10 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
   const facilities = cfg.facilities || [];
   const contact = cfg.contact || {};
   const social = cfg.socialLinks || {};
+  const devCredits = {
+    ...(INITIAL_WEBSITE_CONFIG?.developerCredits || {}),
+    ...(cfg?.developerCredits || {})
+  };
 
   const schoolDisplayName = cfg.schoolName || activeSchoolInfo?.name || 'Our School';
   const affiliationDisplayName = cfg.affiliationBadge || cfg.tagline || activeSchoolInfo?.affiliationBadge || 'MBSE Affiliated';
@@ -114,85 +148,126 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-7 text-xs font-semibold text-slate-300">
+          <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-300">
             <a href="#about" className="hover:text-purple-400 transition">About School</a>
             <a href="#academics" className="hover:text-purple-400 transition">Academics &amp; Streams</a>
             <a href="#facilities" className="hover:text-purple-400 transition">Campus Facilities</a>
+            <a href="#rules" className="hover:text-purple-400 transition">Rules &amp; Code of Conduct</a>
+            <a href="#uniform" className="hover:text-purple-400 transition">Uniform &amp; Dress Code</a>
             <a href="#notices" className="hover:text-purple-400 transition">Public Notices</a>
             <a href="#contact" className="hover:text-purple-400 transition">Contact</a>
+            <a 
+              href="#developer-support" 
+              className="text-purple-300 hover:text-white transition flex items-center gap-1.5 font-bold px-2.5 py-1 rounded-lg bg-purple-950/70 border border-purple-500/40 hover:bg-purple-900/60"
+            >
+              <Code2 className="w-3.5 h-3.5 text-purple-400" />
+              <span>Developer Support</span>
+            </a>
           </nav>
 
-          {/* Actions: Mobile App, Portal Login & CMS Button */}
+          {/* Actions: Fine Clearance, Mobile App, Portal Login, Developer Info & CMS Button */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-            {/* CMS Edit Button (Visible only to Logged In Admin / Principal / Super Admin) */}
-            {(currentUser?.role === 'superadmin' || currentUser?.role === 'principal' || currentUser?.role === 'admin') && (
+            {/* Developer Contact Quick Pill */}
+            <button
+              onClick={() => setIsDevSupportModalOpen(true)}
+              className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-purple-600/30"
+              title="Official Software Architect & Developer Hotline"
+            >
+              <Code2 className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Developer Info</span>
+            </button>
+
+            {/* Online Campus Fine & Fee Clearance Portal Trigger */}
+            <button
+              onClick={() => setIsFineModalOpen(true)}
+              className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-600/30 to-teal-600/30 hover:from-emerald-600/50 hover:to-teal-600/50 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 transition shadow-sm cursor-pointer"
+              title="Pay Student Fees & Campus Fines Online (Instant Sync)"
+            >
+              <CreditCard className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="hidden sm:inline">Pay Fines &amp; Fees</span>
+              <span className="sm:hidden">Pay</span>
+            </button>
+
+            {/* CMS Edit Button (Restricted strictly to Vice Principal chin chunglam) */}
+            {canEditFrontPage && (
               <button
                 onClick={onOpenEditor}
-                className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center gap-1.5 transition"
-                title="Open Website CMS Live Editor (Admin & Super Admin only)"
+                className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                title="Open Website CMS Live Editor (Vice Principal chin chunglam only)"
               >
                 <Edit3 className="w-3.5 h-3.5 text-purple-400" />
                 <span className="hidden sm:inline">CMS Editor</span>
               </button>
             )}
 
-            {/* Mobile App Download Button */}
+            {/* PC Software & Mobile App Download Button */}
             <button
               onClick={onOpenMobileApp}
               className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition"
-              title="Download Mobile Application"
+              title="Download & Install PC Software & Mobile App for this School"
             >
-              <Smartphone className="w-4 h-4 text-emerald-400" />
-              <span className="hidden md:inline">Mobile App</span>
+              <Laptop className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <Smartphone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="hidden md:inline">PC & Phone App</span>
             </button>
 
-            {/* Academic Center Switcher Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setIsSchoolMenuOpen(!isSchoolMenuOpen)}
-                className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-purple-500/50 text-slate-200 text-xs font-semibold flex items-center gap-1.5 sm:gap-2 transition cursor-pointer"
-                title="Select Academic Center / School"
+            {/* Academic Center Switcher: SuperAdmin only, else static proud school badge */}
+            {isSuperAdmin && registeredSchools.length > 1 ? (
+              <div className="relative">
+                <button
+                  onClick={() => setIsSchoolMenuOpen(!isSchoolMenuOpen)}
+                  className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-purple-500/50 text-slate-200 text-xs font-semibold flex items-center gap-1.5 sm:gap-2 transition cursor-pointer"
+                  title="Select Academic Center / School (Super Admin Only)"
+                >
+                  <School className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span className="hidden sm:inline max-w-[130px] truncate">{activeSchoolInfo?.shortName || activeSchoolInfo?.name}</span>
+                  <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+                </button>
+
+                {isSchoolMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
+                    <div className="px-3 py-2 border-b border-slate-800/80 mb-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Super Admin Center Switcher</span>
+                      <span className="text-xs text-indigo-300 font-semibold">{activeSchoolInfo?.name}</span>
+                    </div>
+                    <div className="space-y-1 max-h-64 overflow-y-auto">
+                      {registeredSchools.map((sch) => (
+                        <button
+                          key={sch.id}
+                          onClick={() => {
+                            setIsSchoolMenuOpen(false);
+                            if (switchSchool) switchSchool(sch.id);
+                          }}
+                          className={`w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition cursor-pointer ${
+                            activeSchoolId === sch.id
+                              ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold shadow-md shadow-indigo-600/30'
+                              : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                          }`}
+                        >
+                          <div className="min-w-0 pr-2">
+                            <p className="font-semibold truncate">{sch.name}</p>
+                            <p className={`text-[10px] truncate ${activeSchoolId === sch.id ? 'text-indigo-200' : 'text-slate-400'}`}>
+                              {sch.address || sch.affiliationBadge}
+                            </p>
+                          </div>
+                          {activeSchoolId === sch.id && (
+                            <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold shrink-0">Active</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div 
+                className="hidden sm:flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-200 text-xs font-semibold"
+                title={`${activeSchoolInfo?.name}`}
               >
                 <School className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <span className="hidden sm:inline max-w-[130px] truncate">{activeSchoolInfo?.shortName || activeSchoolInfo?.name}</span>
-                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-              </button>
-
-              {isSchoolMenuOpen && (
-                <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
-                  <div className="px-3 py-2 border-b border-slate-800/80 mb-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Select Academic Center</span>
-                    <span className="text-xs text-indigo-300 font-semibold">{activeSchoolInfo?.name}</span>
-                  </div>
-                  <div className="space-y-1 max-h-64 overflow-y-auto">
-                    {registeredSchools.map((sch) => (
-                      <button
-                        key={sch.id}
-                        onClick={() => {
-                          setIsSchoolMenuOpen(false);
-                          if (switchSchool) switchSchool(sch.id);
-                        }}
-                        className={`w-full text-left px-3 py-2.5 rounded-xl text-xs flex items-center justify-between transition cursor-pointer ${
-                          activeSchoolId === sch.id
-                            ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold shadow-md shadow-indigo-600/30'
-                            : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                        }`}
-                      >
-                        <div className="min-w-0 pr-2">
-                          <p className="font-semibold truncate">{sch.name}</p>
-                          <p className={`text-[10px] truncate ${activeSchoolId === sch.id ? 'text-indigo-200' : 'text-slate-400'}`}>
-                            {sch.address || sch.affiliationBadge}
-                          </p>
-                        </div>
-                        {activeSchoolId === sch.id && (
-                          <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold shrink-0">Active</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+                <span className="max-w-[150px] truncate">{activeSchoolInfo?.shortName || activeSchoolInfo?.name}</span>
+              </div>
+            )}
 
             {/* Portal / ERP Login Button */}
             <button
@@ -235,35 +310,63 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
               </button>
             </div>
 
-            {/* Mobile School Switcher */}
-            <div className="py-2 border-b border-slate-800/80 space-y-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Academic Center:</p>
-              <div className="grid grid-cols-1 gap-1">
-                {registeredSchools.map((sch) => (
-                  <button
-                    key={sch.id}
-                    onClick={() => {
-                      setIsMobileNavOpen(false);
-                      if (switchSchool) switchSchool(sch.id);
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between ${
-                      activeSchoolId === sch.id
-                        ? 'bg-purple-600 text-white font-bold'
-                        : 'text-slate-300 hover:bg-slate-800'
-                    }`}
-                  >
-                    <span className="truncate">{sch.shortName || sch.name}</span>
-                    {activeSchoolId === sch.id && <span className="text-[10px] font-mono">✓</span>}
-                  </button>
-                ))}
+            <button
+              onClick={() => { setIsMobileNavOpen(false); setIsFineModalOpen(true); }}
+              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>Pay Fees &amp; Campus Fines Online</span>
+            </button>
+
+            {/* Mobile School Switcher: SuperAdmin only */}
+            {isSuperAdmin && registeredSchools.length > 1 ? (
+              <div className="py-2 border-b border-slate-800/80 space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Academic Center (Super Admin):</p>
+                <div className="grid grid-cols-1 gap-1">
+                  {registeredSchools.map((sch) => (
+                    <button
+                      key={sch.id}
+                      onClick={() => {
+                        setIsMobileNavOpen(false);
+                        if (switchSchool) switchSchool(sch.id);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between ${
+                        activeSchoolId === sch.id
+                          ? 'bg-purple-600 text-white font-bold'
+                          : 'text-slate-300 hover:bg-slate-800'
+                      }`}
+                    >
+                      <span className="truncate">{sch.shortName || sch.name}</span>
+                      {activeSchoolId === sch.id && <span className="text-[10px] font-mono">✓</span>}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="py-2 px-2 border-b border-slate-800/80 flex items-center gap-2">
+                <School className="w-4 h-4 text-indigo-400" />
+                <span className="text-xs font-semibold text-slate-300 truncate">{activeSchoolInfo?.name}</span>
+              </div>
+            )}
 
             <a href="#about" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">About School</a>
             <a href="#academics" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Academics &amp; Streams</a>
             <a href="#facilities" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Campus Facilities</a>
+            <a href="#rules" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Rules &amp; Code of Conduct</a>
+            <a href="#uniform" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Uniform &amp; Dress Code</a>
             <a href="#notices" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Public Notices</a>
             <a href="#contact" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Contact &amp; Location</a>
+            <a href="#developer-support" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-bold text-purple-400 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Developer Support Section ↓</a>
+            <button
+              onClick={() => { setIsMobileNavOpen(false); setIsDevSupportModalOpen(true); }}
+              className="w-full text-left text-xs font-semibold text-purple-300 py-2.5 px-3 rounded-xl bg-purple-950/80 border border-purple-500/40 flex items-center justify-between transition cursor-pointer"
+            >
+              <span className="flex items-center gap-2">
+                <Code2 className="w-4 h-4 text-purple-400" />
+                <span>Developer &amp; Tech Support Hotline</span>
+              </span>
+              <span className="text-[10px] bg-purple-500/30 text-purple-200 px-2 py-0.5 rounded-full font-mono font-bold">24/7 Live</span>
+            </button>
           </div>
         )}
       </header>
@@ -290,13 +393,21 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
               </p>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-1 sm:pt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-1 sm:pt-2 flex-wrap">
                 <button
                   onClick={onOpenAdmissions}
                   className="w-full sm:w-auto px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-purple-600/30 flex items-center justify-center gap-2.5 transition transform hover:-translate-y-0.5 cursor-pointer"
                 >
                   <span>{hero.ctaPrimaryText || 'Apply for Admission Online'}</span>
                   <ArrowRight className="w-4 h-4 shrink-0" />
+                </button>
+
+                <button
+                  onClick={() => setIsFineModalOpen(true)}
+                  className="w-full sm:w-auto px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2.5 transition transform hover:-translate-y-0.5 cursor-pointer"
+                >
+                  <CreditCard className="w-4 h-4 shrink-0" />
+                  <span>Pay Fees &amp; Campus Fines</span>
                 </button>
 
                 <a
@@ -315,6 +426,43 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
                     <p className="text-[11px] sm:text-xs text-slate-400 font-medium mt-0.5">{stat.label}</p>
                   </div>
                 ))}
+              </div>
+
+              {/* Developer Credentials Spotlight Ribbon (Hero Direct View) */}
+              <div className="pt-2">
+                <div className="p-3 sm:p-3.5 rounded-2xl bg-purple-950/40 border border-purple-500/40 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg text-left backdrop-blur-sm">
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0 border border-purple-500/30">
+                      <Code2 className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-purple-400 font-bold uppercase tracking-wider">System Architect &amp; Developer</span>
+                        <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded font-bold border border-emerald-500/30">24/7 Hotline</span>
+                      </div>
+                      <p className="text-xs font-bold text-white truncate mt-0.5">
+                        {devCredits.name || 'Samuel (Lead Architect)'} • <span className="text-slate-300 font-normal">{devCredits.company || 'Zoxs Technologies'}</span>
+                      </p>
+                      <p className="text-[11px] text-slate-400 truncate">
+                        Hotline: <a href={`tel:${devCredits.phone || '+919436122000'}`} className="text-emerald-400 font-bold hover:underline">{devCredits.phone || '+91 94361 22000'}</a>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
+                    <a
+                      href="#developer-support"
+                      className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition text-center whitespace-nowrap"
+                    >
+                      Developer Credentials ↓
+                    </a>
+                    <button
+                      onClick={() => setIsDevSupportModalOpen(true)}
+                      className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-200 border border-purple-500/30 text-xs font-semibold transition whitespace-nowrap cursor-pointer"
+                    >
+                      Support Hotline
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -342,52 +490,156 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
         </div>
       </section>
 
-      {/* 4. PRINCIPAL'S WELCOME ADDRESS */}
+      {/* 4. ABOUT SCHOOL, HERITAGE, VISION & PRINCIPAL'S DESK */}
       <section id="about" className="py-12 sm:py-20 border-b border-slate-800/80 bg-slate-900/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10 items-center">
-            {/* Principal Photo Card */}
-            <div className="lg:col-span-5 flex justify-center">
-              <div className="relative w-full max-w-[280px] sm:max-w-sm rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-700 shadow-2xl">
-                <img
-                  src={principal.photoUrl || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80'}
-                  alt={principal.name}
-                  className="w-full h-64 sm:h-80 lg:h-96 object-cover"
-                />
-                <div className="absolute bottom-0 inset-x-0 p-4 sm:p-5 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent">
-                  <p className="text-sm sm:text-base font-bold text-white">{principal.name}</p>
-                  <p className="text-[11px] sm:text-xs text-purple-400 font-medium">{principal.designation}</p>
-                </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 sm:space-y-16">
+          {/* Header Title */}
+          <div className="text-center max-w-3xl mx-auto space-y-2 sm:space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-semibold border border-purple-500/20">
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>About {schoolDisplayName}</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
+              Heritage, Vision &amp; Core Institutional Values
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto">
+              {cfg.motto ? `"${cfg.motto}" — ` : ''}Building character, intellectual curiosity, and grounded leadership in Mizoram.
+            </p>
+          </div>
+
+          {/* School History / Background Narrative */}
+          {cfg.about?.history && (
+            <div className="p-6 sm:p-8 rounded-3xl bg-slate-950/80 border border-slate-800/80 shadow-xl space-y-4">
+              <div className="flex items-center gap-2.5 text-purple-400">
+                <School className="w-5 h-5" />
+                <h3 className="text-base sm:text-lg font-bold text-white">Our Story &amp; Heritage</h3>
               </div>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+                {cfg.about.history}
+              </p>
+            </div>
+          )}
+
+          {/* Vision & Mission Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-purple-950/30 via-slate-900/60 to-slate-950 border border-purple-800/40 shadow-xl space-y-3">
+              <div className="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white">Our Vision</h3>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {cfg.about?.vision || 'To emerge as a premier educational institution fostering academic excellence, moral leadership, and community service.'}
+              </p>
             </div>
 
-            {/* Message Content */}
-            <div className="lg:col-span-7 space-y-4 sm:space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-semibold border border-indigo-500/20">
-                <HeartHandshake className="w-3.5 h-3.5" />
-                <span>Leadership &amp; Vision</span>
+            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-950/30 via-slate-900/60 to-slate-950 border border-indigo-800/40 shadow-xl space-y-3">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white">Our Mission</h3>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {cfg.about?.mission || 'Providing holistic education combining rigorous academics, modern technology, and values that inspire students to excel.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Institutional Highlights Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-1">
+              <span className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider">Campus Area</span>
+              <p className="text-sm sm:text-base font-extrabold text-white">{cfg.about?.campusArea || 'Spacious Campus'}</p>
+            </div>
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-1">
+              <span className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider">Student Body</span>
+              <p className="text-sm sm:text-base font-extrabold text-cyan-400">{cfg.about?.studentStrength || '1,000+ Enrolled'}</p>
+            </div>
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-1">
+              <span className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider">Faculty &amp; Staff</span>
+              <p className="text-sm sm:text-base font-extrabold text-purple-400">{cfg.about?.facultyCount || '45+ Dedicated'}</p>
+            </div>
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-1">
+              <span className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider">Affiliation</span>
+              <p className="text-sm sm:text-base font-extrabold text-emerald-400">{affiliationDisplayName}</p>
+            </div>
+          </div>
+
+          {/* Core Values Section */}
+          {(cfg.about?.coreValues || []).length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-amber-400" />
+                <h3 className="text-sm sm:text-base font-bold text-white uppercase tracking-wider">Core Institutional Values</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {cfg.about.coreValues.map((val, idx) => (
+                  <div key={val.id || idx} className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800/80 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-amber-500/10 text-amber-400 text-xs font-bold flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                      <h4 className="text-xs sm:text-sm font-bold text-white">{val.title}</h4>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed">{val.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Principal's Welcome Address */}
+          <div className="p-6 sm:p-10 rounded-3xl bg-slate-950/90 border border-slate-800 shadow-2xl">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10 items-center">
+              {/* Principal Photo Card */}
+              <div className="lg:col-span-5 flex justify-center">
+                <div className="relative w-full max-w-[280px] sm:max-w-sm rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-700 shadow-2xl">
+                  <img
+                    src={principal.photoUrl || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80'}
+                    alt={principal.name}
+                    className="w-full h-64 sm:h-80 lg:h-96 object-cover"
+                  />
+                  <div className="absolute bottom-0 inset-x-0 p-4 sm:p-5 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent">
+                    <p className="text-sm sm:text-base font-bold text-white">{principal.name}</p>
+                    <p className="text-[11px] sm:text-xs text-purple-400 font-medium">{principal.designation}</p>
+                  </div>
+                </div>
               </div>
 
-              <h2 className="text-xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
-                Principal’s Welcome Message
-              </h2>
+              {/* Message Content */}
+              <div className="lg:col-span-7 space-y-4 sm:space-y-6 text-center lg:text-left">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-semibold border border-indigo-500/20">
+                  <HeartHandshake className="w-3.5 h-3.5" />
+                  <span>Leadership Desk</span>
+                </div>
 
-              <blockquote className="text-sm sm:text-base lg:text-lg italic text-purple-200 border-l-4 border-purple-500 pl-3 sm:pl-4 py-1 text-left">
-                "{principal.quote}"
-              </blockquote>
+                <h2 className="text-xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
+                  Principal’s Welcome Message
+                </h2>
 
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed text-left">
-                {principal.fullMessage}
-              </p>
+                <blockquote className="text-sm sm:text-base lg:text-lg italic text-purple-200 border-l-4 border-purple-500 pl-3 sm:pl-4 py-1 text-left">
+                  "{principal.quote}"
+                </blockquote>
 
-              <div className="pt-2 flex items-center justify-center lg:justify-start">
-                <button
-                  onClick={onOpenAdmissions}
-                  className="w-full sm:w-auto px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-purple-600/25 cursor-pointer"
-                >
-                  <span>Admission Enquiry &amp; Registration</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed text-left">
+                  {principal.fullMessage}
+                </p>
+
+                <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3">
+                  <button
+                    onClick={onOpenAdmissions}
+                    className="w-full sm:w-auto px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-purple-600/25 cursor-pointer"
+                  >
+                    <span>Admission Enquiry &amp; Registration</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    onClick={() => setIsRulesModalOpen(true)}
+                    className="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-200 hover:text-white font-semibold text-xs transition flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-amber-400" />
+                    <span>View Student Code of Conduct &amp; Rules</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -486,7 +738,254 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
         </div>
       </section>
 
-      {/* 7. LATEST PUBLIC NOTICES */}
+      {/* 6B. INSTITUTIONAL RULES & CODE OF CONDUCT */}
+      <section id="rules" className="py-12 sm:py-20 border-b border-slate-800/80 bg-slate-900/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-12">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-semibold border border-amber-500/20">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Student Code of Conduct</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight mt-1 sm:mt-2">
+                Rules &amp; Institutional Regulations
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl">
+                Official disciplinary regulations, mandatory attendance standards, and statutory campus conduct for {schoolDisplayName}.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {(currentUser?.role === 'superadmin' || isPrincipal || currentUser?.role === 'admin') && (
+                <button
+                  onClick={() => setIsRulesModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                  title="Edit Institutional Rules"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit Rules</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => setIsRulesModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-bold flex items-center gap-1.5 transition shadow-lg shadow-amber-600/20 cursor-pointer"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Full Handbook &amp; Print (PDF)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Preview Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {schoolRules.slice(0, 6).map((rule, idx) => (
+              <div 
+                key={rule.id || idx}
+                onClick={() => setIsRulesModalOpen(true)}
+                className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-amber-500/40 transition flex flex-col justify-between space-y-3 cursor-pointer group"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-900 text-amber-400 border border-amber-500/20 font-semibold text-[10px] uppercase">
+                      {rule.categoryLabel || rule.category}
+                    </span>
+                    <span className="text-slate-500 font-mono text-[10px]">#{idx + 1}</span>
+                  </div>
+                  <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-amber-200 transition">
+                    {rule.title}
+                  </h4>
+                  <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed">
+                    {rule.description}
+                  </p>
+                </div>
+
+                {rule.penalty && (
+                  <div className="pt-2 border-t border-slate-900 text-[11px] text-amber-300/90 flex items-center gap-1.5 font-medium">
+                    <span className="font-bold uppercase text-[9px] text-amber-400">Penalty:</span>
+                    <span className="truncate">{rule.penalty}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-950/20 via-slate-900/60 to-slate-950 border border-amber-900/30 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-300">
+            <div className="flex items-center gap-2 text-center sm:text-left">
+              <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0" />
+              <span>
+                All students and parents must sign and adhere to the Institutional Code of Conduct upon admission.
+              </span>
+            </div>
+            <button
+              onClick={() => setIsRulesModalOpen(true)}
+              className="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 shrink-0 cursor-pointer"
+            >
+              <span>Explore all {schoolRules.length} rules</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 7. OFFICIAL UNIFORM & DRESS CODE SHOWCASE */}
+      <section id="uniform" className="py-12 sm:py-20 border-b border-slate-800/80 bg-slate-900/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-12">
+          <div className="text-center max-w-3xl mx-auto space-y-2 sm:space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-semibold border border-indigo-500/20">
+              <Shirt className="w-3.5 h-3.5" />
+              <span>Identity &amp; Discipline</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
+              Prescribed Uniform &amp; Dress Code
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
+              Cleanliness and adherence to the official school uniform is mandatory for all students from Monday to Saturday.
+            </p>
+          </div>
+
+          {/* Daily Schedule Reminder Card */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-5 rounded-2xl bg-slate-950/80 border border-indigo-500/30 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 font-bold text-xs">
+                M-F
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-white">Regular Uniform Days</h4>
+                <p className="text-xs text-slate-400">
+                  Mon, Tue, Thu &amp; Friday: Sky blue formal shirt, navy trousers/skirt, tie, belt, and polished black shoes.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-slate-950/80 border border-emerald-500/30 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 font-bold text-xs">
+                W-S
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-white">Sports &amp; House Activity</h4>
+                <p className="text-xs text-slate-400">
+                  Wednesday &amp; Saturday: Assigned House Sports Tee (Red, Blue, Green, Yellow), white track trousers, and white sports shoes.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-slate-950/80 border border-cyan-500/30 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 font-bold text-xs">
+                WIN
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-white">Winter Protocol (Nov - Feb)</h4>
+                <p className="text-xs text-slate-400">
+                  School crest navy blazer or V-neck woolen sweater with school monogram is mandatory during morning assemblies.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Curated Uniform Items Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {storeUniforms.slice(0, 8).map((item) => (
+              <div 
+                key={item.id} 
+                className="rounded-2xl bg-slate-950 border border-slate-800/90 overflow-hidden flex flex-col justify-between group hover:border-indigo-500/50 transition duration-300 shadow-lg"
+              >
+                <div className="relative aspect-[4/3] bg-slate-900 overflow-hidden">
+                  <img
+                    src={item.photoUrl}
+                    alt={item.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                    loading="lazy"
+                  />
+                  <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-slate-950/80 backdrop-blur-md text-indigo-300 text-[10px] font-bold uppercase border border-indigo-500/30">
+                    {item.category}
+                  </span>
+                  <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-bold">
+                    ₹{item.price}
+                  </span>
+                </div>
+
+                <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                      <span className="capitalize">{item.gender}</span>
+                      <span className="font-mono text-[10px]">Code: {item.code}</span>
+                    </div>
+                    <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-indigo-300 transition">
+                      {item.name}
+                    </h4>
+                    <p className="text-xs text-slate-400 line-clamp-2 mt-1">
+                      {item.description}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-900 flex items-center justify-between text-[11px] text-slate-400">
+                    <span>Sizes: {item.sizes?.map(s => s.size).join(', ') || 'All standard'}</span>
+                  </div>
+
+                  {/* Out of Stock & Procurement Note */}
+                  {(item.stockStatus === 'out_of_stock' || item.expectedRestockDate || item.allowExternalPurchase) && (
+                    <div className="mt-2 p-2.5 rounded-xl bg-rose-950/40 border border-rose-500/30 text-[11px] space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-rose-400 flex items-center gap-1 text-[10px]">
+                          <AlertTriangle className="w-3 h-3" />
+                          <span>Store-ah a zo rih</span>
+                        </span>
+                        {item.expectedRestockDate && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold">
+                            ETA: {item.expectedRestockDate}
+                          </span>
+                        )}
+                      </div>
+                      {item.allowExternalPurchase && item.externalVendorName && (
+                        <div className="text-[10px] text-slate-300 bg-slate-900/80 p-2 rounded-lg border border-cyan-500/30 space-y-0.5">
+                          <p className="font-bold text-cyan-300 flex items-center gap-1">
+                            <Store className="w-2.5 h-2.5" />
+                            <span>Pawn Lam Dawr: {item.externalVendorName}</span>
+                          </p>
+                          {item.externalVendorLocation && <p className="text-slate-400 truncate">{item.externalVendorLocation}</p>}
+                          {item.externalVendorPhone && (
+                            <a href={`tel:${item.externalVendorPhone}`} className="text-cyan-400 hover:underline font-bold block pt-0.5">
+                              📞 {item.externalVendorPhone}
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Depot Location Callout Banner */}
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-950/40 via-purple-950/30 to-slate-950 border border-indigo-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center shrink-0">
+                <Shirt className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5 text-xs text-slate-300">
+                <p className="font-bold text-white">
+                  Official Campus Store Depot &bull; {storeConfig.storeName || 'School Uniform Counter'}
+                </p>
+                <p className="text-slate-400">
+                  Location: {storeConfig.locationRoom || 'Administrative Block, Ground Floor'} &bull; Contact: {storeConfig.contactPhone || '+91 94361 55000'} &bull; In-charge: {storeConfig.inChargeName || 'Store In-Charge'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={onEnterPortal}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+            >
+              <span>Login to Check Kit Status</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 8. LATEST PUBLIC NOTICES */}
       <section id="notices" className="py-12 sm:py-20 border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-10">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -538,15 +1037,48 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
           </h2>
 
           <p className="text-xs sm:text-base text-slate-300 max-w-2xl mx-auto">
-            Online admission forms are now actively accepted for Nursery through Class 12 (Science, Arts, Commerce). Limited seats available.
+            Online admission forms are now actively accepted for Nursery through Class 12 (Science, Arts, Commerce). Sanctioned seat matrix &amp; institutional old-student quota policy now active.
           </p>
+
+          {/* Seat Matrix & Old Student Quota Feature Highlights */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl mx-auto pt-2 text-left">
+            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-amber-500/30 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 font-bold text-xs">
+                60%
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-white block">Old Student Reservation</span>
+                <p className="text-[11px] text-slate-400 leading-snug">60% seats guaranteed for continuing students with 20% fee discount.</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-cyan-500/30 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 font-bold text-xs">
+                40%
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-white block">Fresh Open Seats</span>
+                <p className="text-[11px] text-slate-400 leading-snug">Open merit applications invited across all streams &amp; classes.</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-indigo-500/30 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 font-bold text-xs">
+                MBSE
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-white block">Official Seat Matrix</span>
+                <p className="text-[11px] text-slate-400 leading-snug">View real-time vacancies &amp; class quotas on public portal.</p>
+              </div>
+            </div>
+          </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-2 sm:pt-4 w-full max-w-md mx-auto sm:max-w-none">
             <button
               onClick={onOpenAdmissions}
               className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-2xl shadow-purple-600/40 flex items-center justify-center gap-2 transition transform hover:-translate-y-0.5 cursor-pointer"
             >
-              <span>Submit Admission Form Online</span>
+              <span>Submit Admission Form / View Quotas</span>
               <ArrowRight className="w-4 h-4 shrink-0" />
             </button>
 
@@ -557,6 +1089,124 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
               <Smartphone className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>Install Mobile App</span>
             </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 8B. DEDICATED SOFTWARE ARCHITECT & TECH SUPPORT SECTION */}
+      <section id="developer-support" className="py-14 sm:py-20 bg-slate-950 border-t-2 border-b-2 border-purple-500/40 relative overflow-hidden scroll-mt-24 shadow-2xl">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-purple-950/40 via-transparent to-transparent pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-800 pb-6">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/15 text-purple-200 border border-purple-500/40 text-xs font-bold mb-2 shadow-sm">
+                <Code2 className="w-4 h-4 text-purple-400" />
+                <span>Verified Institutional Technology Partner &amp; Software Architect</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
+                Software Developer &amp; Technical Support Hotline
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                {schoolDisplayName} management portal, mobile Android/iOS apps, real-time database sync, and cyber infrastructure te hi lead architect kuta awm a ni a, technical support, rawtna, emaw feature thar duh tan biakpawh theih reng a ni.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setIsDevSupportModalOpen(true)}
+              className="self-start md:self-auto px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-purple-600/30 transition cursor-pointer"
+            >
+              <span>View Full Developer Profile &amp; SLA</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Detailed Developer Card */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="md:col-span-2 p-6 sm:p-8 rounded-2xl bg-slate-900/90 border border-purple-500/40 space-y-5 shadow-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <span className="text-xs uppercase font-extrabold tracking-wider text-purple-400 font-mono">
+                    {devCredits.company || 'Zoxs Technologies Mizoram'}
+                  </span>
+                  <h3 className="text-2xl font-black text-white mt-0.5">
+                    {devCredits.name || 'Samuel (Lead Software Architect)'}
+                  </h3>
+                  <p className="text-xs text-slate-300 font-medium">
+                    {devCredits.title || 'Lead Software Architect & Full-Stack Systems Engineer'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-3.5 py-1.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                    24/7 Priority Support
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {devCredits.tagline || 'Engineering robust, next-gen digital infrastructure & academic management systems for educational institutions across Mizoram.'}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2 text-xs">
+                <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-950/80 border border-purple-500/20">
+                  <div className="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
+                    <Phone className="w-4 h-4 text-purple-300" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] text-slate-400 block font-medium">Direct Hotline / Call</span>
+                    <a href={`tel:${devCredits.phone || '+919436122000'}`} className="font-bold text-white hover:text-purple-300 text-sm transition">
+                      {devCredits.phone || '+91 94361 22000'}
+                    </a>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-950/80 border border-purple-500/20">
+                  <div className="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
+                    <Mail className="w-4 h-4 text-purple-300" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] text-slate-400 block font-medium">Official Developer Email</span>
+                    <a href={`mailto:${devCredits.email || 'samuel.developer@mizoramschool.edu'}`} className="font-bold text-white hover:text-purple-300 text-sm transition truncate block">
+                      {devCredits.email || 'samuel.developer@mizoramschool.edu'}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Instant WhatsApp & Support Actions */}
+            <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-b from-purple-950/60 to-slate-900 border border-purple-500/40 flex flex-col justify-between space-y-4 shadow-xl">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Instant WhatsApp Desk</span>
+                </div>
+                <h4 className="text-sm font-bold text-white">Direct Chat with Developer</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Emergency bug reports, password reset assistance, school data recovery, leh system customization request te direct-in WhatsApp hmangin thawn rawh le.
+                </p>
+              </div>
+
+              <div className="space-y-2.5 pt-2">
+                <a
+                  href={`https://wa.me/${(devCredits.whatsapp || devCredits.phone || '+919436122000').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Chibai Developer, ${schoolDisplayName} atangin biakpawh ka duh che a, technical support / rawtna ka nei a ni.`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Chat on WhatsApp</span>
+                </a>
+
+                <button
+                  onClick={() => setIsDevSupportModalOpen(true)}
+                  className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-200 hover:text-white font-bold text-xs border border-purple-500/30 flex items-center justify-center gap-2 transition cursor-pointer"
+                >
+                  <Code2 className="w-3.5 h-3.5" />
+                  <span>Open Detailed Dossier &amp; Credentials</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -596,6 +1246,17 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
                 <li><button onClick={onOpenMobileApp} className="hover:text-purple-400 transition cursor-pointer">Install Mobile Application</button></li>
                 <li><a href="#academics" className="hover:text-purple-400 transition">Courses &amp; Streams</a></li>
                 <li><a href="#facilities" className="hover:text-purple-400 transition">Campus Facilities</a></li>
+                {devCredits.enabled !== false && devCredits.showOnFrontPage !== false && (
+                  <li>
+                    <button 
+                      onClick={() => setIsDevSupportModalOpen(true)} 
+                      className="text-purple-400 hover:text-purple-300 font-medium transition cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Code2 className="w-3.5 h-3.5" />
+                      <span>Developer &amp; Tech Support</span>
+                    </button>
+                  </li>
+                )}
               </ul>
             </div>
 
@@ -619,20 +1280,68 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
                   <Clock className="w-4 h-4 text-slate-500 shrink-0" />
                   <span>{contact.officeHours || 'Mon - Fri: 8:30 AM - 3:30 PM'}</span>
                 </div>
+
+                <div className="pt-2 border-t border-slate-800">
+                    <button
+                      onClick={() => setIsDevSupportModalOpen(true)}
+                      className="w-full text-left p-2.5 rounded-xl bg-purple-950/40 hover:bg-purple-950/70 border border-purple-500/20 hover:border-purple-500/40 transition group cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between text-[10px] text-purple-300 font-mono">
+                        <span className="flex items-center gap-1 font-semibold">
+                          <Code2 className="w-3 h-3 text-purple-400" />
+                          Software Architect
+                        </span>
+                        <span className="text-emerald-400 font-bold">24/7 Support</span>
+                      </div>
+                      <div className="text-xs font-bold text-white group-hover:text-purple-200 transition mt-0.5">
+                        {devCredits.name || 'Samuel'}
+                      </div>
+                      <div className="text-[10px] text-slate-400 truncate">
+                        {devCredits.company || 'Zoxs Technologies Mizoram'} • Click for Hotline
+                      </div>
+                    </button>
+                  </div>
               </div>
             </div>
           </div>
 
           <div className="pt-6 sm:pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] sm:text-[11px] text-slate-500 text-center sm:text-left">
             <p>© 2026 {schoolDisplayName}. All rights reserved.</p>
-            <p className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <span>Powered by ZOXS School Management Platform</span>
               <span>•</span>
+              <button 
+                onClick={() => setIsDevSupportModalOpen(true)} 
+                className="text-purple-400 hover:text-purple-300 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                title="Click to view full developer credentials, hotline and WhatsApp technical support"
+              >
+                <Code2 className="w-3.5 h-3.5 text-purple-400" />
+                <span>Architected by {devCredits.name || 'Samuel'} (Developer Hotline &amp; Support)</span>
+              </button>
+              <span>•</span>
               <button onClick={onEnterPortal} className="text-purple-400 hover:underline cursor-pointer">Portal Access</button>
-            </p>
+            </div>
           </div>
         </div>
       </footer>
+
+      {/* School Rules & Regulations Handbook Modal */}
+      <SchoolRulesModal 
+        isOpen={isRulesModalOpen} 
+        onClose={() => setIsRulesModalOpen(false)} 
+      />
+
+      {/* Online Campus Fine & Fee Clearance Portal Modal */}
+      <PublicFineFeeClearanceModal
+        isOpen={isFineModalOpen}
+        onClose={() => setIsFineModalOpen(false)}
+      />
+
+      {/* Embedded Developer Details & Tech Support SLA Modal */}
+      <DeveloperSupportModal
+        isOpen={isDevSupportModalOpen}
+        onClose={() => setIsDevSupportModalOpen(false)}
+      />
     </div>
   );
 }

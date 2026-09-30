@@ -32,3 +32,8 @@ dist-ssr
 .firebase/
 firebase-debug.log*
 firestore-debug.log*
+
+# Archives and Backups
+*.zip
+*.tar.gz
+.legacy_backup/

@@ -13,7 +13,8 @@ import {
   Sparkles,
   Check,
   RefreshCw,
-  QrCode
+  QrCode,
+  Radio
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 
@@ -25,9 +26,34 @@ export default function LibraryScannerModal({
 
   const [activeTab, setActiveTab] = useState('scanner'); // 'scanner' | 'config'
   const [selectedStudentId, setSelectedStudentId] = useState(students[0]?.id || '');
+  const [studentRfidInput, setStudentRfidInput] = useState('');
   const [scannedBook, setScannedBook] = useState(null);
   const [scanStatus, setScanStatus] = useState('ready'); // 'ready' | 'detected' | 'processed'
   const [toast, setToast] = useState(null);
+
+  const handleStudentRfidTap = (e) => {
+    if (e) e.preventDefault();
+    if (!studentRfidInput.trim()) return;
+    const clean = studentRfidInput.trim().toLowerCase();
+    const matched = students.find(s => 
+      (s.rfidCardUid && s.rfidCardUid.toLowerCase() === clean) ||
+      (s.admissionNo && s.admissionNo.toLowerCase() === clean) ||
+      (s.rollNumber && s.rollNumber.toString() === clean) ||
+      (s.rollNo && s.rollNo.toString() === clean) ||
+      (s.id && s.id.toLowerCase() === clean)
+    );
+
+    if (matched) {
+      setSelectedStudentId(matched.id);
+      playBeep();
+      setToast(`🪪 Student Card Verified: ${matched.firstName} ${matched.lastName}`);
+      setTimeout(() => setToast(null), 3500);
+      setStudentRfidInput('');
+    } else {
+      setToast(`❌ Unknown Card UID (${studentRfidInput})`);
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
 
   // Scanner Configuration State
   const [scannerConfig, setScannerConfig] = useState({
@@ -392,7 +418,31 @@ export default function LibraryScannerModal({
 
               {/* Student Checkout Action */}
               <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5">
-                <label className="text-xs font-bold text-slate-300 block">Issue To Student</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-300 block">Issue To Student</label>
+                  <span className="text-[10px] text-cyan-400 font-mono flex items-center gap-1">
+                    <Radio className="w-3 h-3 text-cyan-400 animate-pulse" />
+                    <span>Tap Card</span>
+                  </span>
+                </div>
+
+                {/* Instant RFID Card Tap Reader */}
+                <form onSubmit={handleStudentRfidTap} className="relative">
+                  <input
+                    type="text"
+                    value={studentRfidInput}
+                    onChange={(e) => setStudentRfidInput(e.target.value)}
+                    placeholder="Tap student RFID card here..."
+                    className="w-full px-3 py-1.5 pr-14 rounded-xl bg-slate-950 border border-cyan-500/40 text-cyan-200 text-xs font-mono placeholder:text-slate-600 focus:outline-none focus:border-cyan-400"
+                  />
+                  <button
+                    type="submit"
+                    className="absolute right-1 top-1 px-2.5 py-0.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-[10px] cursor-pointer"
+                  >
+                    Tap
+                  </button>
+                </form>
+
                 <select
                   value={selectedStudentId}
                   onChange={(e) => setSelectedStudentId(e.target.value)}
@@ -400,7 +450,7 @@ export default function LibraryScannerModal({
                 >
                   {students.map(s => (
                     <option key={s.id} value={s.id}>
-                      {s.firstName} {s.lastName} (Roll #{s.rollNumber || '0'} • {s.classId})
+                      {s.firstName} {s.lastName} (Roll #{s.rollNumber || s.rollNo || '0'} &bull; {s.classId}{s.rfidCardUid ? ' &bull; 🪪 RFID' : ''})
                     </option>
                   ))}
                 </select>

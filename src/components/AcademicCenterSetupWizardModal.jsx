@@ -30,6 +30,9 @@ import {
   Utensils,
   Check,
   AlertCircle,
+  AlertTriangle,
+  FastForward,
+  RotateCcw,
   X,
   Sliders,
   FileCheck,
@@ -56,7 +59,9 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
     websiteConfig,
     updateWebsiteConfig,
     registerSchoolTenant,
-    initializeCleanSlateSchool
+    initializeCleanSlateSchool,
+    setModuleBatchStatus,
+    toggleModule
   } = useSchool();
 
   // Active step in the wizard: 1 to 7
@@ -66,6 +71,82 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
   // Setup Mode in Step 7: 'clean_slate' (Zero Mock Data) vs 'demo_data' (Sandbox with sample students)
   const [setupMode, setSetupMode] = useState('clean_slate');
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Skipped steps tracking (Steps 3, 4, 5, 6 are optional and skippable)
+  const [skippedSteps, setSkippedSteps] = useState({
+    3: false, // Timetable & Bell Schedule
+    4: false, // Fee Structure & Online Payment Gateways
+    5: false, // Campus Infrastructure & Modules
+    6: false  // Official Seal & Signatory
+  });
+
+  // Handle skipping optional/non-essential steps with automatic module disabling
+  const handleSkipStep = (stepId) => {
+    setSkippedSteps((prev) => ({ ...prev, [stepId]: true }));
+
+    if (stepId === 3) {
+      // Step 3 (Timetable): Advance to Step 4
+      setCurrentStep(4);
+    } else if (stepId === 4) {
+      // Step 4 (Fees & Gateways): Auto-disable online payment gateway & sibling discount
+      setFormData((prev) => ({
+        ...prev,
+        activePaymentGateway: 'cash_offline',
+        enableSiblingDiscount: false
+      }));
+      setCurrentStep(5);
+    } else if (stepId === 5) {
+      // Step 5 (Campus Modules): Auto-disable all optional campus amenities
+      setFormData((prev) => ({
+        ...prev,
+        enableTransportModule: false,
+        enableHostelModule: false,
+        enableClinicModule: false,
+        enableVisitorModule: false,
+        enableCanteenModule: false,
+        enableLibraryModule: false,
+        enableOnlineAdmissions: false,
+        enableSmsNotifications: false,
+        enableMobilePwa: false
+      }));
+      setCurrentStep(6);
+    } else if (stepId === 6) {
+      // Step 6 (Official Seal): Auto-disable watermark seal on documents
+      setFormData((prev) => ({
+        ...prev,
+        showSealOnTC: false,
+        showSealOnReportCard: false,
+        showSealOnCertificates: false
+      }));
+      setCurrentStep(7);
+    }
+  };
+
+  // Re-enable / unskip a previously skipped step
+  const handleUnskipStep = (stepId) => {
+    setSkippedSteps((prev) => ({ ...prev, [stepId]: false }));
+    if (stepId === 4) {
+      setFormData((prev) => ({
+        ...prev,
+        activePaymentGateway: 'direct_upi'
+      }));
+    } else if (stepId === 5) {
+      setFormData((prev) => ({
+        ...prev,
+        enableTransportModule: true,
+        enableCanteenModule: true,
+        enableLibraryModule: true,
+        enableSmsNotifications: true
+      }));
+    } else if (stepId === 6) {
+      setFormData((prev) => ({
+        ...prev,
+        showSealOnTC: true,
+        showSealOnReportCard: true,
+        showSealOnCertificates: true
+      }));
+    }
+  };
 
   // Helper to generate a clean URL-friendly subdomain slug from school name
   const generateSlug = (text = '') => {
@@ -266,6 +347,28 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
 
   // Final Action: Apply & Initialize Academic Center Charter into system context
   const handleApplyCharter = () => {
+    // Determine enabled modules map based on form choices and skipped steps
+    const updatedModules = {
+      ...(systemConfig?.enabledModules || {}),
+      academics: true,
+      report_cards: true,
+      certificates: true,
+      calendar: true,
+      attendance: true,
+      id_card_studio: true,
+      routine: !skippedSteps[3],
+      financials: !skippedSteps[4],
+      transport: !skippedSteps[5] && Boolean(formData.enableTransportModule),
+      hostel: !skippedSteps[5] && Boolean(formData.enableHostelModule),
+      clinic: !skippedSteps[5] && Boolean(formData.enableClinicModule),
+      visitors: !skippedSteps[5] && Boolean(formData.enableVisitorModule),
+      canteen: !skippedSteps[5] && Boolean(formData.enableCanteenModule),
+      library: !skippedSteps[5] && Boolean(formData.enableLibraryModule),
+      school_store: !skippedSteps[5] && Boolean(formData.enableCanteenModule),
+      sms_notifications: !skippedSteps[5] && Boolean(formData.enableSmsNotifications),
+      admissions: !skippedSteps[5] && Boolean(formData.enableOnlineAdmissions)
+    };
+
     // 1. Update system config
     updateSystemConfig({
       schoolName: formData.schoolName,
@@ -276,13 +379,20 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
       contactPhone: formData.contactPhone,
       contactEmail: formData.contactEmail,
       academicSession: formData.academicSession,
-      enableTransportModule: formData.enableTransportModule,
-      enableHostelModule: formData.enableHostelModule,
-      enableSmsNotifications: formData.enableSmsNotifications,
-      enableOnlineAdmissions: formData.enableOnlineAdmissions
+      enabledModules: updatedModules,
+      enableTransportModule: updatedModules.transport,
+      enableHostelModule: updatedModules.hostel,
+      enableSmsNotifications: updatedModules.sms_notifications,
+      enableOnlineAdmissions: updatedModules.admissions,
+      activePaymentGateway: skippedSteps[4] ? 'cash_offline' : formData.activePaymentGateway
     });
 
-    // 2. Update seal & signature config
+    // 2. Dispatch batch module status to SchoolContext
+    if (setModuleBatchStatus) {
+      setModuleBatchStatus(updatedModules);
+    }
+
+    // 3. Update seal & signature config
     updateSealConfig({
       schoolCrestText: formData.schoolCrestText,
       affiliationNumber: `MBSE Affiliation No: ${formData.affiliationNo}`,
@@ -292,18 +402,18 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
       sealType: formData.sealType,
       principalSignatoryName: formData.principalName,
       principalDesignation: formData.principalTitle,
-      showSealOnTC: formData.showSealOnTC,
-      showSealOnReportCard: formData.showSealOnReportCard,
-      showSealOnCertificates: formData.showSealOnCertificates,
+      showSealOnTC: skippedSteps[6] ? false : formData.showSealOnTC,
+      showSealOnReportCard: skippedSteps[6] ? false : formData.showSealOnReportCard,
+      showSealOnCertificates: skippedSteps[6] ? false : formData.showSealOnCertificates,
       signatureMode: formData.signatureMode,
       calligraphyStyle: formData.calligraphyStyle
     });
 
-    // 3. Update payment config
+    // 4. Update payment config
     updatePaymentConfig({
-      activeGateway: formData.activePaymentGateway
+      activeGateway: skippedSteps[4] ? 'cash_offline' : formData.activePaymentGateway
     });
-    if (updateGatewayDetails) {
+    if (updateGatewayDetails && !skippedSteps[4]) {
       updateGatewayDetails('direct_upi', {
         upiId: formData.upiId,
         merchantName: formData.merchantName,
@@ -312,16 +422,16 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
       });
     }
 
-    // 4. Update sibling discount policy
+    // 5. Update sibling discount policy
     if (configureSiblingDiscountPolicy) {
       configureSiblingDiscountPolicy({
-        enabled: formData.enableSiblingDiscount,
+        enabled: skippedSteps[4] ? false : formData.enableSiblingDiscount,
         secondChildDiscount: Number(formData.siblingDiscountPercent),
         thirdChildDiscount: Number(formData.thirdSiblingDiscountPercent)
       });
     }
 
-    // 5. Update website config
+    // 6. Update website config
     if (updateWebsiteConfig) {
       updateWebsiteConfig({
         schoolName: formData.schoolName,
@@ -331,7 +441,7 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
       });
     }
 
-    // 6. Register as new school tenant in registry
+    // 7. Register as new school tenant in registry
     let registeredInfo = null;
     if (registerSchoolTenant) {
       registeredInfo = registerSchoolTenant({
@@ -345,11 +455,13 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
         contactPhone: formData.contactPhone,
         contactEmail: formData.contactEmail,
         affiliationBadge: `${formData.affiliationBoard}`,
-        establishedYear: Number(formData.establishedYear) || 2026
+        establishedYear: Number(formData.establishedYear) || 2026,
+        isLiveProduction: true,
+        disableFastLogin: true
       });
     }
 
-    // 7. Clean Slate Initialization (Zero Mock Data)
+    // 8. Clean Slate Initialization (Zero Mock Data)
     if (setupMode === 'clean_slate' && initializeCleanSlateSchool) {
       initializeCleanSlateSchool({
         schoolId: registeredInfo?.id,
@@ -370,13 +482,13 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
   };
 
   const stepsList = [
-    { id: 1, title: 'Identity & Board', subtitle: 'Hming, Address, Affiliation', icon: Building2 },
-    { id: 2, title: 'Academic Structure', subtitle: 'Session, Stream & Grading', icon: GraduationCap },
-    { id: 3, title: 'Timetable & Bell', subtitle: 'Working Days, Periods', icon: Clock },
-    { id: 4, title: 'Fees & Gateways', subtitle: 'Tuition, UPI, Bank Details', icon: DollarSign },
-    { id: 5, title: 'Campus Modules', subtitle: 'Hostel, Transport, Clinic', icon: ShieldCheck },
-    { id: 6, title: 'Official Seal', subtitle: 'Crest, Signature, Watermark', icon: Award },
-    { id: 7, title: 'Review & Launch', subtitle: 'Charter Verification & Apply', icon: FileCheck }
+    { id: 1, title: 'Identity & Board', subtitle: 'Hming, Address, Affiliation', icon: Building2, skippable: false },
+    { id: 2, title: 'Academic Structure', subtitle: 'Session, Stream & Grading', icon: GraduationCap, skippable: false },
+    { id: 3, title: 'Timetable & Bell', subtitle: 'Working Days, Periods', icon: Clock, skippable: true },
+    { id: 4, title: 'Fees & Gateways', subtitle: 'Tuition, UPI, Bank Details', icon: DollarSign, skippable: true },
+    { id: 5, title: 'Campus Modules', subtitle: 'Hostel, Transport, Clinic', icon: ShieldCheck, skippable: true },
+    { id: 6, title: 'Official Seal', subtitle: 'Crest, Signature, Watermark', icon: Award, skippable: true },
+    { id: 7, title: 'Review & Launch', subtitle: 'Charter Verification & Apply', icon: FileCheck, skippable: false }
   ];
 
   if (!isOpen && !inlineMode) return null;
@@ -429,11 +541,13 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
 
       {/* STEPPER PROGRESS BAR */}
       <div className="px-6 py-3 bg-slate-900/80 border-b border-slate-800/80 shrink-0">
-        <div className="flex items-center justify-between gap-2 overflow-x-auto scrollbar-none py-1">
+        <div className="flex items-center justify-between gap-2 overflow-x-auto scrollbar-thin py-1">
           {stepsList.map((step) => {
             const Icon = step.icon;
             const isCompleted = currentStep > step.id;
             const isCurrent = currentStep === step.id;
+            const isSkipped = Boolean(skippedSteps[step.id]);
+
             return (
               <button
                 key={step.id}
@@ -441,6 +555,8 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-left transition shrink-0 ${
                   isCurrent
                     ? 'bg-indigo-600/30 text-white border border-indigo-500/50 shadow-md shadow-indigo-500/10'
+                    : isSkipped
+                    ? 'bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20'
                     : isCompleted
                     ? 'text-emerald-400 hover:bg-slate-800/60'
                     : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-300'
@@ -450,16 +566,37 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
                   className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition ${
                     isCurrent
                       ? 'bg-indigo-600 text-white shadow-sm'
+                      : isSkipped
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
                       : isCompleted
                       ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                       : 'bg-slate-800 text-slate-400 border border-slate-700'
                   }`}
                 >
-                  {isCompleted ? <Check className="w-3.5 h-3.5" /> : step.id}
+                  {isSkipped ? (
+                    <FastForward className="w-3.5 h-3.5 text-amber-400" />
+                  ) : isCompleted ? (
+                    <Check className="w-3.5 h-3.5" />
+                  ) : (
+                    step.id
+                  )}
                 </div>
                 <div>
-                  <div className="text-xs font-semibold whitespace-nowrap">{step.title}</div>
-                  <div className="text-[10px] text-slate-400 whitespace-nowrap">{step.subtitle}</div>
+                  <div className="text-xs font-semibold whitespace-nowrap flex items-center gap-1.5">
+                    <span>{step.title}</span>
+                    {step.skippable && !isSkipped && !isCompleted && (
+                      <span className="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-400 font-normal">
+                        Optional
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[10px] whitespace-nowrap">
+                    {isSkipped ? (
+                      <span className="text-amber-400 font-medium">Skipped (Auto-Disabled)</span>
+                    ) : (
+                      <span className="text-slate-400">{step.subtitle}</span>
+                    )}
+                  </div>
                 </div>
               </button>
             );
@@ -937,12 +1074,34 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
 
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                  Continuous Assessment Ratio
+                  Assessment Weightage (Class Tests vs Final Exam)
                 </label>
-                <div className="flex items-center gap-2 text-xs text-slate-300 py-2">
-                  <span className="font-mono text-amber-400">Class Tests: {formData.continuousAssessmentWeight}%</span>
-                  <span>/</span>
-                  <span className="font-mono text-cyan-400">Final: {formData.termExamWeight}%</span>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs text-slate-300">
+                    <span className="font-mono text-amber-400 font-semibold">Class Tests: {formData.continuousAssessmentWeight}%</span>
+                    <span className="font-mono text-cyan-400 font-semibold">Final Exam: {100 - formData.continuousAssessmentWeight}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="50"
+                    step="5"
+                    value={formData.continuousAssessmentWeight}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setFormData({
+                        ...formData,
+                        continuousAssessmentWeight: val,
+                        termExamWeight: 100 - val
+                      });
+                    }}
+                    className="w-full accent-indigo-500 bg-slate-800 rounded-lg h-2 cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-400">
+                    <span>0% (100% Final)</span>
+                    <span>25% (Standard)</span>
+                    <span>50% (Equal)</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -952,14 +1111,71 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
         {/* STEP 3: BELL SCHEDULE & TIMETABLE MATRIX */}
         {currentStep === 3 && (
           <div className="space-y-6 max-w-4xl mx-auto">
-            <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Clock className="w-5 h-5 text-indigo-400" />
-                Step 3: Daily Bell Schedule & Timetable Matrix
-              </h3>
-              <p className="text-slate-400 text-xs mt-1">
-                Ni tin school tan hun, assembly hun chhung, period zat leh rei zawng, chawchhun (lunch break), leh ban hun ruahmanna.
-              </p>
+            {/* SKIPPED STATE ALERT */}
+            {skippedSteps[3] && (
+              <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-200 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                  <div>
+                    <div className="font-bold text-white">He step hi skip (auto-disabled) a ni rih!</div>
+                    <div className="text-amber-300/80 text-[11px]">
+                      Default standard schedule hman a ni a, routine/timetable matrix customization hi disable a ni rih.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleUnskipStep(3)}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shrink-0 transition"
+                >
+                  Re-enable Step
+                </button>
+              </div>
+            )}
+
+            <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-indigo-400" />
+                  <h3 className="text-base font-bold text-white">
+                    Step 3: Daily Bell Schedule & Timetable Matrix
+                  </h3>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-semibold">
+                    Optional
+                  </span>
+                </div>
+                <p className="text-slate-400 text-xs mt-1">
+                  Ni tin school tan hun, assembly hun chhung, period zat leh rei zawng, chawchhun (lunch break), leh ban hun ruahmanna.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (skippedSteps[3]) {
+                    handleUnskipStep(3);
+                  } else {
+                    handleSkipStep(3);
+                  }
+                }}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0 border ${
+                  skippedSteps[3]
+                    ? 'bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                    : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30'
+                }`}
+              >
+                {skippedSteps[3] ? (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Re-enable Step</span>
+                  </>
+                ) : (
+                  <>
+                    <FastForward className="w-3.5 h-3.5" />
+                    <span>Skip this Step</span>
+                  </>
+                )}
+              </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1086,14 +1302,140 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
         {/* STEP 4: FEES & DIGITAL PAYMENT GATEWAYS */}
         {currentStep === 4 && (
           <div className="space-y-6 max-w-4xl mx-auto">
-            <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-indigo-400" />
-                Step 4: Fee Structure & Digital Payment Gateways
-              </h3>
-              <p className="text-slate-400 text-xs mt-1">
-                Zirlai fee standard rate, unau in tanna (sibling discount), leh direct bank / UPI QR code payment dawn theihna ruahmanna.
-              </p>
+            {/* SKIPPED STATE ALERT */}
+            {skippedSteps[4] && (
+              <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-200 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                  <div>
+                    <div className="font-bold text-white">He step hi skip (auto-disabled) a ni rih!</div>
+                    <div className="text-amber-300/80 text-[11px]">
+                      Digital online payment gateways leh sibling discounts hi auto-disable a ni a, offline cash-only mode hman a ni.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleUnskipStep(4)}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shrink-0 transition"
+                >
+                  Re-enable Step
+                </button>
+              </div>
+            )}
+
+            <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-indigo-400" />
+                  <h3 className="text-base font-bold text-white">
+                    Step 4: Fee Structure & Digital Payment Gateways
+                  </h3>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-semibold">
+                    Optional
+                  </span>
+                </div>
+                <p className="text-slate-400 text-xs mt-1">
+                  Zirlai fee standard rate, unau in tanna (sibling discount), leh direct bank / UPI QR code payment dawn theihna ruahmanna.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (skippedSteps[4]) {
+                    handleUnskipStep(4);
+                  } else {
+                    handleSkipStep(4);
+                  }
+                }}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0 border ${
+                  skippedSteps[4]
+                    ? 'bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                    : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30'
+                }`}
+              >
+                {skippedSteps[4] ? (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Re-enable Step</span>
+                  </>
+                ) : (
+                  <>
+                    <FastForward className="w-3.5 h-3.5" />
+                    <span>Skip this Step (Cash Only)</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* ACTIVE PAYMENT GATEWAY SELECTOR */}
+            <div className="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-emerald-400" /> Active School Payment Gateway
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    School fee dawn luhna atan eng gateway nge hman tur thlang rawh.
+                  </p>
+                </div>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                  formData.activePaymentGateway === 'cash_offline'
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                }`}>
+                  {formData.activePaymentGateway === 'cash_offline' ? 'Offline Cash Only' : 'Digital Gateway Active'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                {[
+                  {
+                    id: 'direct_upi',
+                    title: 'Direct UPI & Bank QR',
+                    badge: 'Recommended (Mizoram)',
+                    desc: 'Free 0% MDR direct settlement to School SBI/HDFC/Apex bank account.'
+                  },
+                  {
+                    id: 'cash_offline',
+                    title: 'Offline Cash Counter Only',
+                    badge: 'Zero Online Setup',
+                    desc: 'No online payment gateway. School fee counter & cash slips only.'
+                  },
+                  {
+                    id: 'razorpay',
+                    title: 'Razorpay Gateway',
+                    badge: 'Merchant Account',
+                    desc: 'Cards, Netbanking & UPI with automated transaction reconciliation.'
+                  }
+                ].map((gw) => (
+                  <div
+                    key={gw.id}
+                    onClick={() => setFormData({ ...formData, activePaymentGateway: gw.id })}
+                    className={`p-3.5 rounded-xl border-2 cursor-pointer transition flex flex-col justify-between ${
+                      formData.activePaymentGateway === gw.id
+                        ? 'bg-slate-900 border-indigo-500 shadow-md shadow-indigo-500/10'
+                        : 'bg-slate-950 border-slate-800 hover:border-slate-700 opacity-75 hover:opacity-100'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-white">{gw.title}</span>
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                          formData.activePaymentGateway === gw.id ? 'border-indigo-400 bg-indigo-500' : 'border-slate-600'
+                        }`}>
+                          {formData.activePaymentGateway === gw.id && <Check className="w-2.5 h-2.5 text-slate-950 stroke-[3]" />}
+                        </div>
+                      </div>
+                      <span className="inline-block text-[10px] px-2 py-0.5 rounded-md font-semibold bg-slate-800 text-indigo-300 border border-slate-700 mb-1.5">
+                        {gw.badge}
+                      </span>
+                      <p className="text-[11px] text-slate-400 leading-snug">{gw.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* FEE RATES */}
@@ -1307,14 +1649,138 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
         {/* STEP 5: CAMPUS MODULES */}
         {currentStep === 5 && (
           <div className="space-y-6 max-w-4xl mx-auto">
-            <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-indigo-400" />
-                Step 5: Campus Infrastructure & Operational Modules
-              </h3>
-              <p className="text-slate-400 text-xs mt-1">
-                He academic center-a software module leh campus infrastructure hman tur thlanna.
-              </p>
+            {/* SKIPPED STATE ALERT */}
+            {skippedSteps[5] && (
+              <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-200 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                  <div>
+                    <div className="font-bold text-white">He step hi skip (auto-disabled) a ni rih!</div>
+                    <div className="text-amber-300/80 text-[11px]">
+                      Campus modules (Hostel, Transport, Clinic, Canteen, Gatehouse etc.) zawng zawng hi automatic-in DISABLE a ni.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleUnskipStep(5)}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shrink-0 transition"
+                >
+                  Re-enable Step
+                </button>
+              </div>
+            )}
+
+            <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-indigo-400" />
+                  <h3 className="text-base font-bold text-white">
+                    Step 5: Campus Infrastructure & Operational Modules
+                  </h3>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-semibold">
+                    Optional
+                  </span>
+                </div>
+                <p className="text-slate-400 text-xs mt-1">
+                  He academic center-a software module leh campus infrastructure hman tur thlanna.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (skippedSteps[5]) {
+                    handleUnskipStep(5);
+                  } else {
+                    handleSkipStep(5);
+                  }
+                }}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0 border ${
+                  skippedSteps[5]
+                    ? 'bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                    : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30'
+                }`}
+              >
+                {skippedSteps[5] ? (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Re-enable Step</span>
+                  </>
+                ) : (
+                  <>
+                    <FastForward className="w-3.5 h-3.5" />
+                    <span>Skip this Step (Disable All)</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* QUICK PRESETS */}
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-900/40 rounded-xl border border-slate-800">
+              <span className="text-xs font-medium text-slate-400">Quick Module Presets:</span>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      enableTransportModule: false,
+                      enableHostelModule: false,
+                      enableClinicModule: false,
+                      enableVisitorModule: false,
+                      enableCanteenModule: false,
+                      enableLibraryModule: true,
+                      enableOnlineAdmissions: false,
+                      enableSmsNotifications: true,
+                      enableMobilePwa: true
+                    });
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+                >
+                  Academics Only (Minimal)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      enableTransportModule: true,
+                      enableHostelModule: false,
+                      enableClinicModule: true,
+                      enableVisitorModule: true,
+                      enableCanteenModule: true,
+                      enableLibraryModule: true,
+                      enableOnlineAdmissions: true,
+                      enableSmsNotifications: true,
+                      enableMobilePwa: true
+                    });
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+                >
+                  Day-Scholar School (No Hostel)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      enableTransportModule: true,
+                      enableHostelModule: true,
+                      enableClinicModule: true,
+                      enableVisitorModule: true,
+                      enableCanteenModule: true,
+                      enableLibraryModule: true,
+                      enableOnlineAdmissions: true,
+                      enableSmsNotifications: true,
+                      enableMobilePwa: true
+                    });
+                  }}
+                  className="px-2.5 py-1 rounded-lg text-xs bg-indigo-600/30 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 transition"
+                >
+                  Full Residential Campus (All On)
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
@@ -1427,14 +1893,71 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
         {/* STEP 6: OFFICIAL SEALS & PRINCIPAL SIGNATURE */}
         {currentStep === 6 && (
           <div className="space-y-6 max-w-4xl mx-auto">
-            <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Award className="w-5 h-5 text-indigo-400" />
-                Step 6: Official Seals, Digital Stamps & Signatory
-              </h3>
-              <p className="text-slate-400 text-xs mt-1">
-                Marksheet, Certificate, leh Fee Receipt-a official seal chhut lanna tur leh Principal signature ruahmanna.
-              </p>
+            {/* SKIPPED STATE ALERT */}
+            {skippedSteps[6] && (
+              <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-200 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+                  <div>
+                    <div className="font-bold text-white">He step hi skip (auto-disabled) a ni rih!</div>
+                    <div className="text-amber-300/80 text-[11px]">
+                      Digital official seals leh principal watermark signature hi disable a ni a, documents-ah chhut lan a ni rih lo vang.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleUnskipStep(6)}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shrink-0 transition"
+                >
+                  Re-enable Step
+                </button>
+              </div>
+            )}
+
+            <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-indigo-400" />
+                  <h3 className="text-base font-bold text-white">
+                    Step 6: Official Seals, Digital Stamps & Signatory
+                  </h3>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 font-semibold">
+                    Optional
+                  </span>
+                </div>
+                <p className="text-slate-400 text-xs mt-1">
+                  Marksheet, Certificate, leh Fee Receipt-a official seal chhut lanna tur leh Principal signature ruahmanna.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (skippedSteps[6]) {
+                    handleUnskipStep(6);
+                  } else {
+                    handleSkipStep(6);
+                  }
+                }}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shrink-0 border ${
+                  skippedSteps[6]
+                    ? 'bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                    : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30'
+                }`}
+              >
+                {skippedSteps[6] ? (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Re-enable Step</span>
+                  </>
+                ) : (
+                  <>
+                    <FastForward className="w-3.5 h-3.5" />
+                    <span>Skip this Step (Disable Seal)</span>
+                  </>
+                )}
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1572,282 +2095,410 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
         )}
 
         {/* STEP 7: REVIEW BLUEPRINT & ONE-CLICK INITIALIZATION */}
-        {currentStep === 7 && (
-          <div className="space-y-6 max-w-4xl mx-auto">
-            {/* SCORECARD BANNER */}
-            <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-500/20 via-indigo-500/20 to-emerald-500/20 border border-indigo-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
-                  <CheckCheck className="w-8 h-8 text-emerald-400" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      100% Ready for Initialization
-                    </span>
-                    <span className="text-xs text-slate-400">Academic Session {formData.academicSession}</span>
+        {currentStep === 7 && (() => {
+          const activeCampusModulesList = [
+            { id: 'transport', name: 'School Bus & Transport', active: formData.enableTransportModule && !skippedSteps[5] },
+            { id: 'hostel', name: 'Residential Hostels', active: formData.enableHostelModule && !skippedSteps[5] },
+            { id: 'clinic', name: 'Campus Health Clinic', active: formData.enableClinicModule && !skippedSteps[5] },
+            { id: 'visitors', name: 'Gatehouse & Visitors', active: formData.enableVisitorModule && !skippedSteps[5] },
+            { id: 'canteen', name: 'Canteen & Cafeteria', active: formData.enableCanteenModule && !skippedSteps[5] },
+            { id: 'library', name: 'Digital Library Catalog', active: formData.enableLibraryModule && !skippedSteps[5] },
+            { id: 'sms_notifications', name: 'SMS & WhatsApp Gateway', active: formData.enableSmsNotifications && !skippedSteps[5] },
+            { id: 'admissions', name: 'Online Admissions', active: formData.enableOnlineAdmissions && !skippedSteps[5] },
+            { id: 'mobile_pwa', name: 'Parent/Student Mobile App', active: formData.enableMobilePwa && !skippedSteps[5] },
+          ];
+          const activeModulesCount = activeCampusModulesList.filter((m) => m.active).length;
+          const disabledModulesCount = 9 - activeModulesCount;
+
+          const skippedSummaryList = [
+            skippedSteps[3] && {
+              step: 3,
+              title: 'Step 3: Timetable & Bell Schedule',
+              impact: 'Routine matrix auto-disabled. Standard default bell schedule will be used.',
+            },
+            skippedSteps[4] && {
+              step: 4,
+              title: 'Step 4: Fees & Payment Gateways',
+              impact: 'Digital online gateways & sibling discounts auto-disabled. Offline Cash Only counter mode is active.',
+            },
+            skippedSteps[5] && {
+              step: 5,
+              title: 'Step 5: Campus Infrastructure Modules',
+              impact: 'All campus operational amenities (Transport, Hostel, Clinic, Canteen, etc.) are auto-disabled.',
+            },
+            skippedSteps[6] && {
+              step: 6,
+              title: 'Step 6: Official Digital Seals & Signatures',
+              impact: 'Digital crest watermark seals and signature placements are auto-disabled on certificates.',
+            },
+          ].filter(Boolean);
+
+          return (
+            <div className="space-y-6 max-w-4xl mx-auto">
+              {/* SCORECARD BANNER */}
+              <div className="p-6 rounded-3xl bg-gradient-to-r from-amber-500/20 via-indigo-500/20 to-emerald-500/20 border border-indigo-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
+                    <CheckCheck className="w-8 h-8 text-emerald-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mt-1">
-                    {formData.schoolName}
-                  </h3>
-                  <p className="text-xs text-slate-300">
-                    {formData.address} • Affiliation: {formData.affiliationNo}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleApplyCharter}
-                className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition transform active:scale-95 shrink-0"
-              >
-                <Sparkles className="w-5 h-5 text-amber-200" />
-                <span>Initialize & Apply Charter</span>
-              </button>
-            </div>
-
-            {/* SETUP MODE SELECTION (CLEAN SLATE VS DEMO DATA) */}
-            <div className="p-5 rounded-2xl bg-slate-900 border-2 border-indigo-500/40 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Database className="w-5 h-5 text-indigo-400" />
-                    <h4 className="text-sm font-bold text-white">
-                      School Data Setup Mode (Database Initialization)
-                    </h4>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                      I duh zawk thlang rawh
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    School thar hlak, mock data tel miah lo a setup nge i duh a, sample mock data awmsa kawl ṭhat zawk?
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Mode 1: Clean Slate (Zero Mock Data) */}
-                <div
-                  onClick={() => setSetupMode('clean_slate')}
-                  className={`p-4 rounded-xl border-2 cursor-pointer transition relative flex flex-col justify-between ${
-                    setupMode === 'clean_slate'
-                      ? 'bg-emerald-950/30 border-emerald-500 text-white shadow-lg shadow-emerald-500/10'
-                      : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
-                  }`}
-                >
                   <div>
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          setupMode === 'clean_slate' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-400'
-                        }`}>
-                          <Sparkles className="w-4 h-4" />
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        100% Ready for Initialization
+                      </span>
+                      <span className="text-xs text-slate-400">Academic Session {formData.academicSession}</span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mt-1">
+                      {formData.schoolName}
+                    </h3>
+                    <p className="text-xs text-slate-300">
+                      {formData.address} • Affiliation: {formData.affiliationNo}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleApplyCharter}
+                  className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition transform active:scale-95 shrink-0"
+                >
+                  <Sparkles className="w-5 h-5 text-amber-200" />
+                  <span>Initialize & Apply Charter</span>
+                </button>
+              </div>
+
+              {/* SETUP MODE SELECTION (CLEAN SLATE VS DEMO DATA) */}
+              <div className="p-5 rounded-2xl bg-slate-900 border-2 border-indigo-500/40 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Database className="w-5 h-5 text-indigo-400" />
+                      <h4 className="text-sm font-bold text-white">
+                        School Data Setup Mode (Database Initialization)
+                      </h4>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                        I duh zawk thlang rawh
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      School thar hlak, mock data tel miah lo a setup nge i duh a, sample mock data awmsa kawl ṭhat zawk?
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Mode 1: Clean Slate (Zero Mock Data) */}
+                  <div
+                    onClick={() => setSetupMode('clean_slate')}
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition relative flex flex-col justify-between ${
+                      setupMode === 'clean_slate'
+                        ? 'bg-emerald-950/30 border-emerald-500 text-white shadow-lg shadow-emerald-500/10'
+                        : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            setupMode === 'clean_slate' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-400'
+                          }`}>
+                            <Sparkles className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                              <span>Clean Slate (School Thar Hlak)</span>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500 text-slate-950">
+                                RECOMMENDED
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-emerald-400 font-semibold">Zero Mock Data • Blank Database</div>
+                          </div>
                         </div>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                          setupMode === 'clean_slate' ? 'border-emerald-400 bg-emerald-500' : 'border-slate-600'
+                        }`}>
+                          {setupMode === 'clean_slate' && <Check className="w-3 h-3 text-slate-950 stroke-[3]" />}
+                        </div>
+                      </div>
+                      
+                      <p className="text-[11px] text-slate-300 leading-relaxed mb-3">
+                        School thar tak tak atan a ṭha ber. Mock data zawng zawng (students, attendance, fees, marks) a paih fai vek ang a, class schedule i thlan sa aṭangin clean classes siam a ni ang.
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-800/80 space-y-1 text-[10px]">
+                      <div className="flex items-center gap-1.5 text-emerald-300">
+                        <CheckCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>Students: 0 (Blank database - ready for real admissions)</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-emerald-300">
+                        <CheckCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>Attendance, Grades & Fees: 0 records</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-emerald-300">
+                        <CheckCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>Staff: Principal account chauh official-in awm</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-emerald-300">
+                        <CheckCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span>Classes: Generated from Step 2 academic levels</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mode 2: Demo / Sandbox Mode */}
+                  <div
+                    onClick={() => setSetupMode('demo_data')}
+                    className={`p-4 rounded-xl border-2 cursor-pointer transition relative flex flex-col justify-between ${
+                      setupMode === 'demo_data'
+                        ? 'bg-indigo-950/30 border-indigo-500 text-white shadow-lg shadow-indigo-500/10'
+                        : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            setupMode === 'demo_data' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400'
+                          }`}>
+                            <Layers className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <div className="text-xs font-bold text-white">Keep Demo Data (Testing Sandbox)</div>
+                            <div className="text-[11px] text-indigo-400 font-semibold">Keep Sample Students & Records</div>
+                          </div>
+                        </div>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                          setupMode === 'demo_data' ? 'border-indigo-400 bg-indigo-500' : 'border-slate-600'
+                        }`}>
+                          {setupMode === 'demo_data' && <Check className="w-3 h-3 text-slate-950 stroke-[3]" />}
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-slate-300 leading-relaxed mb-3">
+                        Features test leh enchhin nan sample students (Lalrinsanga, Zodinpuii etc.), demo teachers, test marks leh fee receipt awmsa te kawl ṭhat a ni ang.
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-800/80 space-y-1 text-[10px]">
+                      <div className="flex items-center gap-1.5 text-slate-300">
+                        <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        <span>Includes sample students across classes</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-slate-300">
+                        <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        <span>Includes sample subject teachers & attendance</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-slate-300">
+                        <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        <span>Includes sample report card grades & receipts</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SKIPPED & AUTO-DISABLED FEATURES AUDIT CARD */}
+              {skippedSummaryList.length > 0 ? (
+                <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-500/40 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-400" />
+                      <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                        Skipped Steps &amp; Auto-Disabled Features ({skippedSummaryList.length} Steps Kalsan)
+                      </h4>
+                    </div>
+                    <span className="text-[10px] text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                      Control Center aṭangin i duh hunah enable leh vek theih
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300">
+                    Heng step i kalsan (skip) te hi anmahni inremna milin <strong>automatic-in disable</strong> an ni a, school chhungah buaina an thlen loh nan menu leh feature-ah thup an ni rih ang. Setup zawh hnuah pawh Super Admin / Principal in Control Center aṭangin an hawng leh thei vek a ni.
+                  </p>
+                  <div className="space-y-2 pt-1">
+                    {skippedSummaryList.map((item) => (
+                      <div key={item.step} className="p-3 rounded-xl bg-slate-900/80 border border-amber-500/30 flex items-center justify-between gap-3">
                         <div>
-                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                            <span>Clean Slate (School Thar Hlak)</span>
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500 text-slate-950">
-                              RECOMMENDED
+                          <div className="text-xs font-bold text-white flex items-center gap-2">
+                            <span>{item.title}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold">
+                              Auto-Disabled
                             </span>
                           </div>
-                          <div className="text-[11px] text-emerald-400 font-semibold">Zero Mock Data • Blank Database</div>
+                          <p className="text-[11px] text-slate-400 mt-0.5">{item.impact}</p>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleUnskipStep(item.step);
+                            setCurrentStep(item.step);
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 text-xs font-semibold flex items-center gap-1.5 transition shrink-0"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          <span>Re-enable &amp; Edit</span>
+                        </button>
                       </div>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                        setupMode === 'clean_slate' ? 'border-emerald-400 bg-emerald-500' : 'border-slate-600'
-                      }`}>
-                        {setupMode === 'clean_slate' && <Check className="w-3 h-3 text-slate-950 stroke-[3]" />}
-                      </div>
-                    </div>
-                    
-                    <p className="text-[11px] text-slate-300 leading-relaxed mb-3">
-                      School thar tak tak atan a ṭha ber. Mock data zawng zawng (students, attendance, fees, marks) a paih fai vek ang a, class schedule i thlan sa aṭangin clean classes siam a ni ang.
-                    </p>
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-800/80 space-y-1 text-[10px]">
-                    <div className="flex items-center gap-1.5 text-emerald-300">
-                      <CheckCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <span>Students: 0 (Blank database - ready for real admissions)</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-emerald-300">
-                      <CheckCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <span>Attendance, Grades & Fees: 0 records</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-emerald-300">
-                      <CheckCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <span>Staff: Principal account chauh official-in awm</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-emerald-300">
-                      <CheckCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <span>Classes: Generated from Step 2 academic levels</span>
-                    </div>
+                    ))}
                   </div>
                 </div>
-
-                {/* Mode 2: Demo / Sandbox Mode */}
-                <div
-                  onClick={() => setSetupMode('demo_data')}
-                  className={`p-4 rounded-xl border-2 cursor-pointer transition relative flex flex-col justify-between ${
-                    setupMode === 'demo_data'
-                      ? 'bg-indigo-950/30 border-indigo-500 text-white shadow-lg shadow-indigo-500/10'
-                      : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-slate-700'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          setupMode === 'demo_data' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-slate-800 text-slate-400'
-                        }`}>
-                          <Layers className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-white">Keep Demo Data (Testing Sandbox)</div>
-                          <div className="text-[11px] text-indigo-400 font-semibold">Keep Sample Students & Records</div>
-                        </div>
-                      </div>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                        setupMode === 'demo_data' ? 'border-indigo-400 bg-indigo-500' : 'border-slate-600'
-                      }`}>
-                        {setupMode === 'demo_data' && <Check className="w-3 h-3 text-slate-950 stroke-[3]" />}
-                      </div>
-                    </div>
-
-                    <p className="text-[11px] text-slate-300 leading-relaxed mb-3">
-                      Features test leh enchhin nan sample students (Lalrinsanga, Zodinpuii etc.), demo teachers, test marks leh fee receipt awmsa te kawl ṭhat a ni ang.
-                    </p>
-                  </div>
-
-                  <div className="pt-2 border-t border-slate-800/80 space-y-1 text-[10px]">
-                    <div className="flex items-center gap-1.5 text-slate-300">
-                      <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                      <span>Includes sample students across classes</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-slate-300">
-                      <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                      <span>Includes sample subject teachers & attendance</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-slate-300">
-                      <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                      <span>Includes sample report card grades & receipts</span>
-                    </div>
-                  </div>
+              ) : (
+                <div className="p-3.5 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 flex items-center gap-2.5 text-xs text-emerald-300">
+                  <CheckCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span><strong>Zero Steps Skipped:</strong> Setup steps zawng zawng fel taka configure vek a ni a, module leh system zawng zawng a nung (active) vek ang.</span>
                 </div>
-              </div>
-            </div>
+              )}
 
-            {/* AUDIT SUMMARY GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Card 1: Identity & Affiliation */}
-              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-                <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800/80">
-                  <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-indigo-400" /> Identity & Affiliation
-                  </h4>
-                  <button onClick={() => setCurrentStep(1)} className="text-xs text-indigo-400 hover:underline">
-                    Edit
-                  </button>
-                </div>
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex justify-between"><span className="text-slate-400">School Name:</span> <span className="font-semibold text-white">{formData.schoolName}</span></div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-400">Dedicated Portal:</span>
-                    <span className="font-mono text-indigo-400 font-bold text-[11px] bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-500/30">
-                      https://{formData.subdomain || 'school'}.zoxs.in
-                    </span>
+              {/* AUDIT SUMMARY GRID */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Card 1: Identity & Affiliation */}
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800/80">
+                    <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-indigo-400" /> Identity & Affiliation
+                    </h4>
+                    <button onClick={() => setCurrentStep(1)} className="text-xs text-indigo-400 hover:underline">
+                      Edit
+                    </button>
                   </div>
-                  {formData.customDomain && (
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between"><span className="text-slate-400">School Name:</span> <span className="font-semibold text-white">{formData.schoolName}</span></div>
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Custom Domain:</span>
-                      <span className="font-mono text-cyan-300 font-semibold text-[11px]">{formData.customDomain}</span>
+                      <span className="text-slate-400">Dedicated Portal:</span>
+                      <span className="font-mono text-indigo-400 font-bold text-[11px] bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-500/30">
+                        https://{formData.subdomain || 'school'}.zoxs.in
+                      </span>
                     </div>
-                  )}
-                  <div className="flex justify-between"><span className="text-slate-400">Affiliation:</span> <span className="text-slate-200">{formData.affiliationBoard}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Board Reg No:</span> <span className="font-mono text-amber-300">{formData.affiliationNo}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Principal:</span> <span className="text-slate-200">{formData.principalName}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Helpline:</span> <span className="text-slate-200">{formData.contactPhone}</span></div>
+                    {formData.customDomain && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">Custom Domain:</span>
+                        <span className="font-mono text-cyan-300 font-semibold text-[11px]">{formData.customDomain}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between"><span className="text-slate-400">Affiliation:</span> <span className="text-slate-200">{formData.affiliationBoard}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Board Reg No:</span> <span className="font-mono text-amber-300">{formData.affiliationNo}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Principal:</span> <span className="text-slate-200">{formData.principalName}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Helpline:</span> <span className="text-slate-200">{formData.contactPhone}</span></div>
+                  </div>
                 </div>
-              </div>
 
-              {/* Card 2: Academic & Bell Schedule */}
-              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-                <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800/80">
-                  <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                    <GraduationCap className="w-4 h-4 text-cyan-400" /> Academic & Timetable
-                  </h4>
-                  <button onClick={() => setCurrentStep(2)} className="text-xs text-indigo-400 hover:underline">
-                    Edit
-                  </button>
+                {/* Card 2: Academic & Bell Schedule */}
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800/80">
+                    <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                      <GraduationCap className="w-4 h-4 text-cyan-400" /> Academic & Timetable
+                    </h4>
+                    <button onClick={() => setCurrentStep(2)} className="text-xs text-indigo-400 hover:underline">
+                      Edit
+                    </button>
+                  </div>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between"><span className="text-slate-400">Session:</span> <span className="font-bold text-white">{formData.academicSession}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Assembly Time:</span> <span className="text-slate-200">{formData.dailyAssemblyTime}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Daily Periods:</span> <span className="text-slate-200">{formData.periodsPerDay} periods ({formData.periodDurationMins}m each)</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Lunch Break:</span> <span className="text-slate-200">{formData.recessStartTime} ({formData.recessDurationMins} mins)</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Grading Scale:</span> <span className="text-emerald-400">CBSE 9-Point (A1 to E2)</span></div>
+                  </div>
                 </div>
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex justify-between"><span className="text-slate-400">Session:</span> <span className="font-bold text-white">{formData.academicSession}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Assembly Time:</span> <span className="text-slate-200">{formData.dailyAssemblyTime}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Daily Periods:</span> <span className="text-slate-200">{formData.periodsPerDay} periods ({formData.periodDurationMins}m each)</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Lunch Break:</span> <span className="text-slate-200">{formData.recessStartTime} ({formData.recessDurationMins} mins)</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Grading Scale:</span> <span className="text-emerald-400">CBSE 9-Point (A1 to E2)</span></div>
-                </div>
-              </div>
 
-              {/* Card 3: Fees & Payment Gateway */}
-              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-                <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800/80">
-                  <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-emerald-400" /> Financials & UPI Settlement
-                  </h4>
-                  <button onClick={() => setCurrentStep(4)} className="text-xs text-indigo-400 hover:underline">
-                    Edit
-                  </button>
+                {/* Card 3: Fees & Payment Gateway */}
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800/80">
+                    <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-emerald-400" /> Financials & UPI Settlement
+                    </h4>
+                    <button onClick={() => setCurrentStep(4)} className="text-xs text-indigo-400 hover:underline">
+                      Edit
+                    </button>
+                  </div>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between"><span className="text-slate-400">Monthly School Fee:</span> <span className="font-bold text-emerald-400">₹{formData.monthlySchoolFee} (Mandatory)</span></div>
+                    {formData.enableOptionalTuition && (
+                      <div className="flex justify-between"><span className="text-slate-400">Evening Tuition:</span> <span className="text-indigo-300 font-semibold">₹{formData.tuitionFeeMonthly} (Optional)</span></div>
+                    )}
+                    <div className="flex justify-between"><span className="text-slate-400">Sibling Discount:</span> <span className="text-slate-200">2nd ({formData.siblingDiscountPercent}%) • 3rd+ ({formData.thirdSiblingDiscountPercent}%)</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Active Gateway:</span> <span className="uppercase text-indigo-300 font-semibold">{formData.activePaymentGateway}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Official UPI ID:</span> <span className="font-mono text-cyan-300">{formData.upiId}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Settlement Bank:</span> <span className="text-slate-200">{formData.bankName}</span></div>
+                  </div>
                 </div>
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex justify-between"><span className="text-slate-400">Monthly School Fee:</span> <span className="font-bold text-emerald-400">₹{formData.monthlySchoolFee} (Mandatory)</span></div>
-                  {formData.enableOptionalTuition && (
-                    <div className="flex justify-between"><span className="text-slate-400">Evening Tuition:</span> <span className="text-indigo-300 font-semibold">₹{formData.tuitionFeeMonthly} (Optional)</span></div>
-                  )}
-                  <div className="flex justify-between"><span className="text-slate-400">Sibling Discount:</span> <span className="text-slate-200">2nd ({formData.siblingDiscountPercent}%) • 3rd+ ({formData.thirdSiblingDiscountPercent}%)</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Active Gateway:</span> <span className="uppercase text-indigo-300 font-semibold">{formData.activePaymentGateway}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Official UPI ID:</span> <span className="font-mono text-cyan-300">{formData.upiId}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Settlement Bank:</span> <span className="text-slate-200">{formData.bankName}</span></div>
-                </div>
-              </div>
 
-              {/* Card 4: Active Modules & Seal */}
-              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-                <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800/80">
-                  <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                    <Award className="w-4 h-4 text-amber-400" /> Modules & Official Seal
-                  </h4>
-                  <button onClick={() => setCurrentStep(5)} className="text-xs text-indigo-400 hover:underline">
-                    Edit
-                  </button>
-                </div>
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex justify-between"><span className="text-slate-400">Active Campus Modules:</span> <span className="text-emerald-400 font-semibold">9 Active</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Seal Rim Text:</span> <span className="font-mono text-slate-200 truncate max-w-[200px]">{formData.schoolCrestText}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Seal Color:</span> <span className="font-mono flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: formData.sealColor }} /> {formData.sealColor}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Signatory Title:</span> <span className="text-slate-200">{formData.principalTitle}</span></div>
+                {/* Card 4: Active Modules & Seal */}
+                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+                  <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800/80">
+                    <h4 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                      <Award className="w-4 h-4 text-amber-400" /> Modules & Official Seal
+                    </h4>
+                    <button onClick={() => setCurrentStep(5)} className="text-xs text-indigo-400 hover:underline">
+                      Edit
+                    </button>
+                  </div>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Active Campus Modules:</span>
+                      <span className="text-emerald-400 font-semibold">
+                        {activeModulesCount} Active {disabledModulesCount > 0 ? `• ${disabledModulesCount} Disabled` : ''}
+                      </span>
+                    </div>
+                    <div className="flex justify-between"><span className="text-slate-400">Seal Rim Text:</span> <span className="font-mono text-slate-200 truncate max-w-[200px]">{formData.schoolCrestText}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Seal Color:</span> <span className="font-mono flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{ backgroundColor: formData.sealColor }} /> {formData.sealColor}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Signatory Title:</span> <span className="text-slate-200">{formData.principalTitle}</span></div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* FOOTER CONTROLS */}
       <div className="px-6 py-4 bg-slate-900 border-t border-slate-800 flex items-center justify-between shrink-0">
-        <button
-          type="button"
-          disabled={currentStep === 1}
-          onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
-            currentStep === 1
-              ? 'text-slate-600 bg-slate-900 cursor-not-allowed border border-slate-800'
-              : 'text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700'
-          }`}
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Previous Step</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={currentStep === 1}
+            onClick={() => setCurrentStep((prev) => Math.max(1, prev - 1))}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
+              currentStep === 1
+                ? 'text-slate-600 bg-slate-900 cursor-not-allowed border border-slate-800'
+                : 'text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700'
+            }`}
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span>Previous Step</span>
+          </button>
+
+          {/* Prominent Skip / Re-enable action in footer for skippable steps */}
+          {[3, 4, 5, 6].includes(currentStep) && (
+            <button
+              type="button"
+              onClick={() => {
+                if (skippedSteps[currentStep]) {
+                  handleUnskipStep(currentStep);
+                } else {
+                  handleSkipStep(currentStep);
+                }
+              }}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition border ${
+                skippedSteps[currentStep]
+                  ? 'bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border-indigo-500/40'
+                  : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/30'
+              }`}
+            >
+              {skippedSteps[currentStep] ? (
+                <>
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Re-enable Step {currentStep}</span>
+                </>
+              ) : (
+                <>
+                  <FastForward className="w-3.5 h-3.5" />
+                  <span>Skip Step {currentStep} (Auto-Disable)</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
 
         <div className="text-xs text-slate-400">
           Step <span className="text-white font-bold">{currentStep}</span> of <span className="text-white font-bold">7</span>

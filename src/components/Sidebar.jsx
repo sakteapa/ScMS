@@ -30,6 +30,9 @@ import {
   MessageSquare,
   BarChart3,
   Globe,
+  Shirt,
+  Sliders,
+  Power,
   LogOut,
   X
 } from 'lucide-react';
@@ -38,7 +41,7 @@ import { useSchool } from '../context/SchoolContext';
 
 export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIsMobileOpen }) {
   const { currentUser, isPrincipal, isTeacher, isStudent, isParent, logout } = useAuth();
-  const { admissions, notices, leaveApplications = [], systemConfig, activeSchoolInfo, t, liveSessionRequests = [], staff = [] } = useSchool();
+  const { admissions, notices, leaveApplications = [], systemConfig, activeSchoolInfo, t, liveSessionRequests = [], staff = [], isModuleEnabled } = useSchool();
 
   const pendingAdmissionsCount = admissions.filter(a => a.status === 'pending').length;
   const pendingLeavesCount = leaveApplications.filter(l => l.status === 'pending_class_master' || l.status === 'pending_principal').length;
@@ -120,6 +123,14 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       badge: 'Live Cam'
     },
     {
+      id: 'id_card_studio',
+      label: 'Smart ID & RFID Studio',
+      icon: CreditCard,
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
+      badge: 'Dual-PVC',
+      badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+    },
+    {
       id: 'leave_management',
       label: 'Leave Applications',
       icon: Clock,
@@ -186,6 +197,22 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       badge: null
     },
     {
+      id: 'school_rules',
+      label: 'Rules & Code of Conduct',
+      icon: ShieldCheck,
+      roles: ['superadmin', 'principal', 'vice_principal', 'warden', 'teacher', 'student', 'parent'],
+      badge: 'Dan & Hrai',
+      badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+    },
+    {
+      id: 'sms_notifications',
+      label: 'SMS & WhatsApp Broadcast',
+      icon: MessageSquare,
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
+      badge: 'Direct wa.me',
+      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+    },
+    {
       id: 'clinic',
       label: 'Clinic & Sick Bay',
       icon: HeartPulse,
@@ -206,6 +233,14 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       icon: Package,
       roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
       badge: 'Labs & Stocks'
+    },
+    {
+      id: 'school_store',
+      label: 'School Store & Books',
+      icon: Shirt,
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
+      badge: 'Uniform & Depot',
+      badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
     },
     {
       id: 'canteen',
@@ -256,10 +291,10 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
     },
     {
       id: 'dev_studio',
-      label: 'Developer Studio',
-      icon: Code2,
-      roles: ['superadmin'],
-      badge: 'In-App IDE',
+      label: 'Control Center & Modules',
+      icon: Sliders,
+      roles: ['superadmin', 'principal', 'vice_principal'],
+      badge: 'Admin Hub',
       badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30'
     }
   ];
@@ -271,7 +306,14 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
   );
   const officeAssignedModules = currentStaffRecord?.isOfficeStaff ? (currentStaffRecord?.assignedModuleAccess || []) : [];
 
+  const isAdmin = ['superadmin', 'principal', 'vice_principal'].includes(currentUser?.role);
+
   const filteredNavItems = navItems.filter(item => {
+    // If module is disabled and user is NOT an admin, hide it from sidebar
+    if (!isAdmin && isModuleEnabled && !isModuleEnabled(item.id)) {
+      return false;
+    }
+
     if (!item.roles) return true;
     const role = currentUser?.role || 'principal';
     if (role === 'superadmin') return true;
@@ -343,6 +385,9 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
           {filteredNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
+            const isEnabled = isModuleEnabled ? isModuleEnabled(item.id) : true;
+            const isDisabledForAdmin = isAdmin && !isEnabled;
+
             return (
               <button
                 key={item.id}
@@ -351,7 +396,8 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
                   if (setIsMobileOpen) setIsMobileOpen(false);
                 }}
                 className={`
-                  w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group
+                  w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group cursor-pointer
+                  ${isDisabledForAdmin ? 'opacity-65 hover:opacity-100' : ''}
                   ${isActive 
                     ? 'bg-gradient-to-r from-cyan-500/15 via-indigo-500/15 to-transparent text-cyan-300 border-l-4 border-cyan-400 shadow-sm font-semibold' 
                     : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/50'}
@@ -361,7 +407,11 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
                   <Icon className={`w-4.5 h-4.5 transition-colors ${isActive ? 'text-cyan-400' : 'text-slate-400 group-hover:text-slate-200'}`} />
                   <span className="truncate">{t(item.id, item.label)}</span>
                 </div>
-                {officeAssignedModules.includes(item.id) && !item.roles?.includes(currentUser?.role || 'principal') ? (
+                {isDisabledForAdmin ? (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-rose-500/20 text-rose-300 border-rose-500/30">
+                    Off
+                  </span>
+                ) : officeAssignedModules.includes(item.id) && !item.roles?.includes(currentUser?.role || 'principal') ? (
                   <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-purple-500/20 text-purple-300 border-purple-500/30">
                     Office Duty
                   </span>

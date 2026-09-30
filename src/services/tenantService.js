@@ -132,7 +132,9 @@ export function registerNewSchool(schoolData = {}) {
     affiliationBadge: schoolData.affiliationBadge || 'MBSE Affiliated',
     primaryColor: schoolData.primaryColor || '#6366f1',
     secondaryColor: schoolData.secondaryColor || '#8b5cf6',
-    establishedYear: Number(schoolData.establishedYear) || new Date().getFullYear()
+    establishedYear: Number(schoolData.establishedYear) || new Date().getFullYear(),
+    isLiveProduction: schoolData.isLiveProduction !== undefined ? schoolData.isLiveProduction : true,
+    disableFastLogin: schoolData.disableFastLogin !== undefined ? schoolData.disableFastLogin : true
   };
 
   const updated = [newSchool, ...currentSchools.filter(s => s.id !== newSchool.id)];
@@ -143,6 +145,38 @@ export function registerNewSchool(schoolData = {}) {
   }
 
   return newSchool;
+}
+
+/**
+ * Update existing registered school tenant (e.g. custom domain, subdomain, colors, contact)
+ */
+export function updateSchoolTenant(schoolId, updates = {}) {
+  const currentSchools = getRegisteredSchools();
+  const cleanId = (schoolId || '').toLowerCase().trim();
+  
+  const updated = currentSchools.map(s => {
+    if (s.id === cleanId) {
+      return {
+        ...s,
+        ...updates,
+        customDomain: updates.customDomain !== undefined 
+          ? updates.customDomain.toLowerCase().trim().replace(/^https?:\/\//, '').replace(/\/$/, '')
+          : (s.customDomain || ''),
+        subdomain: updates.subdomain !== undefined
+          ? updates.subdomain.toLowerCase().trim().replace(/[^a-z0-9-]/g, '')
+          : (s.subdomain || s.id)
+      };
+    }
+    return s;
+  });
+
+  try {
+    localStorage.setItem('zoxs_registered_schools', JSON.stringify(updated));
+  } catch (e) {
+    console.warn('[TenantService] Failed to update registered school:', e);
+  }
+
+  return updated.find(s => s.id === cleanId);
 }
 
 /**
@@ -262,7 +296,7 @@ export function updateDynamicPwaBranding(school) {
   if (typeof document === 'undefined' || !school) return;
 
   // 1. Update Browser Page Title
-  document.title = `${school.name} | Portal`;
+  document.title = `${school.name} | Official Portal`;
 
   // 2. Update Theme Color Meta Tag
   const metaThemeColor = document.querySelector('meta[name="theme-color"]');
@@ -273,27 +307,38 @@ export function updateDynamicPwaBranding(school) {
   // 3. Update Meta Description
   const metaDesc = document.querySelector('meta[name="description"]');
   if (metaDesc) {
-    metaDesc.setAttribute('content', `${school.name} - Institutional Management Portal (${school.affiliationBadge})`);
+    metaDesc.setAttribute('content', `${school.name} - Institutional Management Portal & App (${school.affiliationBadge})`);
   }
 
   // 4. Inject Dynamic School-Specific PWA Manifest for Android, iOS & Windows Desktop App
   try {
-    const currentHref = typeof window !== 'undefined' ? window.location.href : '/';
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const schoolStartUrl = `${origin}/${school.id}`;
+    
+    // Check for custom uploaded school logo
+    let customLogo = '';
+    try {
+      customLogo = localStorage.getItem(`zoxs_${school.id}_custom_logo`) || '';
+    } catch {}
+
+    const iconSrc = customLogo || `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="24" fill="${encodeURIComponent(school.primaryColor || '#6366f1')}"/><text x="50" y="68" font-size="52" text-anchor="middle" fill="white">🏫</text></svg>`;
+
     const dynamicManifest = {
       name: school.name,
-      short_name: school.shortName || school.name.slice(0, 12),
+      short_name: school.shortName || school.name.slice(0, 16),
       description: `${school.name} - Official School & Student Mobile Portal (${school.affiliationBadge})`,
-      start_url: currentHref,
-      id: currentHref,
+      start_url: schoolStartUrl,
+      id: schoolStartUrl,
+      scope: `/${school.id}/`,
       display: "standalone",
       background_color: "#090d16",
       theme_color: school.primaryColor || "#090d16",
       orientation: "portrait-primary",
       icons: [
         {
-          src: `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="24" fill="${encodeURIComponent(school.primaryColor || '#6366f1')}"/><text x="50" y="68" font-size="52" text-anchor="middle" fill="white">🏫</text></svg>`,
+          src: iconSrc,
           sizes: "192x192 512x512",
-          type: "image/svg+xml",
+          type: customLogo.startsWith('data:image/png') ? "image/png" : customLogo.startsWith('data:image/jpeg') ? "image/jpeg" : "image/svg+xml",
           purpose: "any maskable"
         }
       ],

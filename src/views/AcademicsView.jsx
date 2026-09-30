@@ -28,6 +28,9 @@ import { STREAM_SUBJECTS } from '../data/mockData';
 import LiveClassroomSuite from '../components/LiveClassroomSuite';
 import SpecialOnlineExamSuite from '../components/SpecialOnlineExamSuite';
 import StudentIdCardModal from '../components/StudentIdCardModal';
+import UnitTestManager from '../components/academics/UnitTestManager';
+import AssignmentManager from '../components/academics/AssignmentManager';
+import StaybackManager from '../components/academics/StaybackManager';
 import { CreditCard } from 'lucide-react';
 
 export default function AcademicsView({ setCurrentTab, setSelectedStudentForReport }) {
@@ -45,8 +48,8 @@ export default function AcademicsView({ setCurrentTab, setSelectedStudentForRepo
     staff = []
   } = useSchool();
   
-  // Strict separation tabs: 'class_test' vs 'examination' vs 'ptm'
-  const [assessmentType, setAssessmentType] = useState('class_test'); // 'class_test' | 'examination' | 'ptm'
+  // Separation tabs: 'unit_test' | 'class_test' | 'assignment' | 'stayback' | 'examination' | 'ptm'
+  const [assessmentType, setAssessmentType] = useState('unit_test');
   const [selectedClassId, setSelectedClassId] = useState('cls-12-sci');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -146,45 +149,83 @@ export default function AcademicsView({ setCurrentTab, setSelectedStudentForRepo
           </p>
         </div>
 
-        {/* Strict Distinction Switcher */}
-        <div className="inline-flex p-1 rounded-xl bg-slate-900 border border-slate-800">
+        {/* Academic Modules & Assessment Switcher */}
+        <div className="flex flex-wrap gap-1 p-1 rounded-2xl bg-slate-900 border border-slate-800 shadow-inner">
+          <button
+            onClick={() => setAssessmentType('unit_test')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+              assessmentType === 'unit_test'
+                ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            <Award className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Unit Tests (UT-1/2/3)</span>
+          </button>
+
           <button
             onClick={() => {
               setAssessmentType('class_test');
-              setFormData(f => ({ ...f, maxMarks: 25, testName: 'Unit Test 2' }));
+              setFormData(f => ({ ...f, maxMarks: 25, testName: 'Class Test' }));
             }}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-2 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
               assessmentType === 'class_test'
                 ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Class Tests (Continuous)</span>
+            <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Class Tests</span>
           </button>
+
+          <button
+            onClick={() => setAssessmentType('assignment')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+              assessmentType === 'assignment'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 font-bold shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5 text-amber-400" />
+            <span>Assignments</span>
+          </button>
+
+          <button
+            onClick={() => setAssessmentType('stayback')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+              assessmentType === 'stayback'
+                ? 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5 text-rose-400" />
+            <span>Stayback System</span>
+          </button>
+
           <button
             onClick={() => {
               setAssessmentType('examination');
               setFormData(f => ({ ...f, maxMarks: 100, testName: 'Term Examination' }));
             }}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-2 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
               assessmentType === 'examination'
                 ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            <Award className="w-3.5 h-3.5" />
+            <Award className="w-3.5 h-3.5 text-purple-400" />
             <span>Examinations (Term/Final)</span>
           </button>
+
           <button
             onClick={() => setAssessmentType('ptm')}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-2 ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
               assessmentType === 'ptm'
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            <CalendarCheck className="w-3.5 h-3.5" />
+            <CalendarCheck className="w-3.5 h-3.5 text-emerald-400" />
             <span>PTM Conferences</span>
           </button>
         </div>
@@ -236,8 +277,62 @@ export default function AcademicsView({ setCurrentTab, setSelectedStudentForRepo
         </div>
       </div>
 
-      {/* Conditional: PTM vs Gradebook */}
-      {assessmentType === 'ptm' ? (
+      {/* Class Selector Bar (available for all academic tabs except ptm) */}
+      {assessmentType !== 'ptm' && (
+        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 shadow-lg">
+          <div className="flex flex-wrap items-center gap-3">
+            <div>
+              <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Active Class Level</label>
+              <select
+                value={selectedClassId}
+                onChange={(e) => setSelectedClassId(e.target.value)}
+                className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white font-medium focus:border-cyan-400 focus:outline-none cursor-pointer"
+              >
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} {c.stream ? `(${c.stream.toUpperCase()})` : ''} - Room {c.roomNumber}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="text-xs text-slate-400 font-mono sm:pt-4">
+              Enrolled: <strong className="text-white">{classStudents.length}</strong> &bull; Subjects: <strong className="text-cyan-400">{currentSubjects.length}</strong>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setCurrentTab('report_cards')}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-200 hover:text-white hover:border-cyan-400 text-xs font-semibold transition shrink-0 self-start sm:self-auto cursor-pointer"
+          >
+            <span>Combined Report Cards</span>
+            <ArrowRight className="w-3.5 h-3.5 text-cyan-400" />
+          </button>
+        </div>
+      )}
+
+      {/* Conditional: Academic Sub-Modules */}
+      {assessmentType === 'unit_test' ? (
+        <UnitTestManager
+          selectedClassId={selectedClassId}
+          currentSubjects={currentSubjects}
+          classStudents={classStudents}
+          selectedClass={selectedClass}
+        />
+      ) : assessmentType === 'assignment' ? (
+        <AssignmentManager
+          selectedClassId={selectedClassId}
+          currentSubjects={currentSubjects}
+          classStudents={classStudents}
+          selectedClass={selectedClass}
+        />
+      ) : assessmentType === 'stayback' ? (
+        <StaybackManager
+          selectedClassId={selectedClassId}
+          classStudents={classStudents}
+          selectedClass={selectedClass}
+        />
+      ) : assessmentType === 'ptm' ? (
         <div className="space-y-6">
           {/* PTM Banner & Toolbar */}
           <div className="p-6 rounded-2xl bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">

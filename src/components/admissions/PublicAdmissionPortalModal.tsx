@@ -17,11 +17,17 @@ import {
   ChevronRight,
   ShieldCheck,
   FileCheck,
+  Users,
+  Percent,
+  Layers,
+  Bell,
+  Info,
 } from 'lucide-react';
 import { AdmissionApplication, AdmissionStatus } from '../../types';
 import { addDocument } from '../../lib/firebase';
 import { PrintableAdmissionSlipModal } from './PrintableAdmissionSlipModal';
 import AdmissionDocumentUploader from '../AdmissionDocumentUploader';
+import { INITIAL_SEAT_QUOTAS } from '../../data/mockData';
 
 interface PublicAdmissionPortalModalProps {
   isOpen: boolean;
@@ -101,7 +107,10 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
   schoolClasses = [],
   onApplicationSubmitted,
 }) => {
-  const [activeTab, setActiveTab] = useState<'register' | 'track'>('register');
+  const [activeTab, setActiveTab] = useState<'register' | 'track' | 'seat_matrix'>('register');
+  const [seatFilterLevel, setSeatFilterLevel] = useState<'all' | 'primary' | 'middle' | 'secondary' | 'higher_secondary'>('all');
+  const [isOldStudent, setIsOldStudent] = useState(false);
+  const [previousAdmissionNo, setPreviousAdmissionNo] = useState('');
 
   const todayStr = new Date().toISOString().split('T')[0];
   const startDate = admissionConfig?.startDate;
@@ -119,6 +128,18 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
 
   const isAdmissionOpen = scheduleStatus === 'open';
   const activeAcademicYear = admissionConfig?.academicSession || '2026-2027';
+
+  const seatQuotas = (admissionConfig?.seatQuotas && admissionConfig.seatQuotas.length > 0)
+    ? admissionConfig.seatQuotas
+    : INITIAL_SEAT_QUOTAS;
+
+  const getQuotaForClass = (classNameOrId: string) => {
+    return seatQuotas.find((q: any) => 
+      q.className.toLowerCase() === classNameOrId.toLowerCase() ||
+      q.classId === classNameOrId ||
+      classNameOrId.toLowerCase().includes(q.className.toLowerCase())
+    );
+  };
 
   // Dynamic open classes configured by admin
   const openClasses: string[] = React.useMemo(() => {
@@ -272,8 +293,10 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
           passportPhoto: uploadedDocs.some(d => d.slotId === 'student_photo' || d.title.toLowerCase().includes('photo')),
           aadhaarCard: uploadedDocs.some(d => d.slotId === 'aadhaar_id' || d.title.toLowerCase().includes('aadhaar') || d.title.toLowerCase().includes('id')),
         },
+        isOldStudent,
+        previousAdmissionNo: isOldStudent ? previousAdmissionNo : undefined,
         status: 'Pending',
-        reviewerRemarks: `Application submitted via Online Public Admission Portal with ${uploadedDocs.length} documents attached.`,
+        reviewerRemarks: `Application submitted via Online Public Admission Portal with ${uploadedDocs.length} documents attached.${isOldStudent ? ' [Claiming 60% Old Student Priority Quota]' : ''}`,
         appliedDate: todayStr,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -391,6 +414,19 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
             <Search className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Track Application Status</span>
             <span className="sm:hidden">Track Status</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('seat_matrix')}
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              activeTab === 'seat_matrix'
+                ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/30'
+                : 'text-amber-400/90 hover:text-amber-300 hover:bg-amber-500/10'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Seat Matrix &amp; Quotas (Seat Awmzat)</span>
+            <span className="sm:hidden">Seat Matrix</span>
           </button>
         </div>
 
@@ -531,6 +567,16 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
                             </option>
                           ))}
                         </select>
+                        {(() => {
+                          const q = getQuotaForClass(targetClass);
+                          if (!q) return null;
+                          return (
+                            <div className="mt-1.5 text-[10px] px-2 py-1 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 flex items-center justify-between">
+                              <span>Capacity: <strong>{q.totalSeats}</strong> ({q.oldStudentReserved} Old Reserved, {q.freshOpenSeats} Open)</span>
+                              <span className="font-bold text-emerald-400">Quota Active</span>
+                            </div>
+                          );
+                        })()}
                       </div>
                       <div>
                         <label className="block text-xs text-gray-300 mb-1 font-medium">Academic Session</label>
@@ -553,6 +599,43 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
                           <option value="Mizo">Mizo Medium</option>
                         </select>
                       </div>
+                    </div>
+
+                    {/* Continuing / Old Student Reservation Quota Option */}
+                    <div className="p-3.5 rounded-xl bg-gray-800/80 border border-gray-700/80 space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-white">
+                          <input
+                            type="checkbox"
+                            checked={isOldStudent}
+                            onChange={(e) => setIsOldStudent(e.target.checked)}
+                            className="rounded border-gray-600 text-amber-500 focus:ring-amber-500"
+                          />
+                          <span>Applicant is an Old / Continuing Student of this School (Claim 60% Quota)</span>
+                        </label>
+                        {isOldStudent && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                            60% Reserved Seat + 20% Fee Concession
+                          </span>
+                        )}
+                      </div>
+                      {isOldStudent && (
+                        <div className="pt-2 border-t border-gray-700/60 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] text-gray-300 font-medium mb-1">Previous Admission / Roll No *</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. ADM-2024-042 or Roll 12"
+                              value={previousAdmissionNo}
+                              onChange={(e) => setPreviousAdmissionNo(e.target.value)}
+                              className="w-full px-3 py-1.5 rounded-lg bg-gray-900 border border-gray-700 text-white text-xs font-mono focus:border-amber-400 focus:outline-none"
+                            />
+                          </div>
+                          <div className="text-[11px] text-gray-400 flex items-center">
+                            <p>Priority admission guaranteed until 31st May 2026 under institutional continuing student reservation.</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1032,6 +1115,176 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* TAB 3: SEAT MATRIX & QUOTAS */}
+          {activeTab === 'seat_matrix' && (
+            <div className="space-y-6">
+              {/* Header Policy Banner */}
+              <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-amber-950/40 via-gray-900 to-indigo-950/30 border border-amber-500/30 space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+                    <Users className="w-5 h-5" />
+                    <span>Sanctioned Seat Capacity &amp; Old Student Quotas (Seat Awmzat &amp; Reservation)</span>
+                  </div>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30 self-start sm:self-auto">
+                    Session {activeAcademicYear}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-300 leading-relaxed">
+                  Institutional intake approved under MBSE regulations. Under official board policy, <strong>60% of seats across all classes (Nursery to Class 12) are reserved for continuing and former students of this school</strong> with a 20% admission fee concession until 31st May 2026.
+                </p>
+              </div>
+
+              {/* KPI Stat Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                <div className="p-4 rounded-xl bg-gray-800/60 border border-gray-700/80 space-y-1">
+                  <span className="text-[10px] text-gray-400 uppercase font-semibold block">Total School Intake</span>
+                  <span className="text-2xl font-bold text-white font-['Outfit'] block">
+                    {seatQuotas.reduce((acc: number, q: any) => acc + (Number(q.totalSeats) || 0), 0)}
+                  </span>
+                  <span className="text-[10px] text-gray-400">Across {seatQuotas.length} classes</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-gray-800/60 border border-amber-500/30 space-y-1">
+                  <span className="text-[10px] text-amber-400 uppercase font-semibold block">Old Student Reserved</span>
+                  <span className="text-2xl font-bold text-amber-300 font-['Outfit'] block">
+                    {seatQuotas.reduce((acc: number, q: any) => acc + (Number(q.oldStudentReserved) || 0), 0)}
+                  </span>
+                  <span className="text-[10px] text-amber-500/90">60% Protected Quota</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-gray-800/60 border border-cyan-500/30 space-y-1">
+                  <span className="text-[10px] text-cyan-400 uppercase font-semibold block">Fresh Open Intake</span>
+                  <span className="text-2xl font-bold text-cyan-300 font-['Outfit'] block">
+                    {seatQuotas.reduce((acc: number, q: any) => acc + (Number(q.freshOpenSeats) || 0), 0)}
+                  </span>
+                  <span className="text-[10px] text-cyan-500/90">Open Merit Competition</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-gray-800/60 border border-emerald-500/30 space-y-1">
+                  <span className="text-[10px] text-emerald-400 uppercase font-semibold block">Fee Concession</span>
+                  <span className="text-2xl font-bold text-emerald-300 font-['Outfit'] block">20% Off</span>
+                  <span className="text-[10px] text-emerald-500/90">For Continuing Students</span>
+                </div>
+              </div>
+
+              {/* Filter Tabs */}
+              <div className="flex items-center justify-between flex-wrap gap-2 pt-2">
+                <span className="text-xs text-gray-300 font-semibold">Filter by Class Level:</span>
+                <div className="inline-flex p-1 rounded-xl bg-gray-900 border border-gray-800 text-xs overflow-x-auto no-scrollbar">
+                  {[
+                    { id: 'all', label: 'All Classes' },
+                    { id: 'primary', label: 'Primary (Nursery - 5)' },
+                    { id: 'middle', label: 'Middle (6 - 8)' },
+                    { id: 'secondary', label: 'High School (9 - 10)' },
+                    { id: 'higher_secondary', label: 'Higher Sec (11 - 12)' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setSeatFilterLevel(tab.id as any)}
+                      className={`px-3 py-1.5 rounded-lg font-medium transition cursor-pointer whitespace-nowrap ${
+                        seatFilterLevel === tab.id
+                          ? 'bg-amber-500 text-slate-950 font-bold shadow'
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Class Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {seatQuotas
+                  .filter((q: any) => {
+                    const name = q.className.toLowerCase();
+                    if (seatFilterLevel === 'primary') return name.includes('nursery') || name.includes('kg') || name.includes('class 1') || name.includes('class 2') || name.includes('class 3') || name.includes('class 4') || name.includes('class 5');
+                    if (seatFilterLevel === 'middle') return name.includes('class 6') || name.includes('class 7') || name.includes('class 8');
+                    if (seatFilterLevel === 'secondary') return name.includes('class 9') || name.includes('class 10');
+                    if (seatFilterLevel === 'higher_secondary') return name.includes('class 11') || name.includes('class 12');
+                    return true;
+                  })
+                  .map((quota: any) => (
+                    <div
+                      key={quota.classId}
+                      className="p-5 rounded-2xl bg-gray-800/60 border border-gray-700/80 hover:border-gray-600 transition space-y-3.5 flex flex-col justify-between shadow-sm"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="text-sm font-bold text-white font-['Outfit']">{quota.className}</h4>
+                            <span className="text-[10px] text-gray-400 font-mono">
+                              Min. Marks: <strong>{quota.minPercentage}%</strong>
+                            </span>
+                          </div>
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                            Seats Open
+                          </span>
+                        </div>
+
+                        {/* Quota Numbers */}
+                        <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-gray-900/80 border border-gray-800 text-center">
+                          <div>
+                            <span className="text-[10px] text-gray-400 block">Total</span>
+                            <span className="text-sm font-bold text-white font-mono">{quota.totalSeats}</span>
+                          </div>
+                          <div className="border-x border-gray-800">
+                            <span className="text-[10px] text-amber-400 block">Old Reserved</span>
+                            <span className="text-sm font-bold text-amber-300 font-mono">{quota.oldStudentReserved}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-cyan-400 block">Fresh Open</span>
+                            <span className="text-sm font-bold text-cyan-300 font-mono">{quota.freshOpenSeats}</span>
+                          </div>
+                        </div>
+
+                        {/* Quota Progress */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] text-gray-400">
+                            <span>Reservation Breakdown</span>
+                            <span className="text-amber-400 font-semibold">60% Continuing • 40% Fresh</span>
+                          </div>
+                          <div className="w-full h-2 rounded-full bg-gray-900 overflow-hidden flex">
+                            <div style={{ width: '60%' }} className="h-full bg-amber-500" title="60% Old Student Quota" />
+                            <div style={{ width: '40%' }} className="h-full bg-cyan-500" title="40% Fresh Open Quota" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-gray-700/60 flex items-center justify-between">
+                        <span className="text-[10px] text-gray-400">
+                          Priority till: <strong className="text-gray-200">{quota.priorityDeadline || '31-May-2026'}</strong>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTargetClass(quota.className);
+                            setActiveTab('register');
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>Apply Now</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              {/* Institutional Guidelines Card */}
+              <div className="p-4 rounded-xl bg-gray-900/80 border border-gray-800 text-xs text-gray-400 space-y-1.5">
+                <span className="text-white font-bold block flex items-center gap-1.5">
+                  <Info className="w-4 h-4 text-cyan-400" />
+                  <span>Important Note on Old Student Quota &amp; Seat Allotment</span>
+                </span>
+                <p className="leading-relaxed">
+                  Continuing students who passed the previous academic year from this institution are granted priority admission in their next sequential class until 31st May 2026. Any seats remaining unconfirmed after this deadline will be transferred to the open general merit list for new external applicants.
+                </p>
+              </div>
             </div>
           )}
         </div>

@@ -1381,6 +1381,23 @@ export const INITIAL_NOTICES = [
     channels: { inApp: true, whatsapp: true, push: true, sms: false },
     readBy: ['stu-101']
   },
+  {
+    id: 'not-005',
+    scope: 'broadcast',
+    title: 'Official Notification: 2026-2027 Admission Seat Matrix & Old Student Quota Policy',
+    content: 'School Admission Council hereby publishes the sanctioned intake capacity for the Academic Session 2026-2027. Under institutional guidelines, 60% of total seats across all classes (Nursery to Class 12) are reserved for continuing and old students with 20% admission fee concession and accelerated direct enrolment. The priority window for old students remains open until 31st May 2026. Unclaimed seats after this deadline will be released to the fresh/open applicant merit list.',
+    category: 'academic',
+    priority: 'urgent',
+    targetAudience: 'all',
+    targetUserId: null,
+    targetUserName: null,
+    senderId: 'stf-001',
+    publishedBy: 'Rev. Dr. L. H. Rohmingliana (Principal) & Admission Council',
+    publishedAt: '2026-09-20T08:30:00Z',
+    isPinned: true,
+    channels: { inApp: true, whatsapp: true, push: true, sms: true },
+    readBy: ['stu-101', 'stu-102']
+  },
   // PRIVATE NOTIFICATIONS (Pvt 1-to-1 Notifications)
   {
     id: 'pvt-001',
@@ -3280,6 +3297,8 @@ export const INITIAL_SYSTEM_CONFIG = {
   address: 'Lunglawn, Lunglei, Mizoram - 796701',
   contactPhone: '+91 372 2322104 / +91 94361 40552',
   contactEmail: 'oha.lunglawn@gmail.com',
+  principalEmail: 'principal@mizoramschool.edu',
+  vicePrincipalEmail: 'vp@mizoramschool.edu',
   primaryColor: '#6366f1',
   currency: 'INR',
   currencySymbol: '₹',
@@ -3296,6 +3315,28 @@ export const INITIAL_SYSTEM_CONFIG = {
     language: 'both' // 'en' | 'mizo' | 'both'
   }
 };
+
+export const INITIAL_SEAT_QUOTAS = [
+  { classId: 'cls-nursery', className: 'Nursery', totalSeats: 35, oldStudentReserved: 0, freshOpenSeats: 35, minPercentage: 0, oldStudentFeeDiscount: 0, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-lkg', className: 'LKG', totalSeats: 40, oldStudentReserved: 25, freshOpenSeats: 15, minPercentage: 0, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-ukg', className: 'UKG', totalSeats: 40, oldStudentReserved: 28, freshOpenSeats: 12, minPercentage: 0, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-1', className: 'Class 1', totalSeats: 45, oldStudentReserved: 30, freshOpenSeats: 15, minPercentage: 40, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-2', className: 'Class 2', totalSeats: 45, oldStudentReserved: 32, freshOpenSeats: 13, minPercentage: 40, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-3', className: 'Class 3', totalSeats: 45, oldStudentReserved: 32, freshOpenSeats: 13, minPercentage: 40, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-4', className: 'Class 4', totalSeats: 45, oldStudentReserved: 34, freshOpenSeats: 11, minPercentage: 40, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-5', className: 'Class 5', totalSeats: 45, oldStudentReserved: 35, freshOpenSeats: 10, minPercentage: 40, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-6', className: 'Class 6', totalSeats: 50, oldStudentReserved: 35, freshOpenSeats: 15, minPercentage: 45, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-7', className: 'Class 7', totalSeats: 50, oldStudentReserved: 36, freshOpenSeats: 14, minPercentage: 45, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-8', className: 'Class 8', totalSeats: 50, oldStudentReserved: 38, freshOpenSeats: 12, minPercentage: 45, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-9', className: 'Class 9', totalSeats: 55, oldStudentReserved: 40, freshOpenSeats: 15, minPercentage: 50, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-10', className: 'Class 10 (Board)', totalSeats: 55, oldStudentReserved: 45, freshOpenSeats: 10, minPercentage: 50, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-11-sci', className: 'Class 11 - Science', totalSeats: 60, oldStudentReserved: 36, freshOpenSeats: 24, minPercentage: 65, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-15', status: 'filling_fast' },
+  { classId: 'cls-11-arts', className: 'Class 11 - Arts', totalSeats: 60, oldStudentReserved: 36, freshOpenSeats: 24, minPercentage: 50, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-15', status: 'open' },
+  { classId: 'cls-11-comm', className: 'Class 11 - Commerce', totalSeats: 50, oldStudentReserved: 30, freshOpenSeats: 20, minPercentage: 55, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-15', status: 'open' },
+  { classId: 'cls-12-sci', className: 'Class 12 - Science', totalSeats: 60, oldStudentReserved: 50, freshOpenSeats: 10, minPercentage: 60, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-15', status: 'filling_fast' },
+  { classId: 'cls-12-arts', className: 'Class 12 - Arts', totalSeats: 60, oldStudentReserved: 50, freshOpenSeats: 10, minPercentage: 50, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-15', status: 'open' },
+  { classId: 'cls-12-comm', className: 'Class 12 - Commerce', totalSeats: 50, oldStudentReserved: 42, freshOpenSeats: 8, minPercentage: 50, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-15', status: 'open' }
+];
 
 export const INITIAL_ONLINE_ADMISSION_CONFIG = {
   isOpen: true,
@@ -3317,7 +3358,14 @@ export const INITIAL_ONLINE_ADMISSION_CONFIG = {
   requireAadhaar: true,
   minimumPercentage: 40,
   contactPhone: '+91 372 2322104 / +91 94361 40552',
-  contactEmail: 'admissions@mizoramschool.edu.in'
+  contactEmail: 'admissions@mizoramschool.edu.in',
+  // Old Student Quotas & Capacity Settings
+  enableOldStudentReservation: true,
+  defaultOldStudentQuotaPercent: 60,
+  oldStudentPriorityEndDate: '2026-05-31',
+  oldStudentFeeDiscountPercent: 20,
+  oldStudentPolicyNote: '60% seat reservation and accelerated direct re-admission for existing/passed out students of this school. Unclaimed seats released to fresh applicants after priority deadline.',
+  seatQuotas: INITIAL_SEAT_QUOTAS
 };
 
 export const INITIAL_OFFLINE_ADMISSION_CONFIG = {
@@ -3413,6 +3461,23 @@ export const INITIAL_PAYMENT_CONFIG = {
       saltIndex: '1',
       environment: 'sandbox',
       description: 'Seamless integration with India’s leading UPI ecosystem.'
+    },
+    paytm: {
+      id: 'paytm',
+      name: 'Paytm Payment Gateway & All-in-One UPI',
+      enabled: false,
+      mid: 'OHA_ED_PAYTM_STAGE_2026',
+      merchantKey: 'sec_ptm_key_8291029384756',
+      websiteName: 'DEFAULT',
+      industryType: 'Retail',
+      channelId: 'WEB',
+      environment: 'staging', // 'staging' | 'production'
+      themeColor: '#00b9f5',
+      enablePaytmWallet: true,
+      enableUpi: true,
+      enableNetbanking: true,
+      enableCards: true,
+      description: 'Official Paytm JS Checkout with Paytm Wallet, Postpaid, UPI, Cards, and Netbanking.'
     }
   }
 };
@@ -4823,6 +4888,20 @@ export const INITIAL_WEBSITE_CONFIG = {
     quote: 'Our mission is to nurture not just academic toppers, but compassionate leaders grounded in moral integrity and service to Mizoram and the nation.',
     fullMessage: 'At OHA (One Heart Academy), Lunglawn, Lunglei, we believe that true education enlightens the mind and strengthens character. For nearly three decades, our institution has stood as a beacon of academic rigor and moral discipline in southern Mizoram. We warmly welcome every student and parent to join our OHA family.'
   },
+  about: {
+    history: 'One Heart Academy (OHA) hi kum 1998 khan Lunglawn, Lunglei-ah din tan a ni a. Southern Mizoram-a zirlaiten zirna tha leh zahawm, Kristian nundan nena inrem an neih theih nan din a ni. Kum 25 chuang chhung he institution hian MBSE board exam-ah topper leh distinction tam tak a lo chher chhuak tawh a ni.',
+    vision: 'Mizoram leh ram pum tana mi rintlak, thluak vawrh fing leh nungchang mawi, Pathian tih mi chher chhuah hi kan thlirna sang ber a ni.',
+    mission: 'Zirlaite zirtirna sang leh felfai pek, modern science & digital technology hmanga thuam chak, leh an theihna zawng zawng phawrh chhuah sak hi kan hna ber a ni.',
+    campusArea: '5 Acres Lush Green Campus',
+    studentStrength: '1,250+ Enrolled Students',
+    facultyCount: '48+ Experienced Faculty',
+    coreValues: [
+      { id: 'cv-1', title: 'Faith & Integrity', desc: 'Rinawmna leh Pathian tihna nundan nunpui.' },
+      { id: 'cv-2', title: 'Academic Excellence', desc: 'Zirna-ah duhtui leh taihmak chhuah zel.' },
+      { id: 'cv-3', title: 'Discipline & Respect', desc: 'Inthununna leh mi dangte zah thiamna.' },
+      { id: 'cv-4', title: 'Community Service', desc: 'Khawtlang leh ram tana rawngbawl inpeihna.' }
+    ]
+  },
   programs: [
     {
       id: 'hsslc_science',
@@ -4899,6 +4978,28 @@ export const INITIAL_WEBSITE_CONFIG = {
     youtube: 'https://youtube.com',
     instagram: 'https://instagram.com',
     whatsapp: 'https://wa.me/919436140552'
+  },
+  developerCredits: {
+    enabled: true,
+    showOnFrontPage: true,
+    showInPortalHelp: true,
+    name: 'Samuel (Lead Software Architect)',
+    title: 'Lead Software Architect & Full-Stack Systems Engineer',
+    company: 'Zoxs Technologies Mizoram',
+    phone: '+91 94361 22000',
+    whatsapp: '+91 94361 22000',
+    email: 'samuel.developer@mizoramschool.edu',
+    location: 'Aizawl & Lunglei, Mizoram',
+    website: 'https://zoxs.dev',
+    tagline: 'Engineering next-gen digital infrastructure, secure databases & academic portals for educational institutions across Mizoram.',
+    services: [
+      '24/7 Priority Emergency Technical Support & Bug Resolving',
+      'Custom Academic Modules, Class Tests & Examination Tools',
+      'Cloud Firestore Sync & Daily Automated Database Backups',
+      'Campus Hardware, Biometrics & Audio Bell Infrastructure'
+    ],
+    supportHours: 'Mon - Sat: 8:00 AM - 8:00 PM (24/7 Critical System Alerts)',
+    badgeText: 'Verified Institutional Developer'
   }
 };
 
@@ -5026,4 +5127,991 @@ export const INITIAL_NOMENCLATURE = {
   dormitoryLabel: 'Boarding Hostel',
   transitLabel: 'School Bus Fleet'
 };
+
+export const INITIAL_SCHOOL_RULES = [
+  {
+    id: 'srule-1',
+    category: 'campus',
+    categoryLabel: 'Campus Discipline & Timings',
+    title: 'Morning Assembly & Campus Timings',
+    description: 'Zing dar 8:45 AM-ah Devotional Assembly tan a ni a, zirlai zawng zawng an tel kim ngei tur a ni. Dar 8:45 AM hnu lama lo thleng chu "Late" anga chhinchhiah an ni ang a, thla khatah vawi 3 aia tam late an awm chuan Principal counseling-ah koh an ni ang.',
+    penalty: 'Parent summons & counseling after 3 occurrences',
+    applicableTo: 'all'
+  },
+  {
+    id: 'srule-2',
+    category: 'uniform',
+    categoryLabel: 'Uniform & Grooming Code',
+    title: 'Official Uniform, Badge & Footwear',
+    description: 'School ni tinah school uniform fel fai tak hak tur a ni. School badge leh ID card awrh ngei tur a ni a, pheikhawk dum (black formal shoes) leh mawza var hman tur a ni. Mipa tan sam tawi fel fai, hmeichhe tan sam tawn felfai tur a ni. Makeup, fancy jewelry, leh sam rawng hnawih phal a ni lo.',
+    penalty: 'Uniform warning slip & non-compliance fine Rs 50',
+    applicableTo: 'students'
+  },
+  {
+    id: 'srule-3',
+    category: 'attendance',
+    categoryLabel: 'Attendance & Leave Policy',
+    title: 'Minimum 75% Attendance Requirement',
+    description: 'MBSE Board Examination leh Annual Exam-a thut theih nan zirlai tinin total working days atangin minimum 75% class attendance an nei ngei tur a ni. Damlohna emaw chhan dang avanga kal theih lohvin, chawlh la hmain emaw chawlh zawh rualin Nu/Pa sign ngei Leave Application thehluh tur a ni.',
+    penalty: 'Exam admit card withholding if below threshold',
+    applicableTo: 'students'
+  },
+  {
+    id: 'srule-4',
+    category: 'behavior',
+    categoryLabel: 'Code of Conduct & Anti-Ragging',
+    title: 'Zero Tolerance: Anti-Ragging & Substance Abuse',
+    description: 'School campus leh hostel chhungah zu, meizial, vaihlo, sahah, e-cigarette, leh ruihtheihthil reng reng ken leh hman khap tlat a ni. Thiante tihduhdah (bullying/ragging), in-hisa, leh zirlaite inhrosak khum chu hremna na tak pek an ni ang.',
+    penalty: 'Immediate suspension or expulsion from school',
+    applicableTo: 'all'
+  },
+  {
+    id: 'srule-5',
+    category: 'gadgets',
+    categoryLabel: 'Mobile Phone & Gadget Policy',
+    title: 'Strict Campus Mobile Phone Ban',
+    description: 'School regular hours (8:45 AM to 3:30 PM) chhungin zirlaite tan mobile phone, smart watch, leh electronic gadgets ken leh hman khap tlat a ni. Emergency-ah chuan School Office phone hman theih a ni ang.',
+    penalty: 'Device confiscation for 14 days & Rs 500 retrieval fine',
+    applicableTo: 'students'
+  },
+  {
+    id: 'srule-6',
+    category: 'academic',
+    categoryLabel: 'Examination & Academic Integrity',
+    title: 'Zero Tolerance for Exam Malpractice',
+    description: 'Unit test, term exam, leh internal assessment-ah copy, chits paih, leh thil dik lo tih khap bur a ni. Daily homework leh project assignments te hunbi dik takah thehluh tur a ni.',
+    penalty: 'Cancellation of examination paper & 0 marks award',
+    applicableTo: 'students'
+  },
+  {
+    id: 'srule-7',
+    category: 'fees',
+    categoryLabel: 'Fee Payment Regulations',
+    title: 'Monthly Tuition Fee Payment Schedule',
+    description: 'Thla tin school fee hi thla tin ni 10 ral hmain online portal (UPI/QR) emaw school counter-ah pek fel vek tur a ni. Ni 10 hnu lamah late fee charge Rs 100 lak a ni ang.',
+    penalty: 'Late payment fine & provisional receipt hold',
+    applicableTo: 'parents'
+  },
+  {
+    id: 'srule-8',
+    category: 'campus',
+    categoryLabel: 'Campus Cleanliness & Property Care',
+    title: 'Clean Campus (Faina) & Property Protection',
+    description: 'School hmunhma, classroom, bang, leh bench-ah ziah leh tihbawlhhlawh khap a ni. Bawlhhlawh reng reng dustbin-ah paih tur a ni a, "Clean & Green Campus" vawnhim hi zirlai tin mawhphurhna a ni.',
+    penalty: 'Restitution of property damage & campus service',
+    applicableTo: 'all'
+  }
+];
+
+// ==========================================
+// 12. SCHOOL STORE, UNIFORM & BOOK DEPOT DATA
+// ==========================================
+
+export const INITIAL_STORE_CONFIG = {
+  storeName: 'Central Campus Bookstore & Uniform Depot',
+  inChargeName: 'Pi Lalmuanpuii & Pu Zothansanga',
+  contactPhone: '+91 94361 23456',
+  location: 'Administrative Block, Ground Floor (Room 102)',
+  openingHours: '08:30 AM - 03:30 PM (Mon - Fri)',
+  acceptUpi: true,
+  upiId: 'schoolstore@sbi',
+  allowFeeLedgerBilling: true,
+  taxPercent: 0,
+  currency: '₹',
+  termsAndConditions: 'Items can be exchanged for size differences within 7 days with intact tags and original receipt.'
+};
+
+export const INITIAL_STORE_UNIFORMS = [
+  {
+    id: 'uni-001',
+    name: 'Boys Regular Sky Blue Oxford Shirt',
+    code: 'UNI-REG-BSHIRT',
+    category: 'regular',
+    gender: 'boys',
+    applicableClasses: 'Class 1 to 12',
+    price: 450,
+    photoUrl: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=80',
+    description: 'Cotton-poly blend sky blue shirt with embroidered school crest on chest pocket. Mon, Tue, Thu, Fri wear.',
+    sizes: [
+      { size: '28', stock: 18 },
+      { size: '30', stock: 24 },
+      { size: '32', stock: 30 },
+      { size: '34', stock: 15 },
+      { size: '36', stock: 10 },
+      { size: '38', stock: 6 }
+    ]
+  },
+  {
+    id: 'uni-002',
+    name: 'Girls Regular Sky Blue Blouse / Shirt',
+    code: 'UNI-REG-GSHIRT',
+    category: 'regular',
+    gender: 'girls',
+    applicableClasses: 'Class 1 to 12',
+    price: 450,
+    photoUrl: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=500&auto=format&fit=crop&q=80',
+    description: 'Tailored fit sky blue shirt with school crest monogram. Soft breathable fabric for all day comfort.',
+    sizes: [
+      { size: '26', stock: 14 },
+      { size: '28', stock: 22 },
+      { size: '30', stock: 28 },
+      { size: '32', stock: 20 },
+      { size: '34', stock: 12 },
+      { size: '36', stock: 5 }
+    ]
+  },
+  {
+    id: 'uni-003',
+    name: 'Boys Formal Deep Navy Trousers',
+    code: 'UNI-REG-BTRSR',
+    category: 'regular',
+    gender: 'boys',
+    applicableClasses: 'Class 5 to 12',
+    price: 650,
+    photoUrl: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=500&auto=format&fit=crop&q=80',
+    description: 'Durable wrinkle-resistant navy trousers with dual side pockets and adjustable waist clips.',
+    sizes: [
+      { size: '26', stock: 12 },
+      { size: '28', stock: 20 },
+      { size: '30', stock: 25 },
+      { size: '32', stock: 18 },
+      { size: '34', stock: 10 }
+    ]
+  },
+  {
+    id: 'uni-004',
+    name: 'Girls Box-Pleated Deep Navy Skirt',
+    code: 'UNI-REG-GSKRT',
+    category: 'regular',
+    gender: 'girls',
+    applicableClasses: 'Class 1 to 12',
+    price: 600,
+    photoUrl: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=500&auto=format&fit=crop&q=80',
+    description: 'Classic knee-length box-pleated navy skirt with concealed side zipper and inner elastic.',
+    sizes: [
+      { size: '24', stock: 10 },
+      { size: '26', stock: 18 },
+      { size: '28', stock: 25 },
+      { size: '30', stock: 20 },
+      { size: '32', stock: 14 }
+    ]
+  },
+  {
+    id: 'uni-005',
+    name: 'Official School Crest Blazer (Navy Blue)',
+    code: 'UNI-WIN-BLAZER',
+    category: 'winter',
+    gender: 'unisex',
+    applicableClasses: 'Class 6 to 12',
+    price: 1450,
+    photoUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=500&auto=format&fit=crop&q=80',
+    description: 'Heavy winter blazer with premium gold bullion embroidered school crest, brass buttons, and inner lining.',
+    sizes: [
+      { size: '30', stock: 8 },
+      { size: '32', stock: 15 },
+      { size: '34', stock: 18 },
+      { size: '36', stock: 12 },
+      { size: '38', stock: 5 }
+    ]
+  },
+  {
+    id: 'uni-006',
+    name: 'Winter V-Neck Woolen Cardigan / Sweater',
+    code: 'UNI-WIN-SWTR',
+    category: 'winter',
+    gender: 'unisex',
+    applicableClasses: 'All Classes',
+    price: 750,
+    photoUrl: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=500&auto=format&fit=crop&q=80',
+    description: 'Navy blue warm knit sweater with gold and white striped collar and cuffs.',
+    sizes: [
+      { size: '28', stock: 16 },
+      { size: '30', stock: 22 },
+      { size: '32', stock: 25 },
+      { size: '34', stock: 14 }
+    ]
+  },
+  {
+    id: 'uni-007',
+    name: 'House Sports T-Shirt - Red (Chhawnthial House)',
+    code: 'UNI-HSE-RED',
+    category: 'house',
+    gender: 'unisex',
+    applicableClasses: 'All Classes',
+    price: 380,
+    photoUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80',
+    description: 'Dry-fit breathable sports tee in Crimson Red. Mandatory for Wednesday & Saturday sports days.',
+    sizes: [
+      { size: 'S', stock: 15 },
+      { size: 'M', stock: 20 },
+      { size: 'L', stock: 18 },
+      { size: 'XL', stock: 8 }
+    ]
+  },
+  {
+    id: 'uni-008',
+    name: 'House Sports T-Shirt - Blue (Zokhawsang House)',
+    code: 'UNI-HSE-BLUE',
+    category: 'house',
+    gender: 'unisex',
+    applicableClasses: 'All Classes',
+    price: 380,
+    photoUrl: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=500&auto=format&fit=crop&q=80',
+    description: 'Dry-fit breathable sports tee in Royal Blue. Wednesday & Saturday wear for Zokhawsang House members.',
+    sizes: [
+      { size: 'S', stock: 12 },
+      { size: 'M', stock: 24 },
+      { size: 'L', stock: 15 },
+      { size: 'XL', stock: 6 }
+    ]
+  },
+  {
+    id: 'uni-009',
+    name: 'House Sports T-Shirt - Green (Phawngpui House)',
+    code: 'UNI-HSE-GREEN',
+    category: 'house',
+    gender: 'unisex',
+    applicableClasses: 'All Classes',
+    price: 380,
+    photoUrl: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=500&auto=format&fit=crop&q=80',
+    description: 'Dry-fit sports tee in Forest Green with school emblem. Wednesday & Saturday athletic wear.',
+    sizes: [
+      { size: 'S', stock: 14 },
+      { size: 'M', stock: 18 },
+      { size: 'L', stock: 16 },
+      { size: 'XL', stock: 7 }
+    ]
+  },
+  {
+    id: 'uni-010',
+    name: 'House Sports T-Shirt - Yellow (Reiek House)',
+    code: 'UNI-HSE-YELLOW',
+    category: 'house',
+    gender: 'unisex',
+    applicableClasses: 'All Classes',
+    price: 380,
+    photoUrl: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=500&auto=format&fit=crop&q=80',
+    description: 'Dry-fit sports tee in Canary Yellow. Wednesday & Saturday athletic wear.',
+    sizes: [
+      { size: 'S', stock: 16 },
+      { size: 'M', stock: 22 },
+      { size: 'L', stock: 14 },
+      { size: 'XL', stock: 5 }
+    ]
+  },
+  {
+    id: 'uni-011',
+    name: 'School Striped Necktie & Woven Belt Set',
+    code: 'UNI-ACC-TIEBELT',
+    category: 'accessories',
+    gender: 'unisex',
+    applicableClasses: 'All Classes',
+    price: 220,
+    photoUrl: 'https://images.unsplash.com/photo-1608256246200-53e635b5b65f?w=500&auto=format&fit=crop&q=80',
+    description: 'Gold & Navy blue diagonal striped satin necktie and heavy-duty brass buckle woven belt.',
+    sizes: [
+      { size: 'Junior (Class 1-5)', stock: 35 },
+      { size: 'Senior (Class 6-12)', stock: 45 }
+    ]
+  },
+  {
+    id: 'uni-012',
+    name: 'Cotton Athletic Socks with Twin Navy Stripes (Pack of 2)',
+    code: 'UNI-ACC-SOCKS',
+    category: 'accessories',
+    gender: 'unisex',
+    applicableClasses: 'All Classes',
+    price: 150,
+    photoUrl: 'https://images.unsplash.com/photo-1582966772680-860e372bb558?w=500&auto=format&fit=crop&q=80',
+    description: 'Cushioned high-performance white cotton calf socks with navy stripe bands.',
+    sizes: [
+      { size: 'Regular (Free Size)', stock: 60 }
+    ]
+  },
+  {
+    id: 'uni-013',
+    name: 'Official School Crest Blazer (Deep Navy)',
+    code: 'UNI-WIN-BLAZER',
+    category: 'winter',
+    gender: 'unisex',
+    applicableClasses: 'Class 8 to 12',
+    price: 1450,
+    photoUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&auto=format&fit=crop&q=80',
+    description: 'Official tailored navy blazer with brass buttons and gold embroidered school crest monogram. Mandatory for Monday morning chapel & winter assemblies.',
+    sizes: [
+      { size: '32', stock: 0 },
+      { size: '34', stock: 0 },
+      { size: '36', stock: 0 },
+      { size: '38', stock: 0 }
+    ],
+    stockStatus: 'out_of_stock',
+    expectedRestockDate: '2026-10-18',
+    restockNotes: 'Vendor Guwahati atangin consignment thar lak mek a ni a, October ni 18 velah Depot-ah a lo thleng ang.',
+    allowExternalPurchase: true,
+    externalVendorName: 'Zoram Uniform & Tailoring Store',
+    externalVendorLocation: 'Near Main Petrol Pump, Bazar Veng, Lunglei',
+    externalVendorPhone: '+91 9862345678',
+    externalVendorPrice: '₹1,450 approx',
+    externalPurchaseInstructions: 'Pawn lam dawra an thui hian school crest monogram badge an neih loh chuan, school store counter-ah Rs 30 in a hranin badge a lei theih reng e.'
+  }
+];
+
+export const INITIAL_STORE_BOOKS = [
+  {
+    id: 'bk-001',
+    title: 'MBSE Class 10 Mizo Reader: Rin Lanu & Thangchhuah',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    subject: 'Mizo (MIL)',
+    author: 'MBSE Editorial Board',
+    publisher: 'Mizoram Board of School Education',
+    edition: 'Revised 2026 Edition',
+    price: 180,
+    stockQuantity: 42,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-002',
+    title: 'NCERT Class 10 English: First Flight & Footprints Without Feet',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    subject: 'English',
+    author: 'NCERT National Team',
+    publisher: 'NCERT / National Council',
+    edition: '2025 - 2026 Edition',
+    price: 240,
+    stockQuantity: 38,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-003',
+    title: 'NCERT Class 10 Mathematics Standard Textbook',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    subject: 'Mathematics',
+    author: 'NCERT Mathematics Group',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 290,
+    stockQuantity: 45,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-004',
+    title: 'NCERT Class 10 Science (Theory & Practical Lab Manual)',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    subject: 'Science',
+    author: 'NCERT Science Wing',
+    publisher: 'NCERT',
+    edition: 'Latest Edition',
+    price: 360,
+    stockQuantity: 40,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-005',
+    title: 'NCERT Class 10 Social Science 4-in-1 Comprehensive Set',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    subject: 'Social Science',
+    author: 'NCERT Faculty',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 450,
+    stockQuantity: 35,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-006',
+    title: 'NCERT Class 12 Physics Parts 1 & 2 (Core Science Edition)',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    subject: 'Physics',
+    author: 'NCERT Physics Committee',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 520,
+    stockQuantity: 30,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-007',
+    title: 'NCERT Class 12 Chemistry Parts 1 & 2',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    subject: 'Chemistry',
+    author: 'NCERT Chemistry Group',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 510,
+    stockQuantity: 28,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-008',
+    title: 'NCERT Class 12 Biology Comprehensive Textbook',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    subject: 'Biology',
+    author: 'NCERT Biology Wing',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 340,
+    stockQuantity: 26,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1530210124550-912dc1381cb8?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-009',
+    title: 'NCERT Class 12 Mathematics Parts 1 & 2',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    subject: 'Mathematics',
+    author: 'NCERT Math Panel',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 460,
+    stockQuantity: 32,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-010',
+    title: 'MBSE Class 12 Mizo Core Reader: Kan Hla leh Kan Thu',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science / Arts',
+    subject: 'Mizo (MIL)',
+    author: 'MBSE Expert Committee',
+    publisher: 'Mizoram Board of School Education',
+    edition: '2025 Edition',
+    price: 210,
+    stockQuantity: 40,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-011',
+    title: 'NCERT Class 12 Accountancy: Partnership & Company Accounts',
+    classId: 'cls-12-comm',
+    className: 'Class 12 Commerce',
+    subject: 'Accountancy',
+    author: 'NCERT Commerce Team',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 380,
+    stockQuantity: 25,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-012',
+    title: 'NCERT Class 12 Political Science: Contemporary World Politics',
+    classId: 'cls-12-arts',
+    className: 'Class 12 Arts',
+    subject: 'Political Science',
+    author: 'NCERT Social Sciences',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 320,
+    stockQuantity: 30,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-013',
+    title: 'Foundational Early Years 4-Book Set (Class 1 Starter Pack)',
+    classId: 'cls-1',
+    className: 'Class 1',
+    subject: 'All Subjects (English, Mizo, Numbers, EVS)',
+    author: 'Early Learning Educators',
+    publisher: 'SCERT Mizoram',
+    edition: 'NEP 2020 Aligned Edition',
+    price: 490,
+    stockQuantity: 50,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-014',
+    title: 'Customized School Homework Notebooks (Pack of 6 with School Crest)',
+    classId: 'all',
+    className: 'All Classes',
+    subject: 'Stationery',
+    author: 'School Publications',
+    publisher: 'Campus Press',
+    edition: '2026 Academic Edition',
+    price: 260,
+    stockQuantity: 85,
+    isMandatory: false,
+    photoUrl: 'https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-015',
+    title: 'MBSE Class 10 Science Practical Notebook & Lab Manual',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    subject: 'Science',
+    author: 'MBSE Practical Directorate',
+    publisher: 'Mizoram Board of School Education',
+    edition: '2026 Practical Edition',
+    price: 160,
+    stockQuantity: 0,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=500&auto=format&fit=crop&q=80',
+    stockStatus: 'out_of_stock',
+    expectedRestockDate: '2026-10-12',
+    restockNotes: 'MBSE Central Godown Aizawl atangin rawn thawn mek a ni a, chawlhkar tharah Store-ah sem theih a ni ang.',
+    allowExternalPurchase: true,
+    externalVendorName: 'Hmingthanga Book Depot & School Supplies',
+    externalVendorLocation: 'Chanmari Veng Main Road, Lunglei',
+    externalVendorPhone: '+91 9436155555',
+    externalVendorPrice: '₹160',
+    externalPurchaseInstructions: 'MBSE approved 2026 edition official journal chauh hi exam practical-ah pawm a ni a, bookstore ah edition ennawn theih a ni.'
+  }
+];
+
+export const INITIAL_STORE_DISTRIBUTIONS = [
+  {
+    id: 'dist-001',
+    studentId: 'stu-101',
+    studentName: 'Lalmuanpuia Sailo',
+    admissionNo: 'MZ-2026-0101',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    rollNo: '01',
+    status: 'completed',
+    issuedDate: '2026-08-10',
+    issuedBy: 'Pi Lalmuanpuii (Store In-charge)',
+    paymentMethod: 'included_in_fees',
+    receiptNumber: 'RCP-STORE-2026-001',
+    uniformItems: [
+      { name: 'Boys Regular Sky Blue Oxford Shirt', size: '32', quantity: 2, price: 450 },
+      { name: 'Boys Formal Deep Navy Trousers', size: '30', quantity: 2, price: 650 },
+      { name: 'Official School Crest Blazer', size: '34', quantity: 1, price: 1450 },
+      { name: 'House Sports T-Shirt - Blue (Zokhawsang House)', size: 'M', quantity: 1, price: 380 },
+      { name: 'School Striped Necktie & Woven Belt Set', size: 'Senior', quantity: 1, price: 220 }
+    ],
+    bookItems: [
+      { title: 'NCERT Class 12 Physics Parts 1 & 2', price: 520 },
+      { title: 'NCERT Class 12 Chemistry Parts 1 & 2', price: 510 },
+      { title: 'NCERT Class 12 Biology Comprehensive Textbook', price: 340 },
+      { title: 'MBSE Class 12 Mizo Core Reader: Kan Hla leh Kan Thu', price: 210 }
+    ],
+    pendingItems: [],
+    totalAmount: 5830,
+    remarks: 'Full kit collected by guardian during admissions clearance.'
+  },
+  {
+    id: 'dist-002',
+    studentId: 'stu-102',
+    studentName: 'Vanlalhruaii Ralte',
+    admissionNo: 'MZ-2026-0102',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    rollNo: '02',
+    status: 'partial',
+    issuedDate: '2026-08-12',
+    issuedBy: 'Pi Lalmuanpuii',
+    paymentMethod: 'included_in_fees',
+    receiptNumber: 'RCP-STORE-2026-002',
+    uniformItems: [
+      { name: 'Girls Regular Sky Blue Blouse / Shirt', size: '30', quantity: 2, price: 450 },
+      { name: 'Girls Box-Pleated Deep Navy Skirt', size: '28', quantity: 2, price: 600 },
+      { name: 'House Sports T-Shirt - Red (Chhawnthial House)', size: 'S', quantity: 1, price: 380 }
+    ],
+    bookItems: [
+      { title: 'MBSE Class 10 Mizo Reader: Rin Lanu & Thangchhuah', price: 180 },
+      { title: 'NCERT Class 10 English: First Flight', price: 240 },
+      { title: 'NCERT Class 10 Mathematics Standard Textbook', price: 290 },
+      { title: 'NCERT Class 10 Science (Theory & Practical)', price: 360 },
+      { title: 'NCERT Class 10 Social Science 4-in-1 Set', price: 450 }
+    ],
+    pendingItems: ['School Crest Blazer (Size 30 awaiting replenishment shipment)'],
+    totalAmount: 4600,
+    remarks: 'Blazer pending stock arrival; expected next Monday.'
+  },
+  {
+    id: 'dist-003',
+    studentId: 'stu-103',
+    studentName: 'Lalduhawma Colney',
+    admissionNo: 'MZ-2026-0103',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    rollNo: '03',
+    status: 'completed',
+    issuedDate: '2026-08-14',
+    issuedBy: 'Pu Zothansanga',
+    paymentMethod: 'included_in_fees',
+    receiptNumber: 'RCP-STORE-2026-003',
+    uniformItems: [
+      { name: 'Boys Regular Sky Blue Oxford Shirt', size: '30', quantity: 2, price: 450 },
+      { name: 'Boys Formal Deep Navy Trousers', size: '28', quantity: 2, price: 650 },
+      { name: 'House Sports T-Shirt - Green (Phawngpui House)', size: 'M', quantity: 1, price: 380 },
+      { name: 'School Striped Necktie & Woven Belt Set', size: 'Senior', quantity: 1, price: 220 }
+    ],
+    bookItems: [
+      { title: 'MBSE Class 10 Complete Textbooks 5-Book Bundle', price: 1520 }
+    ],
+    pendingItems: [],
+    totalAmount: 4320,
+    remarks: 'All items handed over in good order.'
+  }
+];
+
+export const INITIAL_STORE_SALES = [
+  {
+    id: 'sale-001',
+    receiptNo: 'RCP-POS-1042',
+    date: '2026-09-18',
+    time: '11:20 AM',
+    studentId: 'stu-101',
+    studentName: 'Lalmuanpuia Sailo',
+    classId: 'cls-12-sci',
+    items: [
+      { name: 'School Striped Necktie & Woven Belt Set', quantity: 1, price: 220 },
+      { name: 'Customized School Homework Notebooks (Pack of 6)', quantity: 1, price: 260 }
+    ],
+    totalAmount: 480,
+    paymentType: 'upi_qr',
+    servedBy: 'Pi Lalmuanpuii',
+    notes: 'Replacement belt purchased.'
+  },
+  {
+    id: 'sale-002',
+    receiptNo: 'RCP-POS-1043',
+    date: '2026-09-22',
+    time: '02:15 PM',
+    studentId: 'stu-104',
+    studentName: 'Zodinpuii Khiangte',
+    classId: 'cls-12-comm',
+    items: [
+      { name: 'Cotton Athletic Socks with Twin Navy Stripes (Pack of 2)', quantity: 2, price: 150 }
+    ],
+    totalAmount: 300,
+    paymentType: 'cash',
+    servedBy: 'Pu Zothansanga',
+    notes: 'Extra socks set.'
+  }
+];
+
+export const INITIAL_UNIT_TESTS = [
+  {
+    id: 'ut-2026-001',
+    testCode: 'UT-1',
+    name: 'Unit Test 1 (Periodic Assessment I)',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    subject: 'Physics',
+    date: '2026-08-18',
+    startTime: '09:30 AM',
+    durationMinutes: 60,
+    maxMarks: 25,
+    passMarks: 10,
+    chaptersCovered: 'Chapter 1: Electric Charges & Fields, Chapter 2: Electrostatic Potential',
+    weightagePercent: 10,
+    status: 'evaluated',
+    scores: [
+      { studentId: 'stu-101', studentName: 'Lalmuanpuia Sailo', rollNo: '01', marksObtained: 23, grade: 'A1', remarks: 'Excellent derivation work' },
+      { studentId: 'stu-102', studentName: 'R. Lalrinawmi', rollNo: '02', marksObtained: 21, grade: 'A2', remarks: 'Good conceptual clarity' },
+      { studentId: 'stu-103', studentName: 'Lalduhawma Colney', rollNo: '03', marksObtained: 8, grade: 'E', remarks: 'Needs remedial stayback coaching' },
+      { studentId: 'stu-104', studentName: 'Zodinpuii Khiangte', rollNo: '04', marksObtained: 19, grade: 'B1', remarks: 'Good attempt' }
+    ]
+  },
+  {
+    id: 'ut-2026-002',
+    testCode: 'UT-2',
+    name: 'Unit Test 2 (Periodic Assessment II)',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    subject: 'Chemistry',
+    date: '2026-09-12',
+    startTime: '10:00 AM',
+    durationMinutes: 60,
+    maxMarks: 25,
+    passMarks: 10,
+    chaptersCovered: 'Solutions & Electrochemistry (Nernst equation & conductance)',
+    weightagePercent: 10,
+    status: 'evaluated',
+    scores: [
+      { studentId: 'stu-101', studentName: 'Lalmuanpuia Sailo', rollNo: '01', marksObtained: 24, grade: 'A1', remarks: 'Perfect score in numericals' },
+      { studentId: 'stu-102', studentName: 'R. Lalrinawmi', rollNo: '02', marksObtained: 22, grade: 'A1', remarks: 'Great answers' },
+      { studentId: 'stu-103', studentName: 'Lalduhawma Colney', rollNo: '03', marksObtained: 12, grade: 'D', remarks: 'Marginal pass' },
+      { studentId: 'stu-104', studentName: 'Zodinpuii Khiangte', rollNo: '04', marksObtained: 20, grade: 'A2', remarks: 'Very neat presentation' }
+    ]
+  },
+  {
+    id: 'ut-2026-003',
+    testCode: 'UT-3',
+    name: 'Unit Test 3 (Pre-Board Assessment)',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    subject: 'Mathematics',
+    date: '2026-10-15',
+    startTime: '09:00 AM',
+    durationMinutes: 90,
+    maxMarks: 40,
+    passMarks: 14,
+    chaptersCovered: 'Quadratic Equations, Arithmetic Progressions & Triangles',
+    weightagePercent: 15,
+    status: 'scheduled',
+    scores: []
+  }
+];
+
+export const INITIAL_STAYBACK_SESSIONS = [
+  {
+    id: 'stb-2026-01',
+    date: '2026-09-30',
+    startTime: '03:30 PM',
+    endTime: '05:00 PM',
+    title: 'Class 12 Physics & Maths Remedial Coaching',
+    category: 'remedial',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    venue: 'Room 204 (Senior Science Wing)',
+    supervisorId: 'stf-002',
+    supervisorName: 'Lalthlamuana Sailo (PGT Physics)',
+    reason: 'Follow-up remedial revision for students scoring below pass marks in Unit Test 1.',
+    transportArrangement: 'School Bus 2 delayed departure (05:15 PM) & Parent Self-Pickup',
+    status: 'in_progress',
+    students: [
+      {
+        studentId: 'stu-103',
+        studentName: 'Lalduhawma Colney',
+        rollNo: '03',
+        parentPhone: '9862000003',
+        parentNotified: true,
+        notificationChannel: 'whatsapp',
+        checkoutStatus: 'in_session',
+        checkoutTime: null,
+        departureNote: ''
+      },
+      {
+        studentId: 'stu-105',
+        studentName: 'Lalruatfela Varte',
+        rollNo: '05',
+        parentPhone: '9862000005',
+        parentNotified: true,
+        notificationChannel: 'sms',
+        checkoutStatus: 'in_session',
+        checkoutTime: null,
+        departureNote: ''
+      }
+    ]
+  },
+  {
+    id: 'stb-2026-02',
+    date: '2026-09-28',
+    startTime: '03:30 PM',
+    endTime: '04:45 PM',
+    title: 'Disciplinary Detention: Campus Uniform & Late Arrival Breach',
+    category: 'disciplinary',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    venue: 'Library Study Hall Room B',
+    supervisorId: 'stf-005',
+    supervisorName: 'Pi C. Laldinpuii (Discipline Mistress)',
+    reason: 'Repeated unexcused late arrivals and non-uniform footwear.',
+    transportArrangement: 'Parent Self-Pickup authorized',
+    status: 'completed',
+    students: [
+      {
+        studentId: 'stu-108',
+        studentName: 'K. Lalrinzuala',
+        rollNo: '08',
+        parentPhone: '9862000008',
+        parentNotified: true,
+        notificationChannel: 'whatsapp',
+        checkoutStatus: 'checked_out',
+        checkoutTime: '04:50 PM',
+        departureNote: 'Picked up by father Mr. K. Sangzuala.'
+      }
+    ]
+  },
+  {
+    id: 'stb-2026-03',
+    date: '2026-10-02',
+    startTime: '03:45 PM',
+    endTime: '05:30 PM',
+    title: 'Inter-School Subroto Cup Football Team Practice',
+    category: 'sports',
+    classId: 'all',
+    className: 'School Senior Football Squad',
+    venue: 'Main School Football Ground',
+    supervisorId: 'stf-008',
+    supervisorName: 'Coach Benjamin Lalrammuana',
+    reason: 'Tactical drills and penalty shootout practice before District Tournament.',
+    transportArrangement: 'Hostel Students return to Dorm; Day-scholars by Parent Pickup',
+    status: 'scheduled',
+    students: [
+      {
+        studentId: 'stu-101',
+        studentName: 'Lalmuanpuia Sailo',
+        rollNo: '01',
+        parentPhone: '9862000001',
+        parentNotified: true,
+        notificationChannel: 'whatsapp',
+        checkoutStatus: 'in_session',
+        checkoutTime: null,
+        departureNote: ''
+      }
+    ]
+  }
+];
+
+export const INITIAL_ASSIGNMENTS = [
+  {
+    id: 'asg-2026-01',
+    title: 'Physics Practical Analysis & Electromagnetic Induction Numericals',
+    subject: 'Physics',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    teacherId: 'stf-002',
+    teacherName: 'Lalthlamuana Sailo',
+    assignedDate: '2026-09-24',
+    dueDate: '2026-10-03',
+    maxMarks: 10,
+    weightage: 'Continuous Assessment Portfolio (5%)',
+    description: 'Solve textbook problems 4.1 to 4.12 on Faraday\'s Law, Lenz\'s rule, and self-inductance. Submit handwritten solutions in homework notebook or upload PDF.',
+    attachments: [
+      { name: 'EMI_Problem_Set_2026.pdf', size: '1.2 MB', url: '#' }
+    ],
+    status: 'active',
+    submissions: [
+      {
+        studentId: 'stu-101',
+        studentName: 'Lalmuanpuia Sailo',
+        rollNo: '01',
+        submittedAt: '2026-09-28T14:20:00Z',
+        status: 'evaluated',
+        marksObtained: 10,
+        feedback: 'Flawless derivations and step-by-step calculus working.'
+      },
+      {
+        studentId: 'stu-102',
+        studentName: 'R. Lalrinawmi',
+        rollNo: '02',
+        submittedAt: '2026-09-29T18:10:00Z',
+        status: 'evaluated',
+        marksObtained: 9,
+        feedback: 'Neat graph plots, minor sign convention error in Q.7.'
+      },
+      {
+        studentId: 'stu-103',
+        studentName: 'Lalduhawma Colney',
+        rollNo: '03',
+        submittedAt: null,
+        status: 'pending',
+        marksObtained: null,
+        feedback: ''
+      },
+      {
+        studentId: 'stu-104',
+        studentName: 'Zodinpuii Khiangte',
+        rollNo: '04',
+        submittedAt: '2026-09-30T09:15:00Z',
+        status: 'submitted',
+        marksObtained: null,
+        feedback: ''
+      }
+    ]
+  },
+  {
+    id: 'asg-2026-02',
+    title: 'Mizo Essay: \'Mizo Hnam Nunphung leh Changkanna (Modernity vs Culture)\'',
+    subject: 'Mizo',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    teacherId: 'stf-003',
+    teacherName: 'Pi Zothanpuii',
+    assignedDate: '2026-09-26',
+    dueDate: '2026-10-05',
+    maxMarks: 20,
+    weightage: 'MBSE Internal Assessment (10%)',
+    description: 'Hawrawp felfai takin thumal 500 aia tlem lo essay ziah tur. Mizo hnam nunhlun leh tunlai changkanna kal chhoh dan khaikhinna telh tur.',
+    attachments: [],
+    status: 'active',
+    submissions: [
+      {
+        studentId: 'stu-101',
+        studentName: 'Lalmuanpuia Sailo',
+        rollNo: '01',
+        submittedAt: '2026-09-29T10:00:00Z',
+        status: 'evaluated',
+        marksObtained: 19,
+        feedback: 'Ṭawngkam thluk mawi tak leh ngaihtuahna ril tak a ni.'
+      }
+    ]
+  }
+];
+
+export const INITIAL_FINE_RECORDS = [
+  {
+    id: 'fine-001',
+    studentId: 'stu-103',
+    studentName: 'Lalduhawma Colney',
+    admissionNo: 'MZ-2026-0103',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    fineType: 'late_arrival',
+    fineTitle: 'Repeated Morning Assembly Late Arrival Fine',
+    amount: 50,
+    imposedDate: '2026-09-25',
+    imposedBy: 'Pi C. Laldinpuii (Discipline Mistress)',
+    dueDate: '2026-10-05',
+    status: 'pending',
+    paidDate: null,
+    receiptNo: null,
+    paymentMode: null,
+    notes: 'Late for 3 consecutive days without parent excuse slip.'
+  },
+  {
+    id: 'fine-002',
+    studentId: 'stu-105',
+    studentName: 'Lalruatfela Varte',
+    admissionNo: 'MZ-2026-0105',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    fineType: 'library_overdue',
+    fineTitle: 'Library Overdue Book Fine (HC Verma Concepts of Physics Vol 2)',
+    amount: 60,
+    imposedDate: '2026-09-20',
+    imposedBy: 'Lalbiakvela (Chief Librarian)',
+    dueDate: '2026-09-30',
+    status: 'pending',
+    paidDate: null,
+    receiptNo: null,
+    paymentMode: null,
+    notes: '6 days overdue @ ₹10 per day.'
+  },
+  {
+    id: 'fine-003',
+    studentId: 'stu-102',
+    studentName: 'R. Lalrinawmi',
+    admissionNo: 'MZ-2026-0102',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    fineType: 'id_card_replacement',
+    fineTitle: 'Smart RFID Dual-PVC Replacement Card Fee',
+    amount: 150,
+    imposedDate: '2026-09-15',
+    imposedBy: 'Office Admin Desk',
+    dueDate: '2026-09-25',
+    status: 'paid',
+    paidDate: '2026-09-16',
+    receiptNo: 'MSS-UPI-2026-9481',
+    paymentMode: 'upi',
+    notes: 'Paid via GPay QR at Front Page Portal.'
+  }
+];
+
+
 

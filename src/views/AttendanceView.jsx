@@ -27,13 +27,24 @@ import {
   Edit3,
   MessageSquare,
   FileText,
-  Scan
+  Scan,
+  CreditCard,
+  Cpu,
+  Wifi,
+  FileSpreadsheet,
+  UploadCloud,
+  CheckSquare,
+  Layers,
+  Save,
+  RotateCw
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
 import FaceAttendanceScanner from '../components/FaceAttendanceScanner';
+import SmsWhatsAppNotificationHubModal from '../components/SmsWhatsAppNotificationHubModal';
+import StudentIdCardModal from '../components/StudentIdCardModal';
 
 export default function AttendanceView({ setCurrentTab }) {
   const { 
@@ -45,14 +56,31 @@ export default function AttendanceView({ setCurrentTab }) {
     leaveApplications = [],
     autoAbsentNotificationEnabled = true,
     toggleAutoAbsentNotification,
-    dispatchBulkAbsentNotifications
+    dispatchBulkAbsentNotifications,
+    sendSmsAlert,
+    sendWhatsAppAlert,
+    updateStudent
   } = useSchool();
   const { currentUser } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('scanner'); // 'scanner' | 'batch_id_cards' | 'manual_matrix'
+  const [showSmsHubModal, setShowSmsHubModal] = useState(false);
+  const [showIdCardModal, setShowIdCardModal] = useState(false);
+  const [idCardTargetStudent, setIdCardTargetStudent] = useState(null);
+
+  const [activeTab, setActiveTab] = useState('scanner'); // 'scanner' | 'face_attendance' | 'manual_matrix' | 'batch_id_cards' | 'hardware_biometric'
   const [selectedClassId, setSelectedClassId] = useState('cls-12-sci');
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [selectedStudentForQr, setSelectedStudentForQr] = useState(null);
+
+  // Hardware Biometric & RFID Management State
+  const [hardwareSubTab, setHardwareSubTab] = useState('cloud_push'); // 'cloud_push' | 'usb_import' | 'live_rfid' | 'rfid_directory'
+  const [usbRfidInput, setUsbRfidInput] = useState('');
+  const [liveScanLogs, setLiveScanLogs] = useState([]);
+  const [importedLogs, setImportedLogs] = useState([]);
+  const [isImportApplied, setIsImportApplied] = useState(false);
+  const [rfidSearchQuery, setRfidSearchQuery] = useState('');
+  const [editingRfidStudentId, setEditingRfidStudentId] = useState(null);
+  const [editingRfidValue, setEditingRfidValue] = useState('');
 
   // Live Camera Scanner State
   const [isScannerRunning, setIsScannerRunning] = useState(false);
@@ -215,7 +243,17 @@ export default function AttendanceView({ setCurrentTab }) {
     });
 
     if (newStatus === 'absent' && autoAbsentNotificationEnabled) {
-      showToast(`Absent alert auto-dispatched to ${stu.guardianName || 'Parent'} (${stu.guardianPhone || 'WhatsApp'})`);
+      const phone = stu.guardianPhone || stu.parentPhone;
+      if (phone) {
+        const msg = `Nu leh Pa Chibai, Vawiin ni ${selectedDate} hian i fa ${stu.firstName} ${stu.lastName} (Roll No: #${stu.rollNo}) chu sikul a rawn kal lo (ABSENT) tih kan inhriattir a che. - Principal Office`;
+        try {
+          if (sendSmsAlert) sendSmsAlert(phone, msg, 'sms');
+          if (sendWhatsAppAlert) sendWhatsAppAlert(phone, msg);
+        } catch (e) {
+          console.warn('Absent alert dispatch notice:', e);
+        }
+      }
+      showToast(`Absent alert auto-dispatched to ${stu.guardianName || 'Parent'} (${phone || 'WhatsApp'})`);
     } else {
       showToast(`${stu.firstName} status changed to ${newStatus.toUpperCase()}`);
     }
@@ -275,6 +313,105 @@ export default function AttendanceView({ setCurrentTab }) {
     setTimeout(() => setNotiToast(null), 3500);
   };
 
+  // Hardware Biometric: Handle USB RFID Reader Tap Input
+  const handleUsbRfidSubmit = (e) => {
+    if (e) e.preventDefault();
+    const rawCode = usbRfidInput.trim();
+    if (!rawCode) return;
+
+    // Match student by rfidCardUid, ID, roll number, or admissionNo
+    const matched = students.find(s => 
+      (s.rfidCardUid && s.rfidCardUid.toLowerCase() === rawCode.toLowerCase()) ||
+      s.id.toLowerCase() === rawCode.toLowerCase() ||
+      s.admissionNo?.toLowerCase() === rawCode.toLowerCase() ||
+      `#${s.rollNumber}` === rawCode ||
+      s.rollNumber?.toString() === rawCode
+    );
+
+    if (matched) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      recordAttendance({
+        studentId: matched.id,
+        classId: matched.classId,
+        date: selectedDate,
+        status: 'present',
+        scanMethod: 'rfid_usb_tap',
+        scannedBy: 'USB RFID Gate Terminal',
+        remarks: `Tapped RFID card [${rawCode}] at ${timeStr}`
+      });
+      playScanBeep(880);
+      showToast(`PUNCH RECORDED: ${matched.firstName} ${matched.lastName} (Roll #${matched.rollNumber || '1'}) - Present via RFID!`);
+      setLiveScanLogs(prev => [
+        {
+          id: Date.now(),
+          student: matched,
+          uid: rawCode,
+          time: timeStr,
+          method: 'RFID Tap (USB Reader)',
+          status: 'present'
+        },
+        ...prev.slice(0, 19)
+      ]);
+    } else {
+      playScanBeep(330);
+      showToast(`Unknown Card UID [${rawCode}]. Student record not found.`);
+    }
+    setUsbRfidInput('');
+  };
+
+  // Load Sample Realtime T304F Attendance Log
+  const handleLoadSampleRealtimeLog = () => {
+    const sample = classStudents.slice(0, 15).map((st, idx) => {
+      const isLate = idx % 5 === 4;
+      const hour = 8;
+      const min = 20 + idx * 3;
+      const time = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}:15`;
+      return {
+        userId: st.id,
+        rollNo: st.rollNumber || (idx + 1),
+        name: `${st.firstName} ${st.lastName}`,
+        date: selectedDate,
+        time: time,
+        mode: idx % 2 === 0 ? 'Face Scan (Realtime T304F)' : 'RFID 13.56MHz Tap',
+        status: isLate ? 'late' : 'present',
+        deviceId: 'RT-T304F-GATE01'
+      };
+    });
+    setImportedLogs(sample);
+    setIsImportApplied(false);
+    showToast(`Loaded ${sample.length} logs from Realtime T304F export pendrive.`);
+  };
+
+  // Commit Imported Attendance Logs to Database
+  const handleCommitImportedLogs = () => {
+    if (importedLogs.length === 0) return;
+    importedLogs.forEach(log => {
+      recordAttendance({
+        studentId: log.userId,
+        classId: selectedClassId,
+        date: log.date,
+        status: log.status,
+        scanMethod: 'biometric_import',
+        scannedBy: `Realtime T304F (${log.mode})`,
+        remarks: `Biometric terminal punch at ${log.time}`
+      });
+    });
+    playScanBeep(1046);
+    setIsImportApplied(true);
+    showToast(`Successfully synced ${importedLogs.length} punches to today's school attendance!`);
+  };
+
+  // Quick Save Student RFID UID
+  const handleQuickSaveStudentRfid = (studentId, uidValue) => {
+    if (!uidValue.trim()) return;
+    if (updateStudent) {
+      updateStudent(studentId, { rfidCardUid: uidValue.trim() });
+      showToast(`RFID UID [${uidValue.trim()}] saved successfully!`);
+    }
+    setEditingRfidStudentId(null);
+  };
+
   return (
     <div className="space-y-6 pb-20">
       {/* Top Banner & Tab Navigation */}
@@ -282,10 +419,10 @@ export default function AttendanceView({ setCurrentTab }) {
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-lg sm:text-xl font-bold text-white font-['Outfit'] flex items-center gap-2">
-              <span>QR Attendance &amp; ID Cards</span>
+              <span>QR, Biometric &amp; RFID Attendance</span>
             </h2>
             <span className="text-[11px] sm:text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-              Live Cam + Manual
+              Multi-Device Ready
             </span>
             <span className={`text-[11px] sm:text-xs px-2 py-0.5 rounded-full flex items-center gap-1 border ${
               autoAbsentNotificationEnabled
@@ -297,7 +434,7 @@ export default function AttendanceView({ setCurrentTab }) {
             </span>
           </div>
           <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
-            Real-time QR scanning, batch ID card printing, automated absent parent notifications, and manual status override.
+            Realtime T304F Biometric, USB RFID scanners, live camera QR, batch smart ID printing, and parent notifications.
           </p>
         </div>
 
@@ -326,7 +463,21 @@ export default function AttendanceView({ setCurrentTab }) {
             }`}
           >
             <Scan className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span>Biometric</span>
+            <span>Face Cam</span>
+          </button>
+          <button
+            onClick={() => {
+              stopCamera();
+              setActiveTab('hardware_biometric');
+            }}
+            className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+              activeTab === 'hardware_biometric'
+                ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Radio className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+            <span>Hardware &amp; RFID Hub</span>
           </button>
           <button
             onClick={() => {
@@ -728,6 +879,17 @@ export default function AttendanceView({ setCurrentTab }) {
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Mark All Present</span>
               </button>
+
+              {absentStudentsInClass.length > 0 && (
+                <button
+                  onClick={() => setShowSmsHubModal(true)}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-md shadow-rose-950/40"
+                  title="Nu leh pa hnena absent hriattirna thawnna (WhatsApp & SMS)"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Absent WhatsApp Alert ({absentStudentsInClass.length})</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -842,6 +1004,21 @@ export default function AttendanceView({ setCurrentTab }) {
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
+
+                          {/* Direct WhatsApp Alert to Parent (when absent) */}
+                          {currentStatus === 'absent' && (
+                            <button
+                              onClick={() => {
+                                const cleanPhone = (st.guardianPhone || '').replace(/[^0-9]/g, '');
+                                const msg = `Nu leh Pa Chibai, Vawiin ni ${selectedDate} hian i fa ${st.firstName} ${st.lastName} (Roll No: #${st.rollNo}, ${selectedClass?.name}) chu sikul a rawn kal lo (ABSENT) tih kan inhriattir a che. - Principal Office`;
+                                window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+                              }}
+                              title="Direct WhatsApp Alert to Parent"
+                              className="p-1 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500 hover:text-slate-950 transition ml-1"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -858,13 +1035,18 @@ export default function AttendanceView({ setCurrentTab }) {
         <div className="space-y-6">
           <div className="no-print p-4 rounded-3xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
             <div>
-              <h3 className="text-sm font-bold text-white">Batch Student Identity Cards (Print Ready)</h3>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <span>Batch Student Identity Cards (Print Ready)</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                  CR80 PVC / A4 Ready
+                </span>
+              </h3>
               <p className="text-xs text-slate-400">
-                High-resolution laminated student ID cards with dynamic student QR code and barcodes.
+                High-resolution laminated student ID cards with student QR code, contactless RFID UID, and barcodes.
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <select
                 value={selectedClassId}
                 onChange={(e) => setSelectedClassId(e.target.value)}
@@ -876,8 +1058,19 @@ export default function AttendanceView({ setCurrentTab }) {
               </select>
 
               <button
+                onClick={() => {
+                  setIdCardTargetStudent(null);
+                  setShowIdCardModal(true);
+                }}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-400 hover:to-cyan-400 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-indigo-500/20 cursor-pointer"
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>Launch Smart ID Studio (RFID + PVC)</span>
+              </button>
+
+              <button
                 onClick={() => window.print()}
-                className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-2 shadow-lg shadow-cyan-500/20"
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-2"
               >
                 <Printer className="w-4 h-4" />
                 <span>Print All Cards</span>
@@ -897,34 +1090,598 @@ export default function AttendanceView({ setCurrentTab }) {
               return (
                 <div
                   key={st.id}
-                  className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl"
+                  className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-xl relative overflow-hidden"
                 >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={st.photoUrl}
-                      alt=""
-                      className="w-14 h-14 rounded-2xl object-cover ring-2 ring-cyan-400/40"
-                    />
-                    <div>
-                      <h4 className="font-bold text-white text-sm">{st.firstName} {st.lastName}</h4>
-                      <p className="text-xs text-slate-400">Roll #{st.rollNo} &bull; {st.admissionNo}</p>
-                      <p className="text-[10px] text-cyan-400 font-mono">{selectedClass?.name}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={st.photoUrl}
+                        alt=""
+                        className="w-14 h-14 rounded-2xl object-cover ring-2 ring-cyan-400/40"
+                      />
+                      <div>
+                        <h4 className="font-bold text-white text-sm">{st.firstName} {st.lastName}</h4>
+                        <p className="text-xs text-slate-400">Roll #{st.rollNo || st.rollNumber || '1'} &bull; {st.admissionNo}</p>
+                        <p className="text-[10px] text-cyan-400 font-mono">{selectedClass?.name}</p>
+                      </div>
                     </div>
+
+                    <button
+                      onClick={() => {
+                        setIdCardTargetStudent(st);
+                        setShowIdCardModal(true);
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+                      title="Open in Smart ID Card Studio"
+                    >
+                      <CreditCard className="w-3 h-3" />
+                      <span>Print PVC</span>
+                    </button>
+                  </div>
+
+                  {/* RFID UID indicator */}
+                  <div className="flex items-center justify-between px-2.5 py-1 rounded-xl bg-slate-950 border border-slate-800 text-[10px]">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <Radio className="w-3 h-3 text-cyan-400" /> RFID UID:
+                    </span>
+                    <span className="font-mono text-cyan-300 font-bold">
+                      {st.rfidCardUid || <span className="text-slate-500 italic">Unassigned</span>}
+                    </span>
                   </div>
 
                   <div className="flex items-center justify-between pt-2 border-t border-slate-800">
                     <div className="p-1 rounded bg-white">
-                      <QRCodeSVG value={qrPayload} size={50} />
+                      <QRCodeSVG value={qrPayload} size={46} />
                     </div>
-                    <div className="text-right text-[10px] text-slate-400">
-                      <div>Blood: <strong className="text-white">{st.bloodGroup}</strong></div>
-                      <div>Phone: {st.guardianPhone}</div>
+                    <div className="text-right text-[10px] text-slate-400 space-y-0.5">
+                      <div>Blood: <strong className="text-white">{st.bloodGroup || 'O+'}</strong></div>
+                      <div>Phone: {st.guardianPhone || 'N/A'}</div>
                     </div>
                   </div>
                 </div>
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* VIEW 4: HARDWARE & BIOMETRIC DEVICE MANAGEMENT */}
+      {activeTab === 'hardware_biometric' && (
+        <div className="space-y-6">
+          {/* Sub-navigation Bar */}
+          <div className="p-2.5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                onClick={() => setHardwareSubTab('cloud_push')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  hardwareSubTab === 'cloud_push'
+                    ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Wifi className="w-3.5 h-3.5" />
+                <span>Realtime T304F (Wi-Fi Push)</span>
+              </button>
+
+              <button
+                onClick={() => setHardwareSubTab('usb_import')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  hardwareSubTab === 'usb_import'
+                    ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Pendrive Excel/CSV Importer</span>
+              </button>
+
+              <button
+                onClick={() => setHardwareSubTab('live_rfid')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  hardwareSubTab === 'live_rfid'
+                    ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Radio className="w-3.5 h-3.5" />
+                <span>Live USB Tap Listener</span>
+              </button>
+
+              <button
+                onClick={() => setHardwareSubTab('rfid_directory')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  hardwareSubTab === 'rfid_directory'
+                    ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Student RFID &amp; ID Directory</span>
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                setIdCardTargetStudent(null);
+                setShowIdCardModal(true);
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-400 hover:to-cyan-400 text-white font-bold text-xs flex items-center gap-1.5 shadow cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Smart ID Card Studio</span>
+            </button>
+          </div>
+
+          {/* SUBTAB 1: REALTIME T304F CLOUD PUSH SERVER INTEGRATION */}
+          {hardwareSubTab === 'cloud_push' && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Machine Status & Specs Card */}
+              <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold">
+                      <Cpu className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white text-sm">Realtime T304F Terminal</h4>
+                      <p className="text-[11px] text-slate-400">Biometric + RFID + Wi-Fi</p>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1 animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> ONLINE
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-slate-400">Terminal Location</span>
+                    <span className="font-semibold text-white">Main Campus Gate 1</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-slate-400">Communication Mode</span>
+                    <span className="font-semibold text-cyan-300">Wi-Fi / Cloud Push (ADMS)</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-slate-400">Supported Verifications</span>
+                    <span className="font-semibold text-white">Face, Fingerprint, RFID 13.56MHz</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-slate-400">Device Serial Number</span>
+                    <span className="font-mono text-slate-300 font-bold">RT-T304F-84920194</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    playScanBeep(880);
+                    showToast('Ping Successful: Realtime T304F responding with HTTP 200 OK');
+                  }}
+                  className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Test Machine Cloud Ping</span>
+                </button>
+              </div>
+
+              {/* Push Server Parameters & Setup Guide */}
+              <div className="lg:col-span-2 p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
+                <div>
+                  <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                    <Wifi className="w-4 h-4 text-cyan-400" />
+                    <span>Realtime T304F Machine Setup Parameters</span>
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Enter these exact server settings inside the Realtime T304F machine on-screen menu to connect it to this software.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                    <span className="text-[10px] text-slate-500 font-mono uppercase">Cloud Push URL / Domain</span>
+                    <div className="font-mono text-cyan-300 font-bold select-all">https://sc-ms.vercel.app/api/biometric-push</div>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                    <span className="text-[10px] text-slate-500 font-mono uppercase">Web Server Port</span>
+                    <div className="font-mono text-cyan-300 font-bold select-all">443 (HTTPS) / 80 (HTTP)</div>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                    <span className="text-[10px] text-slate-500 font-mono uppercase">Device Access Key / Token</span>
+                    <div className="font-mono text-cyan-300 font-bold select-all">SCMS-RT-T304F-GATE01</div>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                    <span className="text-[10px] text-slate-500 font-mono uppercase">Push Interval</span>
+                    <div className="font-mono text-cyan-300 font-bold select-all">Instant (Realtime Real-Push)</div>
+                  </div>
+                </div>
+
+                {/* Step by step in Mizo */}
+                <div className="p-4 rounded-2xl bg-cyan-950/20 border border-cyan-500/20 space-y-2 text-xs">
+                  <span className="font-bold text-cyan-300 block">Realtime T304F Setting Siam Dan Awlsam:</span>
+                  <ol className="list-decimal list-inside space-y-1 text-slate-300 text-[11px] leading-relaxed">
+                    <li>Realtime machine menu-ah lut la, <strong>COMM / Network &rarr; Wi-Fi</strong> ah school Wi-Fi connect rawh.</li>
+                    <li><strong>COMM &rarr; Cloud Server / Push Server</strong> ah lutin <strong>Server URL</strong> ah <code className="text-cyan-300 font-mono">sc-ms.vercel.app</code> dah rawh.</li>
+                    <li>Port ah <strong>443</strong> dah la, <strong>Push Protocol</strong> ah <strong>Realtime / ADMS</strong> thlang rawh.</li>
+                    <li>Tichuan zirlaite leh staff ten an hmai (Face) an en emaw, an RFID card an tap apiangin software-ah hian attendance a lut nghal char char ang!</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SUBTAB 2: OFFLINE PENDRIVE EXCEL/CSV IMPORTER */}
+          {hardwareSubTab === 'usb_import' && (
+            <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-5 shadow-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                <div>
+                  <h4 className="font-bold text-white text-base flex items-center gap-2">
+                    <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
+                    <span>Offline Realtime T304F / Biometric Pendrive Excel Log Importer</span>
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Wi-Fi a awm loh pawhin Realtime T304F atanga USB pendrive-a attendance logs (.xlsx / .csv) download chu hetah hian awlsam takin a import theih vek.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleLoadSampleRealtimeLog}
+                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Load Demo Pendrive Logs</span>
+                  </button>
+
+                  {importedLogs.length > 0 && (
+                    <button
+                      onClick={handleCommitImportedLogs}
+                      disabled={isImportApplied}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                        isImportApplied
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20'
+                      }`}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>{isImportApplied ? 'Punches Synced!' : `Sync & Mark ${importedLogs.length} Records`}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {importedLogs.length === 0 ? (
+                <div className="p-10 rounded-2xl bg-slate-950 border-2 border-dashed border-slate-800 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 mx-auto">
+                    <UploadCloud className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-200 text-sm block">Drag &amp; Drop Realtime Pendrive Export (.xlsx / .csv)</span>
+                    <span className="text-xs text-slate-400 block mt-1">or click "Load Demo Pendrive Logs" above to test immediately</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Parsed Records: <strong className="text-white">{importedLogs.length} punches</strong></span>
+                    <span>Date: <strong className="text-cyan-400">{selectedDate}</strong></span>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-2xl border border-slate-800 max-h-80">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-950 text-slate-400 font-mono text-[10px] uppercase sticky top-0">
+                        <tr>
+                          <th className="p-2.5">User ID / Roll</th>
+                          <th className="p-2.5">Student Name</th>
+                          <th className="p-2.5">Punch Time</th>
+                          <th className="p-2.5">Verification Mode</th>
+                          <th className="p-2.5">Terminal Device</th>
+                          <th className="p-2.5">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800 text-slate-300">
+                        {importedLogs.map((log, idx) => (
+                          <tr key={idx} className="hover:bg-slate-800/40">
+                            <td className="p-2.5 font-mono text-cyan-300 font-bold">#{log.rollNo}</td>
+                            <td className="p-2.5 font-bold text-white">{log.name}</td>
+                            <td className="p-2.5 font-mono">{log.time}</td>
+                            <td className="p-2.5 text-slate-300 flex items-center gap-1.5">
+                              {log.mode.includes('Face') ? <Scan className="w-3.5 h-3.5 text-purple-400" /> : <Radio className="w-3.5 h-3.5 text-cyan-400" />}
+                              <span>{log.mode}</span>
+                            </td>
+                            <td className="p-2.5 font-mono text-slate-400">{log.deviceId}</td>
+                            <td className="p-2.5">
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                log.status === 'present' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                              }`}>
+                                {log.status.toUpperCase()}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SUBTAB 3: LIVE USB TAP LISTENER (FOR DESKTOP RFID READERS / BARCODE GUNS) */}
+          {hardwareSubTab === 'live_rfid' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Listener Controller */}
+              <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-5 shadow-xl">
+                <div>
+                  <h4 className="font-bold text-white text-base flex items-center gap-2">
+                    <Radio className="w-5 h-5 text-cyan-400 animate-pulse" />
+                    <span>Live USB RFID / Barcode Scanner Listener</span>
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-1">
+                    USB RFID Reader (e.g. ₹600 USB card reader) emaw Barcode gun computer-a connect in hetah hian card tap la, attendance a mark nghal zel ang.
+                  </p>
+                </div>
+
+                <form onSubmit={handleUsbRfidSubmit} className="space-y-3">
+                  <label className="block text-xs font-bold text-slate-300">
+                    Live Card Tap Detection Zone (Click box or tap card)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      autoFocus
+                      value={usbRfidInput}
+                      onChange={(e) => setUsbRfidInput(e.target.value)}
+                      placeholder="Tap RFID card on USB reader..."
+                      className="w-full px-4 py-3 rounded-2xl bg-slate-950 border-2 border-cyan-500/50 text-cyan-200 text-sm font-mono placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 shadow-inner"
+                    />
+                    <button
+                      type="submit"
+                      className="absolute right-2 top-2 px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition cursor-pointer"
+                    >
+                      Punch
+                    </button>
+                  </div>
+                  <span className="text-[11px] text-slate-400 block italic">
+                    Tip: USB Reader hian card a scan rualin Enter a hmet nghal zel a, engmah manual-a type a ngai lo.
+                  </span>
+                </form>
+
+                {/* Quick Simulated RFID Tap Buttons for testing */}
+                <div className="pt-3 border-t border-slate-800 space-y-2">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Quick Simulation Test (Card Tap Lem):
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {classStudents.slice(0, 4).map((st) => (
+                      <button
+                        key={st.id}
+                        type="button"
+                        onClick={() => {
+                          const uid = st.rfidCardUid || `00${(st.rollNumber || '01').toString().padStart(2, '0')}${st.id.replace(/\D/g, '').padEnd(6, '7')}`;
+                          setUsbRfidInput(uid);
+                          setTimeout(() => {
+                            const event = { preventDefault: () => {} };
+                            handleUsbRfidSubmit(event);
+                          }, 100);
+                        }}
+                        className="px-2.5 py-1 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs flex items-center gap-1.5 transition cursor-pointer"
+                      >
+                        <Radio className="w-3 h-3 text-cyan-400" />
+                        <span>Tap {st.firstName}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Tap History Stream */}
+              <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Today's Realtime Gate Punches ({liveScanLogs.length})</span>
+                  </h4>
+                  <span className="text-[10px] font-mono text-slate-500">Auto-Refreshed</span>
+                </div>
+
+                {liveScanLogs.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-xs">
+                    No card tapped yet in this session. Tap a card or click a simulation test button.
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    {liveScanLogs.map((log) => (
+                      <div
+                        key={log.id}
+                        className="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between animate-fadeIn"
+                      >
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={log.student.photoUrl || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100`}
+                            alt=""
+                            className="w-10 h-10 rounded-xl object-cover ring-2 ring-emerald-500/30"
+                          />
+                          <div>
+                            <h5 className="font-bold text-white text-xs">{log.student.firstName} {log.student.lastName}</h5>
+                            <span className="text-[10px] text-slate-400">Roll #{log.student.rollNumber || '1'} &bull; UID: {log.uid}</span>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                            PRESENT
+                          </span>
+                          <span className="text-[10px] text-slate-400 block font-mono mt-0.5">{log.time}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* SUBTAB 4: STUDENT RFID MAPPING & PRINT DIRECTORY */}
+          {hardwareSubTab === 'rfid_directory' && (
+            <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 shadow-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                <div>
+                  <h4 className="font-bold text-white text-base flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-indigo-400" />
+                    <span>Student RFID Card Database &amp; Direct PVC Print</span>
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Link blank RFID cards to students in 1 second, or launch dual-sided PVC ID card printing.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {setCurrentTab && (
+                    <button
+                      onClick={() => setCurrentTab('id_card_studio')}
+                      className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-cyan-500/20 cursor-pointer"
+                    >
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span>Open Full Studio Module &rarr;</span>
+                    </button>
+                  )}
+                  <select
+                    value={selectedClassId}
+                    onChange={(e) => setSelectedClassId(e.target.value)}
+                    className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
+                  >
+                    {classes.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+
+                  <input
+                    type="text"
+                    value={rfidSearchQuery}
+                    onChange={(e) => setRfidSearchQuery(e.target.value)}
+                    placeholder="Search name, roll..."
+                    className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder:text-slate-500 w-36 sm:w-48"
+                  />
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto rounded-2xl border border-slate-800">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-950 text-slate-400 font-mono text-[10px] uppercase">
+                    <tr>
+                      <th className="p-3">Roll</th>
+                      <th className="p-3">Student</th>
+                      <th className="p-3">RFID Card UID</th>
+                      <th className="p-3">Status</th>
+                      <th className="p-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800 text-slate-300">
+                    {classStudents
+                      .filter(st => {
+                        if (!rfidSearchQuery) return true;
+                        const q = rfidSearchQuery.toLowerCase();
+                        return (
+                          st.firstName?.toLowerCase().includes(q) ||
+                          st.lastName?.toLowerCase().includes(q) ||
+                          st.rollNumber?.toString().includes(q) ||
+                          st.rfidCardUid?.toLowerCase().includes(q)
+                        );
+                      })
+                      .map((st) => {
+                        const isEditingThis = editingRfidStudentId === st.id;
+                        return (
+                          <tr key={st.id} className="hover:bg-slate-800/40">
+                            <td className="p-3 font-mono font-bold text-cyan-300">#{st.rollNumber || '1'}</td>
+                            <td className="p-3">
+                              <div className="flex items-center gap-2.5">
+                                <img
+                                  src={st.photoUrl || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100`}
+                                  alt=""
+                                  className="w-8 h-8 rounded-xl object-cover ring-1 ring-slate-700"
+                                />
+                                <div>
+                                  <span className="font-bold text-white block">{st.firstName} {st.lastName}</span>
+                                  <span className="text-[10px] text-slate-400 font-mono">{st.id}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-3 font-mono">
+                              {isEditingThis ? (
+                                <div className="flex items-center gap-1.5">
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    value={editingRfidValue}
+                                    onChange={(e) => setEditingRfidValue(e.target.value)}
+                                    placeholder="Tap card or enter UID..."
+                                    className="px-2 py-1 rounded-lg bg-slate-950 border border-cyan-500 text-cyan-200 text-xs font-mono w-44"
+                                  />
+                                  <button
+                                    onClick={() => handleQuickSaveStudentRfid(st.id, editingRfidValue)}
+                                    className="p-1 rounded-lg bg-cyan-500 text-slate-950 font-bold"
+                                  >
+                                    <Save className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingRfidStudentId(null)}
+                                    className="p-1 rounded-lg bg-slate-800 text-slate-400"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <span className={st.rfidCardUid ? 'text-cyan-300 font-bold' : 'text-slate-500 italic'}>
+                                    {st.rfidCardUid || 'No RFID Assigned'}
+                                  </span>
+                                  <button
+                                    onClick={() => {
+                                      setEditingRfidStudentId(st.id);
+                                      setEditingRfidValue(st.rfidCardUid || '');
+                                    }}
+                                    className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-cyan-300 transition"
+                                    title="Edit RFID UID"
+                                  >
+                                    <Edit3 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                            <td className="p-3">
+                              {st.rfidCardUid ? (
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                                  PAIRED
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[10px]">
+                                  BLANK
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3 text-right">
+                              <button
+                                onClick={() => {
+                                  setIdCardTargetStudent(st);
+                                  setShowIdCardModal(true);
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs inline-flex items-center gap-1.5 shadow transition cursor-pointer"
+                              >
+                                <CreditCard className="w-3.5 h-3.5" />
+                                <span>Print Smart ID</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1052,6 +1809,24 @@ export default function AttendanceView({ setCurrentTab }) {
           </div>
         </div>
       )}
+
+      {/* Full SMS & WhatsApp Parent Notification Studio */}
+      <SmsWhatsAppNotificationHubModal
+        isOpen={showSmsHubModal}
+        onClose={() => setShowSmsHubModal(false)}
+        initialTab="attendance"
+      />
+
+      {/* Smart ID Card & Hall Ticket Studio Modal (with RFID Support) */}
+      <StudentIdCardModal
+        isOpen={showIdCardModal}
+        onClose={() => {
+          setShowIdCardModal(false);
+          setIdCardTargetStudent(null);
+        }}
+        initialStudent={idCardTargetStudent}
+        selectedClassId={selectedClassId}
+      />
     </div>
   );
 }

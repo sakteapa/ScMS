@@ -620,11 +620,11 @@ export function processSuperAdminAiCommand(query, {
   // 13. Fees & Financials (READ)
   if (q.includes('fee') || q.includes('pawisa') || q.includes('financial') || q.includes('balance') || q.includes('arrear')) {
     const totalCollected = fees.reduce((sum, f) => sum + (f.paidAmount || f.amount || 0), 0);
-    if (setCurrentTab) setCurrentTab('fees');
+    if (setCurrentTab) setCurrentTab('financials');
     return {
       message: `Fees & Accounts: Vawiina fee chhinchhiah zat chu ₹${totalCollected.toLocaleString('en-IN')} a ni. Financials ledger-ah ka hruai che e.`,
       type: 'action',
-      navigatedTab: 'fees'
+      navigatedTab: 'financials'
     };
   }
 

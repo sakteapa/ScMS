@@ -49,7 +49,8 @@ export default function AcademicSessionPromotionModal({
     onlineAdmissionConfig,
     offlineAdmissionConfig,
     updateOnlineAdmissionConfig,
-    updateOfflineAdmissionConfig
+    updateOfflineAdmissionConfig,
+    activeSchoolInfo
   } = useSchool();
 
   const { currentUser, isPrincipal, isVicePrincipal, isSuperAdmin } = useAuth();
@@ -1092,15 +1093,15 @@ export default function AcademicSessionPromotionModal({
             {/* Official Letterhead */}
             <div className="text-center pb-4 border-b-2 border-indigo-900/30 space-y-1">
               <div className="flex items-center justify-center gap-2 font-bold text-xs uppercase tracking-widest text-indigo-900">
-                <span>{systemConfig?.affiliationNo || 'MBSE-HSS-LGL-0421'}</span>
+                <span>{activeSchoolInfo?.affiliationBadge || systemConfig?.affiliationNo || 'MBSE'}</span>
                 <span>•</span>
                 <span>Govt Recognized</span>
               </div>
               <h2 className="text-2xl font-black tracking-tight text-slate-900 font-['Outfit']">
-                {systemConfig?.schoolName || 'ONE HEART ACADEMY (OHA)'}
+                {activeSchoolInfo?.name || systemConfig?.schoolName || 'School Name'}
               </h2>
               <p className="text-xs text-slate-600">
-                {systemConfig?.address || 'Lunglawn, Lunglei, Mizoram - 796701'}
+                {activeSchoolInfo?.address || systemConfig?.address || ''}
               </p>
               <span className="inline-block mt-2 px-3 py-1 bg-indigo-100 text-indigo-900 text-xs font-extrabold uppercase rounded-full tracking-wider">
                 Official Class Promotion &amp; Advancement Order

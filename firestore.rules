@@ -30,28 +30,28 @@ service cloud.firestore {
     }
 
     // Role detection checking Custom Claims first, then fallback to users collection
-    function hasRole(roleName) {
+    function hasAnyRole(rolesList) {
       return isSignedIn() && (
-        (request.auth.token != null && request.auth.token.role == roleName) ||
+        (request.auth.token != null && request.auth.token.role in rolesList) ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         getUserData().role == roleName)
+         getUserData().role in rolesList)
       );
     }
 
     function isPrincipal() {
-      return hasRole('Principal') || hasRole('Admin');
+      return hasAnyRole(['Principal', 'principal', 'Admin', 'admin', 'SuperAdmin', 'superadmin']);
     }
 
     function isTeacher() {
-      return isPrincipal() || hasRole('Teacher');
+      return isPrincipal() || hasAnyRole(['Teacher', 'teacher', 'Vice_Principal', 'vice_principal', 'Warden', 'warden']);
     }
 
     function isStudent() {
-      return hasRole('Student');
+      return hasAnyRole(['Student', 'student']);
     }
 
     function isParent() {
-      return hasRole('Parent');
+      return hasAnyRole(['Parent', 'parent']);
     }
 
     function isStudentOrParent() {

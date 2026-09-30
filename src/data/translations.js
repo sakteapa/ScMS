@@ -1,4 +1,16 @@
-// Global Localization Dictionary: English & Mizo (Mizoram)
+// Global Localization Dictionary: Multi-Language Indian Languages Suite
+// English, Mizo (Lushai), Hindi, Bengali, Assamese, Meiteilon (Manipuri), Nepali
+
+export const SUPPORTED_LANGUAGES = [
+  { code: 'en', name: 'English', native: 'English', region: 'All India' },
+  { code: 'mizo', name: 'Mizo', native: 'Mizo ṭawng', region: 'Mizoram' },
+  { code: 'hi', name: 'Hindi', native: 'हिन्दी', region: 'National / North India' },
+  { code: 'bn', name: 'Bengali', native: 'বাংলা', region: 'West Bengal & Tripura' },
+  { code: 'as', name: 'Assamese', native: 'অসমীয়া', region: 'Assam' },
+  { code: 'mni', name: 'Meiteilon', native: 'মৈতৈলোন্', region: 'Manipur' },
+  { code: 'ne', name: 'Nepali', native: 'नेपाली', region: 'Sikkim & Gorkhaland' }
+];
+
 export const TRANSLATIONS = {
   en: {
     // Navigation
@@ -21,6 +33,10 @@ export const TRANSLATIONS = {
     transport: 'Transport & Bus Fleet',
     notices: 'Notice Board',
     dev_studio: 'Developer Studio',
+    unit_tests: 'Unit Tests',
+    class_tests: 'Class Tests',
+    stayback: 'Stayback System',
+    assignments: 'Assignments & Homework',
 
     // Common Actions
     save: 'Save Changes',
@@ -36,6 +52,8 @@ export const TRANSLATIONS = {
     close: 'Close',
     view_details: 'View Details',
     download: 'Download',
+    pay_now: 'Pay Now',
+    checkout: 'Checkout',
 
     // Statuses
     cleared: 'Cleared',
@@ -47,6 +65,8 @@ export const TRANSLATIONS = {
     absent: 'Absent',
     late: 'Late',
     live: 'LIVE',
+    active: 'Active',
+    completed: 'Completed',
 
     // Dashboard & Metrics
     total_students: 'Total Enrolled Students',
@@ -54,7 +74,8 @@ export const TRANSLATIONS = {
     fees_collected: 'Total Fees Collected',
     active_notices: 'Active Circulars',
     recent_activity: 'Recent Campus Activity',
-    live_broadcast: 'Live Classroom Broadcast'
+    live_broadcast: 'Live Classroom Broadcast',
+    fine_portal: 'Student Dues & Fine Portal'
   },
   mizo: {
     // Navigation
@@ -77,6 +98,10 @@ export const TRANSLATIONS = {
     transport: 'School Bus & Motor',
     notices: 'Hriattirna (Notices)',
     dev_studio: 'Developer Studio',
+    unit_tests: 'Unit Test Thliarna',
+    class_tests: 'Class Test & Quiz',
+    stayback: 'Stayback Enkawlna',
+    assignments: 'Homework & Assignment',
 
     // Common Actions
     save: 'Vawng Ṭha Rawh',
@@ -85,13 +110,15 @@ export const TRANSLATIONS = {
     filter: 'Thlitfimna',
     export_csv: 'CSV-a Download',
     print: 'Print Chhuahna',
-    delete: 'Nuaibo Rawh',
+    delete: 'Paih / Nuaibo',
     edit: 'Siamṭhatna',
     apply: 'Hman nghalna',
     confirm: 'Nemngheh Rawh',
     close: 'Kharna',
     view_details: 'Chipchiar Enna',
     download: 'Download Rawh',
+    pay_now: 'Pek Nghalna',
+    checkout: 'Chhuak Tura Ziah',
 
     // Statuses
     cleared: 'Pek Tling Tlak',
@@ -103,6 +130,8 @@ export const TRANSLATIONS = {
     absent: 'Kal Lo',
     late: 'Tlaitlai',
     live: 'A NGHALIN',
+    active: 'Thawk Mek',
+    completed: 'Zo Tawh',
 
     // Dashboard & Metrics
     total_students: 'Zirlai Awm Zawng',
@@ -110,6 +139,332 @@ export const TRANSLATIONS = {
     fees_collected: 'Fee Tling Khawm',
     active_notices: 'Hriattirna Chhuak',
     recent_activity: 'Thil Thleng Tharlam',
-    live_broadcast: 'Live Classroom Zirtirna'
+    live_broadcast: 'Live Classroom Zirtirna',
+    fine_portal: 'Fee & Fine Dues Chhanna Portal'
+  },
+  hi: {
+    // Navigation
+    dashboard: 'डैशबोर्ड (Dashboard)',
+    academics: 'शैक्षणिक एवं परीक्षा (Academics)',
+    report_cards: 'प्रगति पत्र (Report Cards)',
+    certificates: 'प्रमाणपत्र एवं टीसी',
+    routine: 'कक्षा समय-सारणी (Routine)',
+    calendar: 'कैलेंडर एवं अवकाश (Calendar)',
+    attendance: 'उपस्थिति स्कैनर (Attendance)',
+    leave_management: 'अवकाश आवेदन (Leave)',
+    hostel: 'छात्रावास प्रबंधन (Hostel)',
+    financials: 'शुल्क एवं वित्त (Fees)',
+    students: 'छात्र निर्देशिका (Students)',
+    portal: 'छात्र पोर्टल (Portal)',
+    ward_portal: 'अभिभावक पोर्टल (Parents)',
+    library: 'पुस्तकालय प्रबंधन (Library)',
+    staff_payroll: 'शिक्षक एवं वेतन (Staff)',
+    admissions: 'ऑनलाइन प्रवेश (Admissions)',
+    transport: 'परिवहन एवं बस सेवा',
+    notices: 'सूचना पट्ट (Notice Board)',
+    dev_studio: 'डेवलपर स्टूडियो',
+    unit_tests: 'इकाई परीक्षा (Unit Tests)',
+    class_tests: 'कक्षा परीक्षा (Class Tests)',
+    stayback: 'स्टेबैक प्रणाली (Stayback)',
+    assignments: 'गृहकार्य एवं असाइनमेंट',
+
+    // Common Actions
+    save: 'सहेजें (Save)',
+    cancel: 'रद्द करें',
+    search: 'खोजें...',
+    filter: 'फ़िल्टर',
+    export_csv: 'सीएसवी निर्यात',
+    print: 'प्रिंट करें',
+    delete: 'हटाएं (Delete)',
+    edit: 'संपादित करें',
+    apply: 'लागू करें',
+    confirm: 'पुष्टि करें',
+    close: 'बंद करें',
+    view_details: 'विवरण देखें',
+    download: 'डाउनलोड',
+    pay_now: 'अभी भुगतान करें',
+    checkout: 'सुरक्षित प्रस्थान',
+
+    // Statuses
+    cleared: 'पूर्ण चुकता',
+    pending: 'लंबित',
+    overdue: 'अतिदेय',
+    approved: 'स्वीकृत',
+    rejected: 'अस्वीकृत',
+    present: 'उपस्थित',
+    absent: 'अनुपस्थित',
+    late: 'देरी से',
+    live: 'लाइव',
+    active: 'सक्रिय',
+    completed: 'पूर्ण',
+
+    // Dashboard & Metrics
+    total_students: 'कुल नामांकित छात्र',
+    attendance_rate: 'औसत उपस्थिति',
+    fees_collected: 'कुल प्राप्त शुल्क',
+    active_notices: 'सक्रिय सूचनाएं',
+    recent_activity: 'हाल की गतिविधियां',
+    live_broadcast: 'लाइव कक्षा प्रसारण',
+    fine_portal: 'शुल्क एवं जुर्माना भुगतान'
+  },
+  bn: {
+    // Navigation
+    dashboard: 'ড্যাশবোর্ড (Dashboard)',
+    academics: 'শিক্ষা ও পরীক্ষা (Academics)',
+    report_cards: 'প্রগ্রেস রিপোর্ট কার্ড',
+    certificates: 'সার্টিফিকেট ও টিসি',
+    routine: 'রুটিন ও সময়সূচী',
+    calendar: 'ছুটি ও ক্যালেন্ডার',
+    attendance: 'উপস্থিতি ট্র্যাকার (Attendance)',
+    leave_management: 'ছুটির আবেদন (Leave)',
+    hostel: 'হোস্টেল ব্যবস্থাপনা',
+    financials: 'ফি ও অর্থব্যবস্থা',
+    students: 'শিক্ষার্থী তালিকা',
+    portal: 'শিক্ষার্থী পোর্টাল',
+    ward_portal: 'অভিভাবক পোর্টাল',
+    library: 'লাইব্রেরি ব্যবস্থাপনা',
+    staff_payroll: 'শিক্ষক ও বেতন',
+    admissions: 'ভর্তি প্রক্রিয়া',
+    transport: 'স্কুল বাস পরিবহন',
+    notices: 'নোটিশ বোর্ড',
+    dev_studio: 'ডেভেলপার স্টুডিও',
+    unit_tests: 'ইউনিট টেস্ট (Unit Tests)',
+    class_tests: 'ক্লাস টেস্ট ও কুইজ',
+    stayback: 'স্টেব্যাক সিস্টেম',
+    assignments: 'অ্যাসাইনমেন্ট ও হোমওয়ার্ক',
+
+    // Common Actions
+    save: 'সংরক্ষণ করুন',
+    cancel: 'বাতিল',
+    search: 'অনুসন্ধান...',
+    filter: 'ফিল্টার',
+    export_csv: 'সিএসভি ডাউনলোড',
+    print: 'প্রিন্ট',
+    delete: 'মুছে ফেলুন',
+    edit: 'সম্পাদনা',
+    apply: 'প্রয়োগ করুন',
+    confirm: 'নিশ্চিত করুন',
+    close: 'বন্ধ করুন',
+    view_details: 'বিস্তারিত দেখুন',
+    download: 'ডাউনলোড',
+    pay_now: 'এখনই পরিশোধ করুন',
+    checkout: 'নিরাপদ প্রস্থান',
+
+    // Statuses
+    cleared: 'পরিশোধিত',
+    pending: 'অপেক্ষমাণ',
+    overdue: 'বকেয়া',
+    approved: 'অনুমোদিত',
+    rejected: 'বাতিল',
+    present: 'উপস্থিত',
+    absent: 'অনুপস্থিত',
+    late: 'দেরি',
+    live: 'সরাসরি',
+    active: 'সক্রিয়',
+    completed: 'সম্পন্ন',
+
+    // Dashboard & Metrics
+    total_students: 'মোট শিক্ষার্থী',
+    attendance_rate: 'গড় উপস্থিতি',
+    fees_collected: 'সংগৃহীত ফি',
+    active_notices: 'সক্রিয় নোটিশ',
+    recent_activity: 'সাম্প্রতিক কার্যক্রম',
+    live_broadcast: 'লাইভ ক্লাসরুম সম্প্রচার',
+    fine_portal: 'ফি ও জরিমানা নিষ্পত্তি'
+  },
+  as: {
+    // Navigation
+    dashboard: 'ডেশ্বৰ্ড (Dashboard)',
+    academics: 'শৈক্ষিক আৰু পৰীক্ষা',
+    report_cards: 'প্ৰগতি পত্ৰ (Report Cards)',
+    certificates: 'প্ৰমাণপত্ৰ আৰু টিচি',
+    routine: 'শ্ৰেণী ৰুটিন আৰু সময়সূচী',
+    calendar: 'কেলেণ্ডাৰ আৰু বন্ধৰ তালিকা',
+    attendance: 'উপস্থিতি নিৰীক্ষণ',
+    leave_management: 'ছুটিৰ আবেদন',
+    hostel: 'হোষ্টেল পৰিচালনা',
+    financials: 'মাচুল আৰু বিত্ত',
+    students: 'ছাত্ৰ-ছাত্ৰীৰ তালিকা',
+    portal: 'ছাত্ৰ-ছাত্ৰী প\'ৰ্টেল',
+    ward_portal: 'অভিভাৱক প\'ৰ্টেল',
+    library: 'পুথিভঁৰাল পৰিচালনা',
+    staff_payroll: 'শিক্ষক আৰু দৰমহা',
+    admissions: 'অনলাইন নামভৰ্তি',
+    transport: 'বিদ্যালয় বাছ সেৱা',
+    notices: 'জাননী ফলি (Notices)',
+    dev_studio: 'ডেভেলপাৰ ষ্টুডিঅ\'',
+    unit_tests: 'ইউনিট টেষ্ট (Unit Tests)',
+    class_tests: 'শ্ৰেণী পৰীক্ষা আৰু কুইজ',
+    stayback: 'ষ্টেবেক প্ৰণালী',
+    assignments: 'গৃহকাৰ্য আৰু এচাইনমেণ্ট',
+
+    // Common Actions
+    save: 'সংৰক্ষণ কৰক',
+    cancel: 'বাতিল',
+    search: 'সন্ধান কৰক...',
+    filter: 'ফিল্টাৰ',
+    export_csv: 'CSV ডাউনলোড',
+    print: 'প্ৰিণ্ট কৰক',
+    delete: 'মচি পেলাওক',
+    edit: 'সম্পাদনা কৰক',
+    apply: 'প্ৰয়োগ কৰক',
+    confirm: 'নিশ্চিত কৰক',
+    close: 'বন্ধ কৰক',
+    view_details: 'বিস্তাৰিত চাওক',
+    download: 'ডাউনলোড',
+    pay_now: 'এতিয়াই পৰিশোধ কৰক',
+    checkout: 'নিৰাপদ প্ৰস্থান',
+
+    // Statuses
+    cleared: 'পৰিশোধিত',
+    pending: 'অমীমাংসিত',
+    overdue: 'বাকী থকা',
+    approved: 'অনুমোদিত',
+    rejected: 'প্ৰত্যাখ্যান',
+    present: 'উপস্থিত',
+    absent: 'অনুপস্থিত',
+    late: 'পলম',
+    live: 'লাইভ',
+    active: 'সক্ৰিয়',
+    completed: 'সম্পূৰ্ণ',
+
+    // Dashboard & Metrics
+    total_students: 'মুঠ ছাত্ৰ-ছাত্ৰী',
+    attendance_rate: 'গড় উপস্থিতি',
+    fees_collected: 'সংগ্ৰহ কৰা মাচুল',
+    active_notices: 'সক্ৰিয় জাননী',
+    recent_activity: 'শেহতীয়া কাৰ্যকলাপ',
+    live_broadcast: 'লাইভ ক্লাছ প্ৰচাৰ',
+    fine_portal: 'জৰিমনা আৰু মাচুল প\'ৰ্টেল'
+  },
+  mni: {
+    // Navigation (Meiteilon / Manipuri)
+    dashboard: 'দ্যাশবোর্দ (Dashboard)',
+    academics: 'মহৈ-তম্বী অমসুং একজাম',
+    report_cards: 'রিপোর্ত কার্দ (Report Cards)',
+    certificates: 'সার্তিফিকেত অমসুং তি.সি.',
+    routine: 'ক্লাসকী মতম লেপপা (Routine)',
+    calendar: 'কেলেন্দর অমসুং ছুতিগী মতম',
+    attendance: 'এতেনদেন্স স্ক্রিন (Attendance)',
+    leave_management: 'ছুতি লৌনবগী আবেদন',
+    hostel: 'হোস্তেল য়েংশিনবা (Hostel)',
+    financials: 'শেন্থুম অমসুং ফী খোমগৎপা',
+    students: 'মহৈরোইশিংগী পরিং',
+    portal: 'মহৈরোই পোল্টাল',
+    ward_portal: 'ইমুং-মনুংগী পোল্টাল',
+    library: 'লাইরিক শঙ (Library)',
+    staff_payroll: 'ওজাশিং অমসুং তোলোপ',
+    admissions: 'অনলাইন ভর্তি',
+    transport: 'স্কুলগী গারী অমসুং বাস',
+    notices: 'পাউখুম পাউদম (Notices)',
+    dev_studio: 'দিভেলপর স্তুদিও',
+    unit_tests: 'য়ুনিৎ তেস্ত (Unit Tests)',
+    class_tests: 'ক্লাস তেস্ত অমসুং কুইজ',
+    stayback: 'স্তেবেক সিস্তেম (Stayback)',
+    assignments: 'য়ুমদা তৌগদবা থবক (Homework)',
+
+    // Common Actions
+    save: 'থম্বীরো (Save)',
+    cancel: 'লেমহৌরো (Cancel)',
+    search: 'থীবীরো...',
+    filter: 'ফিল্তর',
+    export_csv: 'CSV লোকখৎলু',
+    print: 'প্রিন্ত তৌরো',
+    delete: 'মুথৎলু (Delete)',
+    edit: 'শেমদোকউ',
+    apply: 'চৎনহন্নবা',
+    confirm: 'লেপনবা',
+    close: 'থিংলাগনি',
+    view_details: 'অকূপ্পা য়েংবা',
+    download: 'দাউনলোদ',
+    pay_now: 'হৌজিক পীবা',
+    checkout: 'ময়ুমদা হল্লকপা',
+
+    // Statuses
+    cleared: 'লোয়শিনখ্রে',
+    pending: 'ঙাইরিবা',
+    overdue: 'মতম চৎখ্রে',
+    approved: 'য়ারে',
+    rejected: 'য়াদে',
+    present: 'য়াওরি',
+    absent: 'য়াওদে',
+    late: 'মতম থেংলে',
+    live: 'হৌজিক তৌরিবা',
+    active: 'মথৌ তৌরিবা',
+    completed: 'লোয়শিনখ্রে',
+
+    // Dashboard & Metrics
+    total_students: 'অপুনবা মহৈরোই',
+    attendance_rate: 'চাংচৎকি ওইনা য়াওবা',
+    fees_collected: 'খোমগৎলবা শেনফম',
+    active_notices: 'হৌজিক ওইরিবা পাউদোল',
+    recent_activity: 'অনৌবা থৌওংশিং',
+    live_broadcast: 'লাইভ ক্লাস ব্রোদকাস্ত',
+    fine_portal: 'ফী অমসুং দন্দী পীবগী পোল্টাল'
+  },
+  ne: {
+    // Navigation (Nepali)
+    dashboard: 'ड्यासबोर्ड (Dashboard)',
+    academics: 'शैक्षिक तथा परीक्षा',
+    report_cards: 'प्रगति विवरण (Report Card)',
+    certificates: 'प्रमाणपत्र र टीसी',
+    routine: 'कक्षा तालिका (Routine)',
+    calendar: 'पात्रो तथा बिदा (Calendar)',
+    attendance: 'उपस्थिति स्क्यानर',
+    leave_management: 'बिदा निवेदन (Leave)',
+    hostel: 'छात्रावास व्यवस्थापन (Hostel)',
+    financials: 'शुल्क तथा आर्थिक लेखा',
+    students: 'विद्यार्थी नामावली',
+    portal: 'विद्यार्थी पोर्टल',
+    ward_portal: 'अभिभावक पोर्टल',
+    library: 'पुस्तकालय व्यवस्थापन',
+    staff_payroll: 'कर्मचारी तथा तलब',
+    admissions: 'अनलाइन भर्ना (Admissions)',
+    transport: 'यातायात तथा बस सेवा',
+    notices: 'सूचना पाटी (Notices)',
+    dev_studio: 'डेभलपर स्टुडियो',
+    unit_tests: 'एकाइ परीक्षा (Unit Tests)',
+    class_tests: 'कक्षा परीक्षा तथा हाजिरीजवाफ',
+    stayback: 'स्टेब्याक प्रणाली (Stayback)',
+    assignments: 'गृहकार्य तथा असाइनमेन्ट',
+
+    // Common Actions
+    save: 'सुरक्षित गर्नुहोस्',
+    cancel: 'रद्द गर्नुहोस्',
+    search: 'खोज्नुहोस्...',
+    filter: 'फिल्टर',
+    export_csv: 'CSV डाउनलोड',
+    print: 'प्रिन्ट गर्नुहोस्',
+    delete: 'हटाउनुहोस् (Delete)',
+    edit: 'सम्पादन गर्नुहोस्',
+    apply: 'लागू गर्नुहोस्',
+    confirm: 'पुष्टि गर्नुहोस्',
+    close: 'बन्द गर्नुहोस्',
+    view_details: 'विवरण हेर्नुहोस्',
+    download: 'डाउनलोड',
+    pay_now: 'अहिले भुक्तानी गर्नुहोस्',
+    checkout: 'सुरक्षित प्रस्थान',
+
+    // Statuses
+    cleared: 'चुक्ता भएको',
+    pending: 'प्रक्रियामा',
+    overdue: 'म्याद सकिएको',
+    approved: 'स्वीकृत',
+    rejected: 'अस्वीकृत',
+    present: 'उपस्थित',
+    absent: 'अनुपस्थित',
+    late: 'ढिलो',
+    live: 'प्रत्यक्ष (LIVE)',
+    active: 'सक्रिय',
+    completed: 'सम्पन्न',
+
+    // Dashboard & Metrics
+    total_students: 'कुल विद्यार्थी संख्या',
+    attendance_rate: 'औसत उपस्थिति',
+    fees_collected: 'संकलित कुल शुल्क',
+    active_notices: 'सक्रिय सूचनाहरू',
+    recent_activity: 'हालैका गतिविधिहरू',
+    live_broadcast: 'प्रत्यक्ष कक्षा प्रसारण',
+    fine_portal: 'शुल्क तथा जरिवाना भुक्तानी पोर्टल'
   }
 };
