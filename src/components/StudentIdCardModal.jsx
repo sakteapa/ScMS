@@ -16,7 +16,15 @@ import {
   MapPin, 
   Calendar, 
   Award, 
-  Hash 
+  Hash,
+  Radio,
+  Wifi,
+  Cpu,
+  Save,
+  Layers,
+  RotateCw,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { buildStudentQrPayload, serializeStudentQr } from '../lib/qrCodeService';
@@ -28,13 +36,19 @@ export default function StudentIdCardModal({
   initialStudent = null,
   selectedClassId = null
 }) {
-  const { students, classes, systemConfig, activeSchoolInfo, activeSchoolId } = useSchool();
+  const { students, classes, systemConfig, activeSchoolInfo, activeSchoolId, updateStudent } = useSchool();
 
   const [activeMode, setActiveMode] = useState('id_card'); // 'id_card', 'admit_card', 'config'
   const [selectedStudentId, setSelectedStudentId] = useState(initialStudent?.id || students[0]?.id);
   const [selectedClass, setSelectedClass] = useState(selectedClassId || initialStudent?.classId || classes[0]?.id);
   const [cardTheme, setCardTheme] = useState('indigo'); // 'indigo', 'cyan', 'cyber', 'emerald'
   const [isBulkPrint, setIsBulkPrint] = useState(false);
+  const [cardSide, setCardSide] = useState('both'); // 'front', 'back', 'both'
+
+  // RFID Card Pairing State
+  const [rfidInput, setRfidInput] = useState('');
+  const [rfidPairingSuccess, setRfidPairingSuccess] = useState(false);
+  const [rfidPairingMsg, setRfidPairingMsg] = useState('');
 
   // Admit Card Exam Details
   const [examName, setExamName] = useState('Annual Board Examination 2026');
@@ -47,10 +61,12 @@ export default function StudentIdCardModal({
     affiliationNo: activeSchoolInfo?.affiliationBadge || systemConfig?.affiliationNo || 'MBSE Affiliated',
     validThru: 'March 2027',
     showQrCode: true,
+    showRfidBadge: true,
+    rfidFrequency: '13.56 MHz (Mifare/NFC)',
     showPrincipalSignature: true,
     showWatermark: true,
-    emergencyPhone: activeSchoolInfo?.contactPhone || systemConfig?.contactPhone || '',
-    instructions: `1. This card is non-transferable and must be worn inside campus.\n2. In case of loss, report immediately to the Administrative Office.\n3. Found cards must be returned to ${activeSchoolInfo?.address || 'School Office'}.`
+    emergencyPhone: activeSchoolInfo?.contactPhone || systemConfig?.contactPhone || '+91 98623 00000',
+    instructions: `1. This Smart ID Card contains a contactless RFID chip & verification QR.\n2. Must be carried and tapped at school biometric gate terminals.\n3. Non-transferable. Report loss immediately to Administrative Office.\n4. Found cards must be returned to School Office, Aizawl.`
   }));
 
   useEffect(() => {
@@ -61,19 +77,57 @@ export default function StudentIdCardModal({
         schoolMotto: activeSchoolInfo?.motto || systemConfig?.motto || prev.schoolMotto,
         affiliationNo: activeSchoolInfo?.affiliationBadge || systemConfig?.affiliationNo || prev.affiliationNo,
         emergencyPhone: activeSchoolInfo?.contactPhone || systemConfig?.contactPhone || prev.emergencyPhone,
-        instructions: `1. This card is non-transferable and must be worn inside campus.\n2. In case of loss, report immediately to the Administrative Office.\n3. Found cards must be returned to ${activeSchoolInfo?.address || 'School Office'}.`
+        instructions: `1. This Smart ID Card contains a contactless RFID chip & verification QR.\n2. Must be carried and tapped at school biometric gate terminals.\n3. Non-transferable. Report loss immediately to Administrative Office.\n4. Found cards must be returned to ${activeSchoolInfo?.address || 'School Office'}.`
       }));
       setExamCenter(`${activeSchoolInfo?.name || 'School'} Campus, ${activeSchoolInfo?.address || 'Main Campus'}`);
     }
   }, [activeSchoolInfo, activeSchoolId, systemConfig, isOpen]);
 
-  const printAreaRef = useRef(null);
-
-  if (!isOpen) return null;
-
   const currentStudent = students.find(s => s.id === selectedStudentId) || initialStudent || students[0];
   const targetClassStudents = students.filter(s => s.classId === selectedClass);
   const targetClassObj = classes.find(c => c.id === (isBulkPrint ? selectedClass : currentStudent?.classId)) || classes[0];
+
+  // Sync RFID input when currentStudent changes
+  useEffect(() => {
+    if (currentStudent) {
+      setRfidInput(currentStudent.rfidCardUid || '');
+      setRfidPairingSuccess(false);
+      setRfidPairingMsg('');
+    }
+  }, [currentStudent?.id]);
+
+  if (!isOpen) return null;
+
+  // Handle saving RFID Card UID
+  const handleSaveRfidUid = (e) => {
+    if (e) e.preventDefault();
+    if (!currentStudent) return;
+    const cleanUid = rfidInput.trim();
+    if (cleanUid) {
+      if (updateStudent) {
+        updateStudent(currentStudent.id, { rfidCardUid: cleanUid });
+      }
+      setRfidPairingSuccess(true);
+      setRfidPairingMsg(`Card UID [${cleanUid}] assigned to ${currentStudent.firstName}!`);
+      setTimeout(() => {
+        setRfidPairingSuccess(false);
+      }, 3500);
+    }
+  };
+
+  // Auto-generate standard 10-digit RFID UID
+  const handleGenerateRandomRfid = () => {
+    const rawNumber = (currentStudent?.rollNumber || '1').toString().padStart(2, '0');
+    const randomSuffix = Math.floor(100000 + Math.random() * 900000).toString();
+    const newUid = `00${rawNumber}${randomSuffix}`;
+    setRfidInput(newUid);
+    if (currentStudent && updateStudent) {
+      updateStudent(currentStudent.id, { rfidCardUid: newUid });
+      setRfidPairingSuccess(true);
+      setRfidPairingMsg(`Generated & Linked RFID UID: ${newUid}`);
+      setTimeout(() => setRfidPairingSuccess(false), 3500);
+    }
+  };
 
   // Default Exam Schedule Routine
   const examRoutine = [
@@ -123,15 +177,39 @@ export default function StudentIdCardModal({
 
   const activeTheme = themeStyles[cardTheme] || themeStyles.indigo;
 
-  // Single ID Card Render
-  const renderSingleIdCard = (student) => {
+  // Render optical barcode pattern for RFID UID
+  const renderBarcodePattern = (codeStr = '0014829102') => {
+    const clean = String(codeStr || '00123456');
+    const bars = [];
+    for (let i = 0; i < clean.length; i++) {
+      const val = (clean.charCodeAt(i) % 3) + 1;
+      bars.push(val);
+      bars.push(1);
+    }
+    return (
+      <div className="flex items-center justify-center gap-[1.5px] h-8 px-2 bg-white rounded shadow-inner">
+        {bars.map((w, idx) => (
+          <div 
+            key={idx} 
+            className={`h-full ${idx % 2 === 0 ? 'bg-slate-950' : 'bg-transparent'}`}
+            style={{ width: `${Math.max(1, w)}px` }}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  // CARD FRONT RENDER
+  const renderCardFront = (student) => {
     const studentClass = classes.find(c => c.id === student.classId);
+    const rfidDisplayUid = student.rfidCardUid || `00${(student.rollNumber || '01').toString().padStart(2, '0')}${student.id.replace(/\D/g, '').padEnd(6, '7')}`;
+
     return (
       <div 
-        key={student.id} 
-        className="w-[340px] h-[520px] rounded-2xl overflow-hidden shadow-2xl border border-slate-700 bg-slate-900 flex flex-col relative print:border-slate-400 print:shadow-none print:m-3 print:break-inside-avoid shrink-0"
+        key={`front-${student.id}`} 
+        className="w-[330px] h-[510px] rounded-2xl overflow-hidden shadow-2xl border border-slate-700 bg-slate-900 flex flex-col relative print:border-slate-400 print:shadow-none print:m-2 print:break-inside-avoid shrink-0 select-none"
       >
-        {/* Card Header */}
+        {/* Front Header */}
         <div className={`p-4 text-center ${activeTheme.headerBg} text-white relative`}>
           <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md mx-auto mb-1 flex items-center justify-center font-bold font-['Outfit'] text-xs border border-white/30">
             MZS
@@ -144,7 +222,7 @@ export default function StudentIdCardModal({
         </div>
 
         {/* Student Photo & Identity */}
-        <div className="p-4 flex-1 flex flex-col items-center justify-between relative bg-slate-900 text-white">
+        <div className="p-3.5 flex-1 flex flex-col items-center justify-between relative bg-slate-900 text-white">
           {/* Subtle Crest Watermark */}
           {cardConfig.showWatermark && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5">
@@ -153,7 +231,7 @@ export default function StudentIdCardModal({
           )}
 
           {/* Photo */}
-          <div className="relative mt-1">
+          <div className="relative mt-0.5">
             <img 
               src={student.photoUrl || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150`} 
               alt={student.firstName}
@@ -171,7 +249,7 @@ export default function StudentIdCardModal({
           </div>
 
           {/* Name & Class */}
-          <div className="text-center mt-2 space-y-0.5">
+          <div className="text-center mt-1.5 space-y-0.5">
             <h4 className="font-extrabold text-base text-white tracking-tight">
               {student.firstName} {student.lastName}
             </h4>
@@ -181,29 +259,43 @@ export default function StudentIdCardModal({
           </div>
 
           {/* Info Grid */}
-          <div className="w-full grid grid-cols-2 gap-1.5 p-2 rounded-xl bg-slate-950 border border-slate-800 text-[11px] mt-2">
+          <div className="w-full grid grid-cols-2 gap-1.5 p-2 rounded-xl bg-slate-950 border border-slate-800 text-[11px] mt-1.5">
             <div>
-              <span className="text-slate-500 block text-[9px] uppercase font-mono">Roll Number</span>
+              <span className="text-slate-500 block text-[8px] uppercase font-mono">Roll Number</span>
               <span className="font-bold text-slate-200">#{student.rollNumber || '14'}</span>
             </div>
             <div>
-              <span className="text-slate-500 block text-[9px] uppercase font-mono">Blood Group</span>
+              <span className="text-slate-500 block text-[8px] uppercase font-mono">Blood Group</span>
               <span className="font-bold text-rose-400">{student.bloodGroup || 'O+'}</span>
             </div>
             <div>
-              <span className="text-slate-500 block text-[9px] uppercase font-mono">Student ID</span>
+              <span className="text-slate-500 block text-[8px] uppercase font-mono">Student ID</span>
               <span className="font-mono text-slate-300 font-semibold">{student.id}</span>
             </div>
             <div>
-              <span className="text-slate-500 block text-[9px] uppercase font-mono">Emergency</span>
+              <span className="text-slate-500 block text-[8px] uppercase font-mono">Emergency</span>
               <span className="font-mono text-slate-300 text-[10px]">{student.guardianPhone || cardConfig.emergencyPhone}</span>
             </div>
           </div>
 
+          {/* RFID Smart Chip Badge Banner */}
+          {cardConfig.showRfidBadge && (
+            <div className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-950/40 via-blue-950/40 to-slate-950 border border-cyan-500/30 text-[10px] mt-1.5">
+              <div className="flex items-center gap-1.5 text-cyan-300">
+                <Radio className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+                <span className="font-bold tracking-wider uppercase font-mono text-[8px]">RFID TAP PASS</span>
+              </div>
+              <div className="flex items-center gap-1 font-mono text-slate-300 text-[8px]">
+                <span className="text-slate-500">UID:</span>
+                <span className="font-bold text-cyan-200">{rfidDisplayUid}</span>
+              </div>
+            </div>
+          )}
+
           {/* Official Cryptographic Student QR Code & Signature Block */}
-          <div className="w-full flex items-center justify-between pt-2 border-t border-slate-800 mt-2 px-1">
+          <div className="w-full flex items-center justify-between pt-2 border-t border-slate-800 mt-1 px-1">
             {cardConfig.showQrCode && (
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <div className="p-1 bg-white rounded-lg shadow-sm border border-slate-300 shrink-0">
                   <QRCodeSVG 
                     value={serializeStudentQr(buildStudentQrPayload({
@@ -217,14 +309,14 @@ export default function StudentIdCardModal({
                       parentPhone: student.guardianPhone || student.parentPhone || '',
                       bloodGroup: student.bloodGroup || 'O+'
                     }))} 
-                    size={46} 
+                    size={42} 
                     level="M"
                     includeMargin={false}
                   />
                 </div>
                 <div className="text-left space-y-0.5">
-                  <span className="text-[9px] font-bold text-cyan-400 block font-mono leading-none">STUDENT QR</span>
-                  <div className="text-[8px] font-mono text-slate-300 font-semibold">ID: {student.id}</div>
+                  <span className="text-[8px] font-bold text-cyan-400 block font-mono leading-none">STUDENT QR</span>
+                  <div className="text-[8px] font-mono text-slate-300 font-semibold">{student.id}</div>
                   <div className="text-[7px] text-emerald-400 font-semibold flex items-center gap-0.5">
                     <ShieldCheck className="w-2.5 h-2.5" /> In-App Scannable
                   </div>
@@ -237,17 +329,116 @@ export default function StudentIdCardModal({
                 <div className="font-serif italic text-cyan-300 text-xs font-bold leading-none">
                   Lalthansanga
                 </div>
-                <span className="text-[8px] text-slate-500 uppercase font-mono block">Principal</span>
+                <span className="text-[7px] text-slate-500 uppercase font-mono block">Principal</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Card Footer Bar */}
-        <div className="p-2 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-[9px] text-slate-500 px-3">
+        {/* Card Front Footer Bar */}
+        <div className="p-2 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-[8px] text-slate-500 px-3">
           <span>Valid Thru: <strong className="text-slate-300">{cardConfig.validThru}</strong></span>
           <span>Aizawl, Mizoram</span>
         </div>
+      </div>
+    );
+  };
+
+  // CARD BACK RENDER
+  const renderCardBack = (student) => {
+    const rfidDisplayUid = student.rfidCardUid || `00${(student.rollNumber || '01').toString().padStart(2, '0')}${student.id.replace(/\D/g, '').padEnd(6, '7')}`;
+
+    return (
+      <div 
+        key={`back-${student.id}`} 
+        className="w-[330px] h-[510px] rounded-2xl overflow-hidden shadow-2xl border border-slate-700 bg-slate-900 flex flex-col justify-between relative print:border-slate-400 print:shadow-none print:m-2 print:break-inside-avoid shrink-0 select-none text-white"
+      >
+        <div>
+          {/* Magnetic Stripe Simulator */}
+          <div className="w-full h-10 bg-slate-950 border-b border-slate-800 mt-3 relative flex items-center px-4">
+            <div className="w-full h-1 bg-gradient-to-r from-transparent via-slate-800 to-transparent opacity-60"></div>
+          </div>
+
+          {/* Back Content Header */}
+          <div className="p-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <span className="text-[9px] uppercase font-mono text-cyan-400 font-bold tracking-wider flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Cardholder Terms &amp; Rules</span>
+              </span>
+              <span className="text-[8px] font-mono text-slate-400">MBSE / SCMS Standard</span>
+            </div>
+
+            {/* Instruction Bullet Points */}
+            <div className="space-y-1.5 text-[8.5px] text-slate-300 leading-relaxed bg-slate-950/80 p-3 rounded-xl border border-slate-800">
+              <div className="flex items-start gap-1.5">
+                <span className="text-cyan-400 font-bold">1.</span>
+                <span>Card hi school premises chhungah pai reng tur a ni a, entry/exit biometric terminal-ah tap tur a ni.</span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="text-cyan-400 font-bold">2.</span>
+                <span>Contactless RFID Chip (13.56MHz) leh QR code a in-thlunzawm vek a, midang hman tir phal a ni lo.</span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="text-cyan-400 font-bold">3.</span>
+                <span>Card bo emaw chhia a awm chuan Admin Office-ah hriattir vat tur a ni.</span>
+              </div>
+              <div className="flex items-start gap-1.5">
+                <span className="text-cyan-400 font-bold">4.</span>
+                <span>A chhar tute chuan a hnuaia School Office Address-ah hian khawngaihin pek kir tur a ni e.</span>
+              </div>
+            </div>
+
+            {/* Emergency & Medical Box */}
+            <div className="p-2.5 rounded-xl bg-gradient-to-r from-rose-950/20 via-slate-950 to-slate-950 border border-rose-500/20 text-[9px] space-y-1">
+              <div className="font-bold text-rose-300 flex items-center gap-1 text-[8px] uppercase font-mono">
+                <Phone className="w-2.5 h-2.5" /> Emergency Contacts
+              </div>
+              <div className="grid grid-cols-2 gap-1 text-[8px] text-slate-300">
+                <div>
+                  <span className="text-slate-500 block">School Office:</span>
+                  <span className="font-mono font-bold">{cardConfig.emergencyPhone}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block">Nearest Hospital:</span>
+                  <span className="font-semibold text-rose-300">Civil Hospital Aizawl</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Optical Barcode of RFID UID */}
+            <div className="pt-1 text-center space-y-1">
+              {renderBarcodePattern(rfidDisplayUid)}
+              <div className="font-mono text-[8px] tracking-widest text-slate-400">
+                *{rfidDisplayUid}*
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Back Footer */}
+        <div className="p-3 bg-slate-950 border-t border-slate-800 text-[8px] text-slate-400 flex items-center justify-between">
+          <div className="space-y-0.5 text-left">
+            <span className="font-bold text-white block">{cardConfig.schoolName}</span>
+            <span className="text-slate-500">{activeSchoolInfo?.address || 'Aizawl, Mizoram'}</span>
+          </div>
+          <div className="text-right">
+            <span className="text-[7px] text-slate-500 uppercase block font-mono">Official Seal</span>
+            <span className="font-serif italic text-cyan-400 font-bold">Authorized Signatory</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Single ID Card Render (Front, Back, or Both)
+  const renderSingleIdCard = (student) => {
+    if (cardSide === 'front') return renderCardFront(student);
+    if (cardSide === 'back') return renderCardBack(student);
+    return (
+      <div key={`both-${student.id}`} className="flex flex-wrap items-center justify-center gap-4">
+        {renderCardFront(student)}
+        {renderCardBack(student)}
       </div>
     );
   };
@@ -258,7 +449,7 @@ export default function StudentIdCardModal({
     return (
       <div 
         key={student.id} 
-        className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl relative print:border-slate-400 print:shadow-none print:m-4 print:break-inside-avoid print:bg-white print:text-black"
+        className="w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl relative print:border-slate-400 print:shadow-none print:m-4 print:break-inside-avoid print:bg-white print:text-black select-none"
       >
         {/* Admit Card Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
@@ -276,78 +467,74 @@ export default function StudentIdCardModal({
           </div>
 
           <div className="text-right">
-            {student.status === 'suspended' || student.restrictionType === 'exam_hold' ? (
-              <span className="px-3 py-1 rounded-full bg-rose-600/30 text-rose-200 border border-rose-500 text-xs font-bold font-mono animate-pulse">
-                WITHHELD: SUSPENDED
-              </span>
-            ) : (
-              <span className="px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold font-mono">
-                OFFICIAL ADMIT CARD
-              </span>
-            )}
-            <div className="text-[10px] text-slate-400 font-mono mt-1">Academic Session: 2026-2027</div>
+            <span className="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold font-mono">
+              OFFICIAL HALL TICKET
+            </span>
           </div>
         </div>
 
-        {/* Candidate Details & Photo */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 py-4 border-b border-slate-800">
-          <div className="md:col-span-9 grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <span className="text-[10px] uppercase font-mono text-slate-400 block">Candidate Name</span>
-              <strong className="text-white text-sm">{student.firstName} {student.lastName}</strong>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-mono text-slate-400 block">Exam Roll Number</span>
-              <strong className="text-cyan-400 text-sm font-mono">MZ-2026-{student.rollNumber?.toString().padStart(3, '0') || '014'}</strong>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-mono text-slate-400 block">Class &amp; Stream</span>
-              <span className="text-slate-200">{studentClass?.name || 'Class 12'} (Section {student.section || 'A'})</span>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-mono text-slate-400 block">Student ID / Reg No</span>
-              <span className="font-mono text-slate-300">{student.id}</span>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-mono text-slate-400 block">Father / Guardian</span>
-              <span className="text-slate-200">{student.fatherName || 'Lalremsanga'}</span>
-            </div>
-            <div>
-              <span className="text-[10px] uppercase font-mono text-slate-400 block">Assigned Hall &amp; Room</span>
-              <span className="text-emerald-400 font-bold">Hall B - Desk #{student.rollNumber || '14'}</span>
-            </div>
-          </div>
-
-          <div className="md:col-span-3 flex flex-col items-center justify-center">
+        {/* Candidate Detail Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4 border-b border-slate-800 items-center">
+          <div className="flex items-center gap-3">
             <img 
               src={student.photoUrl || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150`} 
-              alt="" 
-              className="w-20 h-24 object-cover rounded-xl border border-slate-700 shadow"
+              alt={student.firstName} 
+              className="w-16 h-20 object-cover rounded-xl border border-slate-700 shadow"
             />
-            <span className="text-[9px] text-slate-400 mt-1 font-mono">Attested Photo</span>
+            <div>
+              <h4 className="font-bold text-sm text-white">{student.firstName} {student.lastName}</h4>
+              <p className="text-xs text-slate-400">Roll No: <strong className="text-cyan-400">#{student.rollNumber || '1'}</strong></p>
+              <p className="text-[10px] text-slate-500 font-mono">ID: {student.id}</p>
+              <p className="text-[10px] text-cyan-300 font-mono">RFID: {student.rfidCardUid || 'Unassigned'}</p>
+            </div>
+          </div>
+
+          <div className="space-y-1 text-xs text-slate-300">
+            <div>Class / Stream: <strong>{studentClass?.name || 'Class 12'}</strong></div>
+            <div>Section: <strong>{student.section || 'A'}</strong></div>
+            <div>Blood Group: <strong className="text-rose-400">{student.bloodGroup || 'O+'}</strong></div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3">
+            <div className="p-1.5 bg-white rounded-xl shadow shrink-0">
+              <QRCodeSVG 
+                value={serializeStudentQr(buildStudentQrPayload({
+                  id: student.id,
+                  name: `${student.firstName} ${student.lastName}`,
+                  rollNo: student.rollNo || student.rollNumber || 1,
+                  classId: student.classId,
+                  className: studentClass?.name || 'Class 12',
+                  stage: studentClass?.stage || 'higher_secondary',
+                  stream: studentClass?.stream || 'science',
+                  parentPhone: student.guardianPhone || '',
+                  bloodGroup: student.bloodGroup || 'O+'
+                }))} 
+                size={60} 
+              />
+            </div>
           </div>
         </div>
 
-        {/* Timetable / Subjects Schedule Table */}
-        <div className="py-4 space-y-2">
-          <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Scheduled Exam Papers &amp; Dates</h4>
-          <div className="rounded-xl overflow-hidden border border-slate-800">
+        {/* Schedule Table */}
+        <div className="py-4">
+          <h5 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Subject Examination Routine</h5>
+          <div className="overflow-x-auto rounded-xl border border-slate-800">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px]">
+              <thead className="bg-slate-950 text-slate-400 font-mono text-[10px] uppercase">
                 <tr>
                   <th className="p-2.5">Date</th>
                   <th className="p-2.5">Time</th>
-                  <th className="p-2.5">Subject Paper</th>
-                  <th className="p-2.5 text-center">Invigilator Initial</th>
+                  <th className="p-2.5">Subject</th>
+                  <th className="p-2.5">Room / Desk</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 text-slate-300">
+              <tbody className="divide-y divide-slate-800 text-slate-200">
                 {examRoutine.map((item, idx) => (
                   <tr key={idx} className="hover:bg-slate-800/40">
-                    <td className="p-2.5 font-mono text-cyan-300">{item.date}</td>
-                    <td className="p-2.5 text-slate-400">{item.time}</td>
+                    <td className="p-2.5 font-mono text-[11px] text-cyan-300">{item.date}</td>
+                    <td className="p-2.5 text-slate-300">{item.time}</td>
                     <td className="p-2.5 font-semibold text-white">{item.subject}</td>
-                    <td className="p-2.5 text-center text-slate-600 font-mono">_______________</td>
+                    <td className="p-2.5 text-slate-400">{item.room}</td>
                   </tr>
                 ))}
               </tbody>
@@ -355,59 +542,15 @@ export default function StudentIdCardModal({
           </div>
         </div>
 
-        {/* Candidate Instructions & Signatures */}
-        <div className="pt-3 border-t border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-          <div className="text-[10px] text-slate-400 space-y-1">
-            <span className="font-bold text-slate-300 uppercase block font-mono">Candidate Instructions:</span>
-            <p>1. Candidates must arrive at the examination hall 15 minutes before commencement.</p>
-            <p>2. Electronic gadgets, smartwatches, and study notes are strictly prohibited.</p>
-            <p>3. This admit card must be presented along with the Student ID Card.</p>
+        {/* Signatures */}
+        <div className="pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+          <div>
+            <div className="h-8"></div>
+            <span className="block border-t border-slate-700 pt-1 text-[10px] font-mono">Candidate Signature</span>
           </div>
-
-          <div className="flex items-end justify-between px-2 pt-4">
-            <div className="text-center">
-              <div className="border-t border-slate-700 w-28 pt-1 text-[9px] font-mono text-slate-400">
-                Candidate Signature
-              </div>
-            </div>
-
-            {/* Official Admit Card Exam Hall Entry QR Code */}
-            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 shadow-sm">
-              <div className="p-1 bg-white rounded-lg shrink-0">
-                <QRCodeSVG
-                  value={serializeStudentQr(buildStudentQrPayload({
-                    id: student.id,
-                    name: `${student.firstName} ${student.lastName}`,
-                    rollNo: student.rollNo || student.rollNumber || 1,
-                    classId: student.classId,
-                    className: studentClass?.name || 'Class 12',
-                    stage: studentClass?.stage || 'higher_secondary',
-                    stream: studentClass?.stream || 'science',
-                    parentPhone: student.guardianPhone || student.parentPhone || '',
-                    bloodGroup: student.bloodGroup || 'O+'
-                  }))}
-                  size={42}
-                  level="M"
-                  includeMargin={false}
-                />
-              </div>
-              <div className="text-left font-mono">
-                <span className="text-[9px] text-cyan-400 font-bold block leading-tight">HALL PASS QR</span>
-                <span className="text-[8px] text-slate-400 block">Scan at Exam Gate</span>
-                <span className="text-[7px] text-emerald-400 font-semibold flex items-center gap-0.5">
-                  <ShieldCheck className="w-2.5 h-2.5" /> Verified Pass
-                </span>
-              </div>
-            </div>
-
-            <div className="text-center">
-              <div className="font-serif italic text-cyan-300 text-xs font-bold leading-none mb-1">
-                Lalthansanga
-              </div>
-              <div className="border-t border-slate-700 w-28 pt-1 text-[9px] font-mono text-slate-400">
-                Principal / Controller
-              </div>
-            </div>
+          <div className="text-right">
+            <div className="font-serif italic text-cyan-300 text-sm font-bold">Lalthansanga</div>
+            <span className="block border-t border-slate-700 pt-1 text-[10px] font-mono uppercase">Principal &amp; Controller</span>
           </div>
         </div>
       </div>
@@ -415,21 +558,51 @@ export default function StudentIdCardModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
-      <div className="w-full max-w-5xl h-[92vh] bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col">
-        
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
+      {/* Print-specific style tag */}
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #id-print-zone, #id-print-zone * {
+            visibility: visible;
+          }
+          #id-print-zone {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .no-print {
+            display: none !important;
+          }
+          @page {
+            size: auto;
+            margin: 8mm;
+          }
+        }
+      `}</style>
+
+      <div className="relative w-full max-w-5xl h-[92vh] rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl flex flex-col overflow-hidden">
         {/* Header Bar */}
-        <div className="p-4 bg-gradient-to-r from-slate-900 via-indigo-950/50 to-slate-900 border-b border-slate-800 flex items-center justify-between">
+        <div className="no-print p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/90">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
               <CreditCard className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-base font-['Outfit']">
-                Student Identity Cards &amp; Exam Admit Card Generator
+              <h3 className="text-base font-bold text-white font-['Outfit'] flex items-center gap-2">
+                <span>Smart ID Card &amp; RFID Pass Studio</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-mono">
+                  CR80 PVC / A4 Ready
+                </span>
               </h3>
               <p className="text-xs text-slate-400">
-                Standard CR80 PVC Student ID Cards and MBSE Term Examination Hall Tickets with printable bulk export.
+                Official PVC Student ID Cards with RFID Chip, QR Code, and instant Tap-to-Pair reader.
               </p>
             </div>
           </div>
@@ -437,47 +610,47 @@ export default function StudentIdCardModal({
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-cyan-500/20 transition"
+              className="px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-cyan-500/20 transition cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               <span>Print / Export PDF</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition"
+              className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Top Control Bar: Modes & Filters */}
-        <div className="p-3 bg-slate-950/80 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+        {/* Top Control Bar: Modes, Filters, Card Side & Themes */}
+        <div className="no-print p-3 bg-slate-950/80 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
           {/* Mode Switcher */}
           <div className="flex items-center p-1 rounded-xl bg-slate-900 border border-slate-800">
             <button
               onClick={() => setActiveMode('id_card')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 activeMode === 'id_card' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
               }`}
             >
               <CreditCard className="w-3.5 h-3.5" />
-              <span>Student ID Card</span>
+              <span>Student Smart ID</span>
             </button>
 
             <button
               onClick={() => setActiveMode('admit_card')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 activeMode === 'admit_card' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
-              <span>Exam Admit Card (Hall Ticket)</span>
+              <span>Exam Admit Card</span>
             </button>
 
             <button
               onClick={() => setActiveMode('config')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 activeMode === 'config' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -486,9 +659,39 @@ export default function StudentIdCardModal({
             </button>
           </div>
 
-          {/* Student / Class Filter */}
+          {/* Student / Class Filter & Card Side Switcher */}
           {activeMode !== 'config' && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center flex-wrap gap-2.5">
+              {/* Card Side Toggle for ID Card */}
+              {activeMode === 'id_card' && (
+                <div className="flex items-center p-0.5 rounded-xl bg-slate-900 border border-slate-800">
+                  <button
+                    onClick={() => setCardSide('front')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                      cardSide === 'front' ? 'bg-cyan-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Front
+                  </button>
+                  <button
+                    onClick={() => setCardSide('back')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                      cardSide === 'back' ? 'bg-cyan-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={() => setCardSide('both')}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                      cardSide === 'both' ? 'bg-cyan-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Dual-Side
+                  </button>
+                </div>
+              )}
+
               <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 font-semibold">
                 <input
                   type="checkbox"
@@ -496,7 +699,7 @@ export default function StudentIdCardModal({
                   onChange={(e) => setIsBulkPrint(e.target.checked)}
                   className="w-4 h-4 rounded text-indigo-500"
                 />
-                <span>Bulk Class Print ({targetClassStudents.length} Students)</span>
+                <span>Bulk Class ({targetClassStudents.length})</span>
               </label>
 
               {isBulkPrint ? (
@@ -513,7 +716,7 @@ export default function StudentIdCardModal({
                 <select
                   value={selectedStudentId}
                   onChange={(e) => setSelectedStudentId(e.target.value)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500 max-w-[200px]"
                 >
                   {students.map(s => (
                     <option key={s.id} value={s.id}>
@@ -525,18 +728,18 @@ export default function StudentIdCardModal({
 
               {/* Theme Selector for ID Card */}
               {activeMode === 'id_card' && (
-                <div className="flex items-center gap-1 ml-2">
+                <div className="flex items-center gap-1 border-l border-slate-800 pl-2">
                   {['indigo', 'cyan', 'emerald', 'cyber'].map(t => (
                     <button
                       key={t}
-                      type="button"
                       onClick={() => setCardTheme(t)}
                       className={`w-5 h-5 rounded-full border-2 transition ${
-                        cardTheme === t ? 'border-white scale-110 shadow' : 'border-transparent opacity-60 hover:opacity-100'
+                        cardTheme === t ? 'border-white scale-110 shadow-md' : 'border-transparent opacity-60'
+                      } ${
+                        t === 'indigo' ? 'bg-indigo-600' :
+                        t === 'cyan' ? 'bg-cyan-500' :
+                        t === 'emerald' ? 'bg-emerald-500' : 'bg-pink-600'
                       }`}
-                      style={{
-                        backgroundColor: t === 'indigo' ? '#6366f1' : t === 'cyan' ? '#06b6d4' : t === 'emerald' ? '#10b981' : '#ec4899'
-                      }}
                       title={`${t} theme`}
                     />
                   ))}
@@ -546,12 +749,67 @@ export default function StudentIdCardModal({
           )}
         </div>
 
+        {/* RFID Card Quick-Pair Station Bar (Only visible in single ID card mode) */}
+        {activeMode === 'id_card' && !isBulkPrint && currentStudent && (
+          <div className="no-print px-4 py-2.5 bg-gradient-to-r from-slate-950 via-cyan-950/30 to-slate-950 border-b border-cyan-500/20 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                <Radio className="w-4 h-4 animate-pulse" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span>RFID Card Pairing Station</span>
+                  <span className="text-[10px] text-cyan-400 font-mono">
+                    ({currentStudent.firstName} {currentStudent.lastName})
+                  </span>
+                </span>
+                <span className="text-[10px] text-slate-400 block">
+                  Tap card on USB Reader or enter 10-digit UID to link attendance &amp; gate access.
+                </span>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveRfidUid} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={rfidInput}
+                onChange={(e) => setRfidInput(e.target.value)}
+                placeholder="Tap RFID card or type UID..."
+                className="px-3 py-1 rounded-xl bg-slate-900 border border-cyan-500/40 text-cyan-200 text-xs font-mono placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 w-48 sm:w-56"
+              />
+              <button
+                type="submit"
+                className="px-3 py-1 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center gap-1 transition cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>Save</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleGenerateRandomRfid}
+                className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                title="Generate new 10-digit UID"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>Auto-UID</span>
+              </button>
+            </form>
+
+            {rfidPairingSuccess && (
+              <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1 bg-emerald-500/10 px-2.5 py-0.5 rounded-lg border border-emerald-500/30 animate-fadeIn">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>{rfidPairingMsg || 'RFID Card paired successfully!'}</span>
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Body Area */}
-        <div ref={printAreaRef} className="flex-1 p-6 overflow-y-auto bg-slate-950/50 flex items-center justify-center">
+        <div className="flex-1 p-4 sm:p-6 overflow-y-auto bg-slate-950/50 flex items-center justify-center">
           
           {/* 1. STUDENT ID CARD VIEW */}
           {activeMode === 'id_card' && (
-            <div className="w-full flex flex-wrap items-center justify-center gap-6">
+            <div id="id-print-zone" className="w-full flex flex-wrap items-center justify-center gap-6">
               {isBulkPrint ? (
                 targetClassStudents.map(student => renderSingleIdCard(student))
               ) : (
@@ -562,7 +820,7 @@ export default function StudentIdCardModal({
 
           {/* 2. EXAM ADMIT CARD VIEW */}
           {activeMode === 'admit_card' && (
-            <div className="w-full flex flex-col items-center justify-center space-y-6">
+            <div id="id-print-zone" className="w-full flex flex-col items-center justify-center space-y-6">
               {isBulkPrint ? (
                 targetClassStudents.map(student => renderSingleAdmitCard(student))
               ) : (
@@ -627,6 +885,21 @@ export default function StudentIdCardModal({
                 <label className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between cursor-pointer">
                   <div>
                     <span className="text-slate-200 text-xs font-bold block flex items-center gap-1.5">
+                      <Radio className="w-3.5 h-3.5 text-cyan-400" /> RFID Chip Badge
+                    </span>
+                    <span className="text-[10px] text-slate-400">Prints Contactless wave logo &amp; UID on card front</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={cardConfig.showRfidBadge}
+                    onChange={(e) => setCardConfig({ ...cardConfig, showRfidBadge: e.target.checked })}
+                    className="w-4 h-4 rounded text-indigo-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between cursor-pointer">
+                  <div>
+                    <span className="text-slate-200 text-xs font-bold block flex items-center gap-1.5">
                       <QrCode className="w-3.5 h-3.5 text-cyan-400" /> Smart Student QR Code
                     </span>
                     <span className="text-[10px] text-slate-400">Encodes student profile for in-app live camera scanner</span>
@@ -680,7 +953,7 @@ export default function StudentIdCardModal({
                 <button
                   type="button"
                   onClick={() => setActiveMode('id_card')}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <Check className="w-4 h-4" />
                   <span>Save &amp; View Preview</span>
