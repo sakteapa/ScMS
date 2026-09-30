@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
 import {
   processSchoolAiQuery,
+  processSchoolAiQueryAsync,
   getSchoolAiProactiveAlerts,
   getSchoolQuickStats,
 } from '../utils/schoolAiEngine';
@@ -299,8 +300,8 @@ export default function SchoolAiAssistant({ setCurrentTab }) {
     setChatInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const response = processSchoolAiQuery(text, schoolCtx);
+    setTimeout(async () => {
+      const response = await processSchoolAiQueryAsync(text, schoolCtx);
       const aiMsg = {
         id: `a-${Date.now()}`,
         sender: 'ai',
@@ -312,7 +313,7 @@ export default function SchoolAiAssistant({ setCurrentTab }) {
       setMessages(prev => [...prev, aiMsg]);
       setIsTyping(false);
       playChime();
-    }, 900 + Math.random() * 600);
+    }, 400);
   };
 
   const navigateTo = (tab) => {

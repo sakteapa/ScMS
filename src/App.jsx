@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SchoolProvider, useSchool } from './context/SchoolContext';
@@ -14,39 +14,43 @@ import SuperAdminAiWidget from './components/SuperAdminAiWidget';
 import SchoolAiAssistant from './components/SchoolAiAssistant';
 import MobileBottomNav from './components/MobileBottomNav';
 
+// Immediate primary landing views
 import DashboardView from './views/DashboardView';
-import ClassAdminLiveView from './views/ClassAdminLiveView';
-import AcademicsView from './views/AcademicsView';
-import ReportCardView from './views/ReportCardView';
-import CertificatesView from './views/CertificatesView';
-import RoutineView from './views/RoutineView';
-import AttendanceView from './views/AttendanceView';
-import FinancialsView from './views/FinancialsView';
-import StudentsView from './views/StudentsView';
-import PortalView from './views/PortalView';
-import LibraryView from './views/LibraryView';
-import StaffPayrollView from './views/StaffPayrollView';
-import AdmissionsView from './views/AdmissionsView';
-import TransportHostelView from './views/TransportHostelView';
-import HostelView from './views/HostelView';
-import NoticesView from './views/NoticesView';
-import DevStudioView from './views/DevStudioView';
-import CalendarView from './views/CalendarView';
-import LeaveManagementView from './views/LeaveManagementView';
-import ClinicView from './views/ClinicView';
-import VisitorsView from './views/VisitorsView';
-import InventoryView from './views/InventoryView';
-import AlumniView from './views/AlumniView';
-import CanteenView from './views/CanteenView';
-import GroupConferenceView from './views/GroupConferenceView';
-import LiveBroadcastView from './views/LiveBroadcastView';
-import StaffChatView from './views/StaffChatView';
-import AnalyticsDashboardView from './views/AnalyticsDashboardView';
 import PublicWebsiteView from './views/PublicWebsiteView';
 import LoginView from './views/LoginView';
-import WebsiteEditorModal from './components/WebsiteEditorModal';
-import { PublicAdmissionPortalModal } from './components/admissions/PublicAdmissionPortalModal';
 import PlatformLandingView from './views/PlatformLandingView';
+import { PublicAdmissionPortalModal } from './components/admissions/PublicAdmissionPortalModal';
+
+// Code-split dynamic views for optimal initial page-load performance
+const ClassAdminLiveView = lazy(() => import('./views/ClassAdminLiveView'));
+const AcademicsView = lazy(() => import('./views/AcademicsView'));
+const ReportCardView = lazy(() => import('./views/ReportCardView'));
+const CertificatesView = lazy(() => import('./views/CertificatesView'));
+const RoutineView = lazy(() => import('./views/RoutineView'));
+const AttendanceView = lazy(() => import('./views/AttendanceView'));
+const FinancialsView = lazy(() => import('./views/FinancialsView'));
+const StudentsView = lazy(() => import('./views/StudentsView'));
+const PortalView = lazy(() => import('./views/PortalView'));
+const LibraryView = lazy(() => import('./views/LibraryView'));
+const StaffPayrollView = lazy(() => import('./views/StaffPayrollView'));
+const AdmissionsView = lazy(() => import('./views/AdmissionsView'));
+const TransportHostelView = lazy(() => import('./views/TransportHostelView'));
+const HostelView = lazy(() => import('./views/HostelView'));
+const NoticesView = lazy(() => import('./views/NoticesView'));
+const DevStudioView = lazy(() => import('./views/DevStudioView'));
+const CalendarView = lazy(() => import('./views/CalendarView'));
+const LeaveManagementView = lazy(() => import('./views/LeaveManagementView'));
+const ClinicView = lazy(() => import('./views/ClinicView'));
+const VisitorsView = lazy(() => import('./views/VisitorsView'));
+const InventoryView = lazy(() => import('./views/InventoryView'));
+const AlumniView = lazy(() => import('./views/AlumniView'));
+const CanteenView = lazy(() => import('./views/CanteenView'));
+const GroupConferenceView = lazy(() => import('./views/GroupConferenceView'));
+const LiveBroadcastView = lazy(() => import('./views/LiveBroadcastView'));
+const StaffChatView = lazy(() => import('./views/StaffChatView'));
+const AnalyticsDashboardView = lazy(() => import('./views/AnalyticsDashboardView'));
+const WebsiteEditorModal = lazy(() => import('./components/WebsiteEditorModal'));
+
 
 function SchoolAppContent() {
   const { center_id } = useParams();
@@ -308,7 +312,6 @@ function SchoolAppContent() {
           <PublicAdmissionPortalModal
             isOpen={isPublicAdmissionModalOpen}
             onClose={() => setIsPublicAdmissionModalOpen(false)}
-            applications={admissions || []}
             admissionConfig={onlineAdmissionConfig}
             schoolClasses={classes}
             onApplicationSubmitted={(newApp) => {
@@ -359,7 +362,6 @@ function SchoolAppContent() {
         <PublicAdmissionPortalModal
           isOpen={isPublicAdmissionModalOpen}
           onClose={() => setIsPublicAdmissionModalOpen(false)}
-          applications={admissions || []}
           admissionConfig={onlineAdmissionConfig}
           schoolClasses={classes}
           onApplicationSubmitted={(newApp) => {

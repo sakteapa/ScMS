@@ -652,7 +652,6 @@ export const AdmissionsManager: React.FC<AdmissionsManagerProps> = ({
       <PublicAdmissionPortalModal
         isOpen={isPublicPortalOpen}
         onClose={() => setIsPublicPortalOpen(false)}
-        applications={applications}
       />
 
       {/* Printable Slip Modal */}

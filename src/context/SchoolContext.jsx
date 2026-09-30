@@ -97,7 +97,22 @@ import {
   DEMO_WEBSITE_CONFIG
 } from '../data/demoSchoolData';
 import { TRANSLATIONS } from '../data/translations';
-import { db, collection, getDocs, setDoc, addDoc, doc, query, orderBy, onSnapshot, isOfflinePersistenceActive, isLiveFirebaseConfigured } from '../services/firebase';
+import {
+  auth as firebaseAuth,
+  db,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  addDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  onAuthStateChanged,
+  isOfflinePersistenceActive,
+  isLiveFirebaseConfigured
+} from '../services/firebase';
 import {
   getActiveSchoolId,
   getActiveSchoolInfo,
@@ -117,6 +132,21 @@ export function SchoolProvider({ children }) {
 
   // Authentication Context & Showcase Mode Guard
   const auth = useAuth();
+  const [firebaseUserUid, setFirebaseUserUid] = useState(() => firebaseAuth?.currentUser?.uid || null);
+  useEffect(() => {
+    if (!firebaseAuth) return undefined;
+    return onAuthStateChanged(firebaseAuth, (user) => {
+      setFirebaseUserUid(user?.uid || null);
+    });
+  }, []);
+  const hasMatchingFirebaseSession = Boolean(
+    firebaseUserUid && (
+      auth?.currentUser?.uid === firebaseUserUid ||
+      auth?.currentUser?.firebaseUid === firebaseUserUid ||
+      (auth?.currentUser?.email && firebaseAuth?.currentUser?.email && 
+       auth.currentUser.email.toLowerCase() === firebaseAuth.currentUser.email.toLowerCase())
+    )
+  );
   const isSuperAdmin = auth?.currentUser?.role === 'superadmin';
   const isShowcaseMode = Boolean(auth?.currentUser && !isSuperAdmin);
   const [showcaseNotice, setShowcaseNotice] = useState(null);
@@ -169,45 +199,65 @@ export function SchoolProvider({ children }) {
       }
 
 
-      // Helper: detect if a saved system_config/website_config is contaminated with OHA data
-      const isOhaContaminated = (rawJson) => {
+      // Helper: detect if a saved system_config/website_config is contaminated with OHA or mismatched data
+      const isConfigContaminated = (rawJson, schoolKey) => {
         try {
           const p = JSON.parse(rawJson);
-          return (
-            p?.schoolName?.includes('One Heart') ||
-            p?.schoolName?.includes('OHA') ||
-            p?.address?.includes('Lunglawn') ||
-            p?.contact?.address?.includes('Lunglawn') ||
-            p?.hero?.headline?.includes('One Heart')
-          );
+          if (!p) return true;
+          const name = (p.schoolName || '').toLowerCase();
+          const addr = (p.address || p.contact?.address || '').toLowerCase();
+          const headline = (p.hero?.headline || '').toLowerCase();
+
+          // 1. Detect OHA data leakage
+          if (name.includes('one heart') || name.includes('oha') || addr.includes('lunglawn') || headline.includes('one heart')) {
+            return true;
+          }
+
+          // 2. Validate identity matches the active school
+          if (schoolKey === 'ghhss' && !name.includes('hnahthial')) return true;
+          if (schoolKey === 'stpauls' && !name.includes('paul')) return true;
+          if (schoolKey === 'gmhs' && !name.includes('mizo')) return true;
+          if (schoolKey === 'demo' && !name.includes('demo') && !name.includes('model')) return true;
+
+          return false;
+        } catch { return true; }
+      };
+
+      const isRecordContaminated = (rawJson, expectedPrefix) => {
+        try {
+          const p = JSON.parse(rawJson);
+          if (Array.isArray(p) && p.length > 0) {
+            if (p[0]?.admissionNo && !p[0]?.admissionNo?.startsWith(expectedPrefix)) return true;
+          }
+          return false;
         } catch { return false; }
       };
 
       // 3. Seed dedicated Govt. Hnahthial Higher Secondary School (GHHSS) data
       if (activeSchoolId === 'ghhss') {
-        if (!saved && key === 'students') { localStorage.setItem(tenantKey, JSON.stringify(GHHSS_STUDENTS)); return GHHSS_STUDENTS; }
+        if ((!saved || isRecordContaminated(saved, 'GHSS')) && key === 'students') { localStorage.setItem(tenantKey, JSON.stringify(GHHSS_STUDENTS)); return GHHSS_STUDENTS; }
         if (!saved && key === 'classes')  { localStorage.setItem(tenantKey, JSON.stringify(GHHSS_CLASSES));  return GHHSS_CLASSES;  }
         if (!saved && key === 'staff')    { localStorage.setItem(tenantKey, JSON.stringify(GHHSS_STAFF));    return GHHSS_STAFF;    }
-        if (key === 'system_config'  && (!saved || isOhaContaminated(saved)))  { localStorage.setItem(tenantKey, JSON.stringify(GHHSS_SYSTEM_CONFIG));  return GHHSS_SYSTEM_CONFIG;  }
-        if (key === 'website_config' && (!saved || isOhaContaminated(saved)))  { localStorage.setItem(tenantKey, JSON.stringify(GHHSS_WEBSITE_CONFIG)); return GHHSS_WEBSITE_CONFIG; }
+        if (key === 'system_config'  && (!saved || isConfigContaminated(saved, 'ghhss')))  { localStorage.setItem(tenantKey, JSON.stringify(GHHSS_SYSTEM_CONFIG));  return GHHSS_SYSTEM_CONFIG;  }
+        if (key === 'website_config' && (!saved || isConfigContaminated(saved, 'ghhss')))  { localStorage.setItem(tenantKey, JSON.stringify(GHHSS_WEBSITE_CONFIG)); return GHHSS_WEBSITE_CONFIG; }
       }
 
       // 4. Seed dedicated St. Paul's Higher Secondary School (STPAULS) data
       if (activeSchoolId === 'stpauls') {
-        if (!saved && key === 'students') { localStorage.setItem(tenantKey, JSON.stringify(STPAULS_STUDENTS)); return STPAULS_STUDENTS; }
+        if ((!saved || isRecordContaminated(saved, 'STP')) && key === 'students') { localStorage.setItem(tenantKey, JSON.stringify(STPAULS_STUDENTS)); return STPAULS_STUDENTS; }
         if (!saved && key === 'classes')  { localStorage.setItem(tenantKey, JSON.stringify(STPAULS_CLASSES));  return STPAULS_CLASSES;  }
         if (!saved && key === 'staff')    { localStorage.setItem(tenantKey, JSON.stringify(STPAULS_STAFF));    return STPAULS_STAFF;    }
-        if (key === 'system_config'  && (!saved || isOhaContaminated(saved)))  { localStorage.setItem(tenantKey, JSON.stringify(STPAULS_SYSTEM_CONFIG));  return STPAULS_SYSTEM_CONFIG;  }
-        if (key === 'website_config' && (!saved || isOhaContaminated(saved)))  { localStorage.setItem(tenantKey, JSON.stringify(STPAULS_WEBSITE_CONFIG)); return STPAULS_WEBSITE_CONFIG; }
+        if (key === 'system_config'  && (!saved || isConfigContaminated(saved, 'stpauls')))  { localStorage.setItem(tenantKey, JSON.stringify(STPAULS_SYSTEM_CONFIG));  return STPAULS_SYSTEM_CONFIG;  }
+        if (key === 'website_config' && (!saved || isConfigContaminated(saved, 'stpauls')))  { localStorage.setItem(tenantKey, JSON.stringify(STPAULS_WEBSITE_CONFIG)); return STPAULS_WEBSITE_CONFIG; }
       }
 
       // 5. Seed dedicated Govt. Mizo Higher Secondary School (GMHS) data
       if (activeSchoolId === 'gmhs') {
-        if (!saved && key === 'students') { localStorage.setItem(tenantKey, JSON.stringify(GMHS_STUDENTS)); return GMHS_STUDENTS; }
+        if ((!saved || isRecordContaminated(saved, 'GMH')) && key === 'students') { localStorage.setItem(tenantKey, JSON.stringify(GMHS_STUDENTS)); return GMHS_STUDENTS; }
         if (!saved && key === 'classes')  { localStorage.setItem(tenantKey, JSON.stringify(GMHS_CLASSES));  return GMHS_CLASSES;  }
         if (!saved && key === 'staff')    { localStorage.setItem(tenantKey, JSON.stringify(GMHS_STAFF));    return GMHS_STAFF;    }
-        if (key === 'system_config'  && (!saved || isOhaContaminated(saved)))  { localStorage.setItem(tenantKey, JSON.stringify(GMHS_SYSTEM_CONFIG));  return GMHS_SYSTEM_CONFIG;  }
-        if (key === 'website_config' && (!saved || isOhaContaminated(saved)))  { localStorage.setItem(tenantKey, JSON.stringify(GMHS_WEBSITE_CONFIG)); return GMHS_WEBSITE_CONFIG; }
+        if (key === 'system_config'  && (!saved || isConfigContaminated(saved, 'gmhs')))  { localStorage.setItem(tenantKey, JSON.stringify(GMHS_SYSTEM_CONFIG));  return GMHS_SYSTEM_CONFIG;  }
+        if (key === 'website_config' && (!saved || isConfigContaminated(saved, 'gmhs')))  { localStorage.setItem(tenantKey, JSON.stringify(GMHS_WEBSITE_CONFIG)); return GMHS_WEBSITE_CONFIG; }
       }
 
       // 6. Seed dedicated Mizoram Model Demonstration Academy (DEMO) data
@@ -425,29 +475,37 @@ export function SchoolProvider({ children }) {
     return base;
   });
 
-  // Runtime guard: if in-memory systemConfig is contaminated with OHA data for a known school,
+  // Runtime guard: if in-memory systemConfig is contaminated with OHA or mismatched data for a known school,
   // immediately correct it with the canonical seed config. Must be after systemConfig useState.
   useEffect(() => {
     if (!activeSchoolId || activeSchoolId === 'oha' || activeSchoolId === 'default') return;
-    const name = systemConfig?.schoolName || '';
-    const addr = systemConfig?.address || '';
-    const isOha = name.includes('One Heart') || name.includes('OHA') || addr.includes('Lunglawn');
-    if (!isOha) return;
+    const name = (systemConfig?.schoolName || '').toLowerCase();
+    const addr = (systemConfig?.address || '').toLowerCase();
 
+    let isMismatch = false;
     let correctConfig = null;
-    if (activeSchoolId === 'ghhss')   correctConfig = GHHSS_SYSTEM_CONFIG;
-    if (activeSchoolId === 'stpauls') correctConfig = STPAULS_SYSTEM_CONFIG;
-    if (activeSchoolId === 'gmhs')    correctConfig = GMHS_SYSTEM_CONFIG;
-    if (activeSchoolId === 'demo')    correctConfig = DEMO_SYSTEM_CONFIG;
 
-    if (correctConfig) {
+    if (activeSchoolId === 'ghhss') {
+      correctConfig = GHHSS_SYSTEM_CONFIG;
+      isMismatch = !name.includes('hnahthial') || name.includes('one heart') || name.includes('oha') || addr.includes('lunglawn');
+    } else if (activeSchoolId === 'stpauls') {
+      correctConfig = STPAULS_SYSTEM_CONFIG;
+      isMismatch = !name.includes('paul') || name.includes('one heart') || name.includes('oha') || addr.includes('lunglawn');
+    } else if (activeSchoolId === 'gmhs') {
+      correctConfig = GMHS_SYSTEM_CONFIG;
+      isMismatch = !name.includes('mizo') || name.includes('one heart') || name.includes('oha') || addr.includes('lunglawn');
+    } else if (activeSchoolId === 'demo') {
+      correctConfig = DEMO_SYSTEM_CONFIG;
+      isMismatch = (!name.includes('demo') && !name.includes('model')) || name.includes('one heart') || name.includes('oha') || addr.includes('lunglawn');
+    }
+
+    if (isMismatch && correctConfig) {
       setSystemConfig(correctConfig);
       try {
         localStorage.setItem(`zoxs_${activeSchoolId}_system_config`, JSON.stringify(correctConfig));
       } catch (e) {}
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSchoolId, systemConfig?.schoolName]);
+  }, [activeSchoolId, systemConfig?.schoolName, systemConfig?.address]);
   const [paymentConfig, setPaymentConfig] = useState(() => loadInitial('payment_config', INITIAL_PAYMENT_CONFIG));
   const [onlineAdmissionConfig, setOnlineAdmissionConfig] = useState(() => loadInitial('online_admission_config', INITIAL_ONLINE_ADMISSION_CONFIG));
   const [offlineAdmissionConfig, setOfflineAdmissionConfig] = useState(() => loadInitial('offline_admission_config', INITIAL_OFFLINE_ADMISSION_CONFIG));
@@ -725,7 +783,7 @@ export function SchoolProvider({ children }) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(new Date().toLocaleTimeString());
   const [firebaseSyncStatus, setFirebaseSyncStatus] = useState({
-    connected: isLiveFirebaseConfigured,
+    connected: false,
     lastPushAt: null,
     lastPullAt: null,
     lastError: null,
@@ -740,19 +798,32 @@ export function SchoolProvider({ children }) {
     setFirebaseSyncStatus(p => ({ ...p, lastError: null, pushProgress: 'Testing connection...' }));
     try {
       if (!db) throw new Error('Firebase db is not initialised. Check your credentials.');
-      // Lightweight probe: attempt to read a non-existent doc
-      const { getDoc } = await import('firebase/firestore');
-      await getDoc(doc(db, '__zoxs_ping__', 'probe'));
+      if (!hasMatchingFirebaseSession) {
+        throw new Error('Sign in with the Firebase account linked to the active user first.');
+      }
+
+      // Verify Firestore connection by reading the signed-in user's profile.
+      // Static import (no dynamic import) — firebase/firestore is already bundled.
+      const profile = await getDoc(doc(db, 'users', firebaseUserUid));
+      // If the profile document doesn't exist yet it's not a connection failure —
+      // the user will need to sync to seed it. We still mark as connected.
       const ts = new Date().toLocaleTimeString();
-      setFirebaseSyncStatus(p => ({ ...p, connected: true, lastError: null, pushProgress: null }));
+      if (!profile.exists()) {
+        setFirebaseSyncStatus(p => ({
+          ...p, connected: true, pushProgress: null,
+          lastError: 'Connected! User profile not yet created in Firestore — run a Push to Firestore to seed it.'
+        }));
+      } else {
+        setFirebaseSyncStatus(p => ({ ...p, connected: true, lastError: null, pushProgress: null }));
+      }
       setLastSyncTime(ts);
       return { success: true };
     } catch (err) {
       const msg = err?.code === 'permission-denied'
-        ? 'Connected! (Firestore rules block read — set rules to allow write for sync.)'
+        ? 'This Firebase account cannot read its own profile. Check its profile and access rules; do not grant public reads.'
         : err.message;
-      setFirebaseSyncStatus(p => ({ ...p, connected: err?.code === 'permission-denied', lastError: msg, pushProgress: null }));
-      return { success: err?.code === 'permission-denied', error: msg };
+      setFirebaseSyncStatus(p => ({ ...p, connected: false, lastError: msg, pushProgress: null }));
+      return { success: false, error: msg };
     }
   };
 
@@ -761,6 +832,11 @@ export function SchoolProvider({ children }) {
     if (isShowcaseMode) {
       if (!silent) triggerShowcaseNotice('Cloud Sync to Firestore');
       return { success: false, error: 'Database mutation is protected in Showcase Demo Mode.' };
+    }
+    if (!hasMatchingFirebaseSession) {
+      const error = 'Cloud sync requires a Firebase-authenticated session matching the active user.';
+      if (!silent) setFirebaseSyncStatus(p => ({ ...p, connected: false, lastError: error, pushProgress: null }));
+      return { success: false, error };
     }
     if (!db) {
       if (!silent) setFirebaseSyncStatus(p => ({ ...p, lastError: 'Firebase not initialised. Enter credentials first.', pushProgress: null }));
@@ -817,11 +893,15 @@ export function SchoolProvider({ children }) {
       }
       const ts = new Date().toLocaleTimeString();
       setLastSyncTime(ts);
+      const success = errors.length === 0;
       setFirebaseSyncStatus(p => ({
-        ...p, connected: true, lastPushAt: ts, pushProgress: null,
+        ...p,
+        connected: success,
+        lastPushAt: success ? ts : p.lastPushAt,
+        pushProgress: null,
         lastError: errors.length ? `${errors.length} record(s) notice: ${errors[0]}` : null
       }));
-      return { success: true, errors };
+      return { success, errors };
     } catch (err) {
       if (!silent) setFirebaseSyncStatus(p => ({ ...p, lastError: err.message, pushProgress: null }));
       return { success: false, error: err.message };
@@ -832,6 +912,11 @@ export function SchoolProvider({ children }) {
 
   // Pull all Firestore collections → overwrite local state (supports manual and background silent hydration)
   const pullFromFirestore = async (silent = false) => {
+    if (!hasMatchingFirebaseSession) {
+      const error = 'Cloud sync requires a Firebase-authenticated session matching the active user.';
+      if (!silent) setFirebaseSyncStatus(p => ({ ...p, connected: false, lastError: error, pushProgress: null }));
+      return { success: false, error };
+    }
     if (!db) {
       if (!silent) setFirebaseSyncStatus(p => ({ ...p, lastError: 'Firebase not initialised. Enter credentials first.', pushProgress: null }));
       return { success: false };
@@ -865,6 +950,7 @@ export function SchoolProvider({ children }) {
       { key: 'system_nomenclature', setter: (docs) => { if (docs[0]) setSystemNomenclature(docs[0]); } }
     ];
     let pulled = 0;
+    const errors = [];
     try {
       const colPrefix = (activeSchoolId === 'oha' || activeSchoolId === 'default') ? 'zoxs_' : `zoxs_${activeSchoolId}_`;
       for (const col of collectionsMap) {
@@ -878,13 +964,22 @@ export function SchoolProvider({ children }) {
             const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             col.setter(docs);
           }
-        } catch (e) { /* collection may not exist yet */ }
+        } catch (e) {
+          errors.push(`${col.key}: ${e.message}`);
+        }
         pulled++;
       }
       const ts = new Date().toLocaleTimeString();
       setLastSyncTime(ts);
-      setFirebaseSyncStatus(p => ({ ...p, connected: true, lastPullAt: ts, pushProgress: null, lastError: null }));
-      return { success: true };
+      const success = errors.length === 0;
+      setFirebaseSyncStatus(p => ({
+        ...p,
+        connected: success,
+        lastPullAt: success ? ts : p.lastPullAt,
+        pushProgress: null,
+        lastError: errors.length ? `${errors.length} collection(s) could not be read: ${errors[0]}` : null
+      }));
+      return { success, errors };
     } catch (err) {
       if (!silent) setFirebaseSyncStatus(p => ({ ...p, lastError: err.message, pushProgress: null }));
       return { success: false, error: err.message };
@@ -963,7 +1058,7 @@ export function SchoolProvider({ children }) {
 
     // Automatic Live Cloud Sync to Firestore (Debounced 2.5s)
     let autoSyncTimer = null;
-    if (isLiveFirebaseConfigured && db && !isShowcaseMode) {
+    if (isLiveFirebaseConfigured && db && hasMatchingFirebaseSession && !isShowcaseMode) {
       autoSyncTimer = setTimeout(() => {
         syncToFirestore(true).catch(err => {
           console.warn('[Firebase AutoSync] Background cloud sync notice:', err);
@@ -974,11 +1069,11 @@ export function SchoolProvider({ children }) {
     return () => {
       if (autoSyncTimer) clearTimeout(autoSyncTimer);
     };
-  }, [activeSchoolId, classes, students, grades, fees, attendance, staff, payroll, libraryBooks, notices, admissions, admissionRequirements, onlineAdmissionConfig, issuedCertificates, reportCardWithholds, transportRoutes, hostelRooms, timetables, hostelGatePasses, hostelRollCalls, hostelMessMenu, hostelRules, academicEvents, customScripts, plugins, systemConfig, paymentConfig, leaveApplications, payScales, tasks, vacations, clinicRecords, clinicConfig, visitors, visitorConfig, inventoryAssets, maintenanceTickets, inventoryConfig, ptmEvents, ptmConfig, alumni, transcriptRequests, alumniConfig, canteenMenu, canteenWallets, canteenTransactions, canteenConfig, studyMaterials, studyConfig, sealConfig, subjects, gradingScales, feeHeads, documentTemplates, systemNomenclature, customStudentFields]);
+  }, [activeSchoolId, hasMatchingFirebaseSession, classes, students, grades, fees, attendance, staff, payroll, libraryBooks, notices, admissions, admissionRequirements, onlineAdmissionConfig, issuedCertificates, reportCardWithholds, transportRoutes, hostelRooms, timetables, hostelGatePasses, hostelRollCalls, hostelMessMenu, hostelRules, academicEvents, customScripts, plugins, systemConfig, paymentConfig, leaveApplications, payScales, tasks, vacations, clinicRecords, clinicConfig, visitors, visitorConfig, inventoryAssets, maintenanceTickets, inventoryConfig, ptmEvents, ptmConfig, alumni, transcriptRequests, alumniConfig, canteenMenu, canteenWallets, canteenTransactions, canteenConfig, studyMaterials, studyConfig, sealConfig, subjects, gradingScales, feeHeads, documentTemplates, systemNomenclature, customStudentFields]);
 
   // Automatic Startup Cloud Sync & Hydration (On first visit or school switch)
   useEffect(() => {
-    if (!isLiveFirebaseConfigured || !db) return;
+    if (!isLiveFirebaseConfigured || !db || !hasMatchingFirebaseSession) return;
 
     let isMounted = true;
     const initialCloudSync = async () => {
@@ -996,12 +1091,18 @@ export function SchoolProvider({ children }) {
         }
       } catch (err) {
         console.warn('[Firebase AutoSync] Startup sync probe notice:', err);
+        setFirebaseSyncStatus(p => ({
+          ...p,
+          connected: false,
+          lastError: `Startup sync failed: ${err.message}`,
+          pushProgress: null,
+        }));
       }
     };
 
     initialCloudSync();
     return () => { isMounted = false; };
-  }, [activeSchoolId, isLiveFirebaseConfigured]);
+  }, [activeSchoolId, hasMatchingFirebaseSession, isLiveFirebaseConfigured]);
 
   // Real-time In-App Stylesheet & Scripts Live Injection
   useEffect(() => {

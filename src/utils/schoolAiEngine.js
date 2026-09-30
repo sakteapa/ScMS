@@ -647,3 +647,89 @@ export function processSchoolAiQuery(query = '', ctx = {}) {
     text: `"${rawQ}" — **${activeSchoolName}** pualin zirlai add, attendance, fee payment, notice tichhuah, leh report enfiah ka execute thei e. I duh zawng chiang takin min hrilh la ka lo ti nghal ang!`,
   };
 }
+
+/**
+ * Intelligent hybrid query processor:
+ * Attempts Google Gemini Generative AI if VITE_GEMINI_API_KEY is configured,
+ * and seamlessly falls back to the native local school NLP engine.
+ */
+export async function processSchoolAiQueryAsync(query = '', ctx = {}) {
+  const localRes = processSchoolAiQuery(query, ctx);
+  const rawQ = query.trim().toLowerCase();
+
+  // Keep local execution for data operations (add student, mark attendance, record fee, etc.)
+  const isDataMutation =
+    rawQ.includes('add student') ||
+    rawQ.includes('zirlai thar') ||
+    rawQ.includes('student thar') ||
+    rawQ.includes('absent') ||
+    rawQ.includes('present') ||
+    rawQ.includes('fee') ||
+    rawQ.includes('pe e') ||
+    rawQ.includes('pe fel') ||
+    rawQ.includes('approve') ||
+    rawQ.includes('notice siam') ||
+    rawQ.includes('dev studio') ||
+    rawQ.includes('root code');
+
+  if (isDataMutation) {
+    return localRes;
+  }
+
+  const apiKey = import.meta.env?.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+    return localRes;
+  }
+
+  try {
+    const schoolName = ctx.activeSchoolInfo?.name || ctx.systemConfig?.schoolName || 'School';
+    const totalStudents = ctx.students?.length || 0;
+    const unpaidFees = ctx.fees?.filter(f => f.status === 'unpaid' || f.status === 'overdue')?.length || 0;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayAttendance = ctx.attendance?.filter(a => a.date === todayStr) || [];
+    const presentCount = todayAttendance.filter(a => a.status === 'present').length;
+
+    const systemPrompt = `You are the intelligent School AI Co-Pilot for ${schoolName} in Mizoram.
+Key School Live Context:
+- Total Enrolled Students: ${totalStudents}
+- Unpaid/Overdue Fee Records: ${unpaidFees}
+- Today's Attendance: ${presentCount} present out of ${todayAttendance.length} records.
+Answer the user's inquiry warmly, accurately and concisely in Mizo (or English if asked in English).
+Use bullet points and bold formatting where appropriate.`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: `${systemPrompt}\n\nUser Question: ${query}` }
+            ]
+          }
+        ]
+      })
+    });
+    clearTimeout(timeoutId);
+
+    if (res.ok) {
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) {
+        return {
+          text: text.trim(),
+          tab: localRes.tab,
+          tabLabel: localRes.tabLabel
+        };
+      }
+    }
+  } catch (err) {
+    console.debug('Online Gemini fallback to local school engine:', err);
+  }
+
+  return localRes;
+}

@@ -26,7 +26,6 @@ import AdmissionDocumentUploader from '../AdmissionDocumentUploader';
 interface PublicAdmissionPortalModalProps {
   isOpen: boolean;
   onClose: () => void;
-  applications: AdmissionApplication[];
   admissionConfig?: any;
   schoolClasses?: any[];
   onApplicationSubmitted?: (newApp: AdmissionApplication) => void;
@@ -98,7 +97,6 @@ export const PUBLIC_ADMISSION_SLOTS = [
 export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProps> = ({
   isOpen,
   onClose,
-  applications,
   admissionConfig,
   schoolClasses = [],
   onApplicationSubmitted,
@@ -233,9 +231,8 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
 
     setIsSubmitting(true);
     try {
-      // Auto-generate application number
-      const existingCount = applications.length + 1;
-      const appNumber = `ADM-2026-${String(existingCount).padStart(3, '0')}`;
+      const applicationId = crypto.randomUUID();
+      const appNumber = `ADM-${new Date().getFullYear()}-${applicationId.slice(0, 12).toUpperCase()}`;
       const todayStr = new Date().toISOString().split('T')[0];
 
       const fullAddress = locality === 'Other Locality / District' && customAddress.trim()
@@ -243,7 +240,7 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
         : `${locality}, ${district}`;
 
       const newApplication: AdmissionApplication = {
-        id: `adm-${Date.now()}`,
+        id: `adm-${applicationId}`,
         applicationNo: appNumber,
         applicantName: applicantName.trim(),
         dob,
@@ -304,13 +301,13 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
       return;
     }
 
-    const found = applications.find(
-      (a) =>
-        a.applicationNo.toLowerCase() === q ||
-        a.parentPhone.replace(/\D/g, '').includes(q.replace(/\D/g, '')) ||
-        a.applicantName.toLowerCase().includes(q)
+    const phoneQuery = q.replace(/\D/g, '');
+    const submittedPhone = submittedApp?.parentPhone.replace(/\D/g, '');
+    const matchesSubmittedApplication = submittedApp && (
+      submittedApp.applicationNo.toLowerCase() === q ||
+      (phoneQuery.length >= 8 && submittedPhone === phoneQuery)
     );
-    setMatchedApplication(found || null);
+    setMatchedApplication(matchesSubmittedApplication ? submittedApp : null);
   };
 
   const resetForm = () => {
@@ -872,7 +869,7 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
               <div className="text-center space-y-2">
                 <h3 className="text-lg font-bold text-white">Track Your Admission Application</h3>
                 <p className="text-xs text-gray-400">
-                  Enter your assigned Application ID (e.g. <span className="font-mono text-indigo-300">ADM-2026-001</span>) or registered parent phone number.
+                  Enter the Application ID or full parent phone number for an application submitted in this session.
                 </p>
               </div>
 
@@ -882,7 +879,7 @@ export const PublicAdmissionPortalModal: React.FC<PublicAdmissionPortalModalProp
                   <input
                     type="text"
                     required
-                    placeholder="Enter Application ID, phone, or student name..."
+                    placeholder="Application ID or full parent phone number"
                     value={trackQuery}
                     onChange={(e) => setTrackQuery(e.target.value)}
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder-gray-500 font-mono"

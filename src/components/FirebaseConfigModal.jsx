@@ -14,9 +14,10 @@ import { getStoredFirebaseConfig, saveStoredFirebaseConfig, isOfflinePersistence
 import { useSchool } from '../context/SchoolContext';
 
 export default function FirebaseConfigModal({ isOpen, onClose }) {
-  const { isSyncing, lastSyncTime, resetToMockData } = useSchool();
+  const { isSyncing, lastSyncTime, resetToMockData, firebaseSyncStatus } = useSchool();
   const [config, setConfig] = useState(() => getStoredFirebaseConfig());
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const isAccountVerified = Boolean(isLiveFirebaseConfigured && firebaseSyncStatus?.connected);
 
   if (!isOpen) return null;
 
@@ -68,17 +69,23 @@ export default function FirebaseConfigModal({ isOpen, onClose }) {
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-[11px] px-2 py-0.5 rounded-md font-semibold border flex items-center gap-1 ${
-                  isLiveFirebaseConfigured 
+                  !isLiveFirebaseConfigured
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                    : isAccountVerified
                     ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' 
-                    : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                    : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                 }`}>
                   <CheckCircle2 className="w-3 h-3" />
-                  {isLiveFirebaseConfigured ? 'Live Cloud Connected' : 'Local Offline Multi-Tab Cache'}
+                  {!isLiveFirebaseConfigured
+                    ? 'Local Offline Multi-Tab Cache'
+                    : isAccountVerified
+                    ? 'Firebase Account Verified'
+                    : 'Firebase Configured, Not Verified'}
                 </span>
               </div>
             </div>
             <p className="text-xs text-slate-400">
-              Configured with <code className="text-cyan-300 font-mono">persistentLocalCache</code> &amp; <code className="text-cyan-300 font-mono">persistentMultipleTabManager</code>. All 13 collections stay cached locally in IndexedDB and sync seamlessly when online.
+              Local IndexedDB caching remains available. Cloud operations require a matching Firebase Auth account and applicable Firestore permissions.
             </p>
             <div className="pt-1 flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-800">
               <span>Last Local Cache Sync: {lastSyncTime}</span>

@@ -126,7 +126,7 @@ export function AuthProvider({ children }) {
             displayName: fbUser.displayName || 'School Member',
             role: 'teacher'
           };
-          setCurrentUser(resolveUser(matched));
+          setCurrentUser(resolveUser({ ...matched, firebaseUid: fbUser.uid }));
           return { success: true };
         } catch (fbErr) {
           throw fbErr;

@@ -66,6 +66,45 @@ service cloud.firestore {
         docId.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasOnly([
+          'id', 'uid', 'email', 'name', 'role', 'phone', 'avatarUrl',
+          'assignedClassId', 'assignedClassName', 'studentId', 'studentName',
+          'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasAll(['uid', 'email', 'name', 'role', 'createdAt']) &&
+        data.uid is string && data.uid == userId &&
+        data.email is string && data.email.size() > 0 && data.email.size() <= 254 &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        data.role in ['Principal', 'Admin', 'Teacher', 'Student', 'Parent'] &&
+        data.createdAt is string && data.createdAt.size() > 0 && data.createdAt.size() <= 40 &&
+        (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 32)) &&
+        (!('avatarUrl' in data) || (data.avatarUrl is string && data.avatarUrl.size() <= 2048)) &&
+        (!('assignedClassId' in data) || (data.assignedClassId is string && data.assignedClassId.size() <= 128)) &&
+        (!('assignedClassName' in data) || (data.assignedClassName is string && data.assignedClassName.size() <= 100)) &&
+        (!('studentId' in data) || (data.studentId is string && data.studentId.size() <= 128)) &&
+        (!('studentName' in data) || (data.studentName is string && data.studentName.size() <= 100)) &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 40));
+    }
+
+    function isSafeSelfUserCreate(data, userId) {
+      return isValidUserProfile(data, userId) &&
+        data.role in ['Student', 'Parent'] &&
+        !data.keys().hasAny([
+          'assignedClassId', 'assignedClassName', 'studentId', 'studentName'
+        ]);
+    }
+
+    function isSafeSelfUserUpdate(data, userId) {
+      return isValidUserProfile(data, userId) &&
+        data.role == resource.data.role &&
+        !data.diff(resource.data).affectedKeys().hasAny([
+          'id', 'uid', 'role', 'assignedClassId', 'assignedClassName',
+          'studentId', 'studentName', 'createdAt'
+        ]);
+    }
+
     // =========================================================================
     // Schema Validation Helpers
     // =========================================================================
@@ -197,17 +236,13 @@ service cloud.firestore {
       // Teachers and Principals can view user profiles; Students and Parents can view own profile
       allow read: if isSignedIn() && (isOwner(userId) || isTeacher());
       
-      // Creating account: users can initialize their own profile, or Principal can create staff accounts
-      allow create: if isSignedIn() && (
-        isPrincipal() ||
-        (isOwner(userId) && request.resource.data.role in ['Student', 'Teacher', 'Parent'])
-      );
+      // Self-registration cannot grant staff roles or link a user to another student.
+      allow create: if isPrincipal() && isValidUserProfile(request.resource.data, userId) ||
+        (isOwner(userId) && isSafeSelfUserCreate(request.resource.data, userId));
       
-      // Updating account: Principal can edit any account; User can edit own info (excluding role elevation)
-      allow update: if isSignedIn() && (
-        isPrincipal() ||
-        (isOwner(userId) && request.resource.data.role == resource.data.role)
-      );
+      // Only Principal can change roles or student/class relationships.
+      allow update: if isPrincipal() && isValidUserProfile(request.resource.data, userId) ||
+        (isOwner(userId) && isSafeSelfUserUpdate(request.resource.data, userId));
       
       // Deleting account: Only Principal
       allow delete: if isPrincipal();
@@ -433,9 +468,8 @@ service cloud.firestore {
     // 13. Online Admissions Collection (Public Registration & Admin Review)
     // =========================================================================
     match /admissions/{admissionId} {
-      // Public / prospective students can submit applications even without account;
-      // Staff, teachers, and principals can view all applications; applicants can look up by applicationNo/phone
-      allow read: if isTeacher() || isPrincipal() || true;
+      // Applicants may submit without an account, but only school staff can read application records.
+      allow read: if isTeacher() || isPrincipal();
       allow create: if isValidAdmission(request.resource.data);
       allow update: if (isTeacher() || isPrincipal()) && isValidAdmission(request.resource.data);
       allow delete: if isPrincipal();

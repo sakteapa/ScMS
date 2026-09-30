@@ -598,8 +598,8 @@ export default function DevStudioView() {
                 ? <Wifi className="w-5 h-5 text-emerald-400" />
                 : <WifiOff className="w-5 h-5 text-slate-500" />}
               <div>
-                <p className="text-xs font-bold text-white">{firebaseSyncStatus.connected ? 'Connected' : 'Not Connected'}</p>
-                <p className="text-[10px] text-slate-400">Firebase Firestore</p>
+                <p className="text-xs font-bold text-white">{firebaseSyncStatus.connected ? 'Account Verified' : 'Not Verified'}</p>
+                <p className="text-[10px] text-slate-400">Firebase user profile</p>
               </div>
             </div>
             <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 flex items-center gap-3">
@@ -648,7 +648,7 @@ export default function DevStudioView() {
                   className="w-full px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-semibold text-sm flex items-center justify-center gap-2.5 transition disabled:opacity-50"
                 >
                   <Zap className="w-4 h-4 text-amber-400" />
-                  Test Firebase Connection
+                  Verify Firebase Account
                 </button>
 
                 {/* Push to Cloud */}
@@ -1527,8 +1527,8 @@ export default function DevStudioView() {
                       </td>
                     </tr>
                   ) : (
-                    filteredCollectionItems.map((item) => (
-                      <tr key={item.id || Math.random()} className="hover:bg-slate-800/40 transition">
+                    filteredCollectionItems.map((item, idx) => (
+                      <tr key={item.id || `doc-${idx}`} className="hover:bg-slate-800/40 transition">
                         <td className="p-3.5 text-purple-300 font-semibold align-top whitespace-nowrap">
                           {item.id}
                         </td>

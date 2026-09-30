@@ -798,7 +798,6 @@ export default function App() {
         <PublicAdmissionPortalModal
           isOpen={isPublicAdmissionOpen}
           onClose={() => setIsPublicAdmissionOpen(false)}
-          applications={admissions}
         />
       </div>
     </div>

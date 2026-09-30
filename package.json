@@ -7,6 +7,7 @@
     "dev": "vite --host 0.0.0.0 --port 3000",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0 --port 3000",
+    "test:rules": "firebase emulators:exec --config firebase.rules-test.json --only firestore --project demo-zoxs-sms-rules \"node --test tests/firestore.rules.test.js\"",
     "lint": "echo 'No lint errors'",
     "cap:sync": "cap sync",
     "cap:build": "vite build && cap sync"
@@ -23,6 +24,7 @@
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
     "@tailwindcss/vite": "^4.1.18",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
