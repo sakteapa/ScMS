@@ -554,22 +554,28 @@ function SchoolAppContent() {
       />
 
       {/* Global Cloud Photo & Media Storage Studio Modal */}
-      <CloudPhotoStorageModal
-        isOpen={isCloudStorageModalOpen}
-        onClose={() => setIsCloudStorageModalOpen(false)}
-      />
+      {isCloudStorageModalOpen && (
+        <CloudPhotoStorageModal
+          isOpen={isCloudStorageModalOpen}
+          onClose={() => setIsCloudStorageModalOpen(false)}
+        />
+      )}
 
       {/* Global SMS & WhatsApp Notification Hub Modal */}
-      <SmsWhatsAppNotificationHubModal
-        isOpen={isSmsHubOpen}
-        onClose={() => setIsSmsHubOpen(false)}
-      />
+      {isSmsHubOpen && (
+        <SmsWhatsAppNotificationHubModal
+          isOpen={isSmsHubOpen}
+          onClose={() => setIsSmsHubOpen(false)}
+        />
+      )}
 
       {/* Global School Rules & Code of Conduct Modal */}
-      <SchoolRulesModal
-        isOpen={isSchoolRulesModalOpen}
-        onClose={() => setIsSchoolRulesModalOpen(false)}
-      />
+      {isSchoolRulesModalOpen && (
+        <SchoolRulesModal
+          isOpen={isSchoolRulesModalOpen}
+          onClose={() => setIsSchoolRulesModalOpen(false)}
+        />
+      )}
 
       {/* Global 1-on-1 Private Call Modal */}
       {activePrivateCall && (

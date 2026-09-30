@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   X,
   UploadCloud,
@@ -91,22 +91,20 @@ export default function CloudPhotoStorageModal({
     }
   }, [initialTargetType, initialTargetId, isOpen]);
 
-  // Clean up camera stream on unmount or close
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, []);
-
-  if (!isOpen) return null;
-
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach(track => track.stop());
       mediaStreamRef.current = null;
     }
     setIsCameraActive(false);
-  };
+  }, []);
+
+  // Clean up camera stream on unmount or close
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, [stopCamera]);
 
   const startCamera = async () => {
     try {
@@ -260,6 +258,8 @@ export default function CloudPhotoStorageModal({
     }
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
