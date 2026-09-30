@@ -44,6 +44,7 @@ import StudentSuspensionModal from '../components/StudentSuspensionModal';
 import AcademicSessionPromotionModal from '../components/AcademicSessionPromotionModal';
 import CloudPhotoStorageModal from '../components/CloudPhotoStorageModal';
 import StudentFormModal from '../components/StudentFormModal';
+import UniversalQrScannerModal from '../components/UniversalQrScannerModal';
 
 export default function StudentsView({ setCurrentTab, setSelectedStudentForReport }) {
   const { students, classes, staff, transportRoutes, hostelRooms, startPrivateCall, systemConfig } = useSchool();
@@ -67,6 +68,7 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
   const [activeViewTab, setActiveViewTab] = useState('students'); // 'students' | 'parents'
   const [isStudentFormOpen, setIsStudentFormOpen] = useState(false);
   const [studentFormTarget, setStudentFormTarget] = useState(null);
+  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
 
   // Group and aggregate unique parents across all enrolled students
   const parentsList = React.useMemo(() => {
@@ -211,6 +213,15 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
           >
             <UploadCloud className="w-3.5 h-3.5" />
             <span>Cloud Photos</span>
+          </button>
+
+          <button
+            onClick={() => setIsQrScannerOpen(true)}
+            className="px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl bg-gradient-to-r from-sky-600/30 to-cyan-600/30 hover:from-sky-600/40 hover:to-cyan-600/40 text-cyan-300 border border-cyan-500/40 text-xs font-bold shadow-lg shadow-cyan-600/10 flex items-center gap-1.5 transition shrink-0 cursor-pointer"
+            title="Scan Student QR Code using camera or image upload"
+          >
+            <QrCode className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Scan QR</span>
           </button>
         </div>
       </div>
@@ -1196,6 +1207,18 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
             if (saved && activeModalStudent && activeModalStudent.id === saved.id) {
               setActiveModalStudent(saved);
             }
+          }}
+        />
+      )}
+
+      {/* Universal Student QR Scanner Modal */}
+      {isQrScannerOpen && (
+        <UniversalQrScannerModal
+          isOpen={isQrScannerOpen}
+          onClose={() => setIsQrScannerOpen(false)}
+          onOpenIdCard={(student) => {
+            setIdCardTargetStudent(student);
+            setIsIdCardModalOpen(true);
           }}
         />
       )}

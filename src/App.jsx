@@ -18,6 +18,8 @@ import { PublicAdmissionPortalModal } from './components/admissions/PublicAdmiss
 import SmsWhatsAppNotificationHubModal from './components/SmsWhatsAppNotificationHubModal';
 import SchoolRulesModal from './components/SchoolRulesModal';
 import CloudPhotoStorageModal from './components/CloudPhotoStorageModal';
+import UniversalQrScannerModal from './components/UniversalQrScannerModal';
+import StudentIdCardModal from './components/StudentIdCardModal';
 
 // Code-split / Lazy-loaded Views for on-demand performance and optimal bundle size
 const DashboardView = lazy(() => import('./views/DashboardView'));
@@ -160,6 +162,9 @@ function SchoolAppContent() {
   const [isSmsHubOpen, setIsSmsHubOpen] = useState(false);
   const [isSchoolRulesModalOpen, setIsSchoolRulesModalOpen] = useState(false);
   const [isCloudStorageModalOpen, setIsCloudStorageModalOpen] = useState(false);
+  const [isUniversalQrScannerOpen, setIsUniversalQrScannerOpen] = useState(false);
+  const [scannedStudentForIdCard, setScannedStudentForIdCard] = useState(null);
+  const [isIdCardFromScannerOpen, setIsIdCardFromScannerOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [selectedStudentForReport, setSelectedStudentForReport] = useState(null);
   
@@ -501,6 +506,7 @@ function SchoolAppContent() {
           openSmsHubModal={() => setIsSmsHubOpen(true)}
           openSchoolRulesModal={() => setIsSchoolRulesModalOpen(true)}
           openCloudStorageModal={() => setIsCloudStorageModalOpen(true)}
+          openQrScannerModal={() => setIsUniversalQrScannerOpen(true)}
           onViewWebsite={() => setCurrentTab('public_website')}
         />
 
@@ -572,6 +578,31 @@ function SchoolAppContent() {
           onClose={endPrivateCall}
           targetUser={activePrivateCall.user}
           initialType={activePrivateCall.type || 'video'}
+        />
+      )}
+
+      {/* Global Universal Student QR Scanner Modal */}
+      {isUniversalQrScannerOpen && (
+        <UniversalQrScannerModal
+          isOpen={isUniversalQrScannerOpen}
+          onClose={() => setIsUniversalQrScannerOpen(false)}
+          onOpenIdCard={(student) => {
+            setScannedStudentForIdCard(student);
+            setIsIdCardFromScannerOpen(true);
+          }}
+        />
+      )}
+
+      {/* ID Card Modal invoked from Universal QR Scanner */}
+      {isIdCardFromScannerOpen && (
+        <StudentIdCardModal
+          isOpen={isIdCardFromScannerOpen}
+          onClose={() => {
+            setIsIdCardFromScannerOpen(false);
+            setScannedStudentForIdCard(null);
+          }}
+          initialStudent={scannedStudentForIdCard}
+          selectedClassId={scannedStudentForIdCard?.classId}
         />
       )}
 

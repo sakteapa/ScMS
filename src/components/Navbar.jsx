@@ -19,7 +19,8 @@ import {
   LogOut,
   MessageSquare,
   Laptop,
-  UploadCloud
+  UploadCloud,
+  QrCode
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
@@ -38,6 +39,7 @@ export default function Navbar({
   openSmsHubModal,
   openSchoolRulesModal,
   openCloudStorageModal,
+  openQrScannerModal,
   onViewWebsite
 }) {
   const { currentUser, logout, isPrincipal, isVicePrincipal, isSuperAdmin } = useAuth();
@@ -374,6 +376,19 @@ export default function Navbar({
           >
             <UploadCloud className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
             <span className="hidden xl:inline">Cloud Photos</span>
+          </button>
+        )}
+
+        {/* Universal Student QR Scanner Trigger (Teachers, Principal, Staff, Admin) */}
+        {(isPrincipal || isVicePrincipal || isSuperAdmin || currentUser?.role === 'teacher' || currentUser?.role === 'admin') && (
+          <button
+            type="button"
+            onClick={openQrScannerModal}
+            className="p-1.5 sm:px-2.5 sm:py-2 rounded-xl bg-gradient-to-r from-sky-950/80 to-cyan-950/80 border border-cyan-500/50 hover:border-cyan-300 text-cyan-300 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold shadow-md shadow-cyan-950/40 shrink-0 cursor-pointer"
+            title="Scan Student QR Code (Live Camera Attendance, ID & Gate Pass Verification)"
+          >
+            <QrCode className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span className="hidden xl:inline">Scan QR</span>
           </button>
         )}
 

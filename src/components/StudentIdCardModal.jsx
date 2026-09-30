@@ -11,13 +11,15 @@ import {
   Sparkles, 
   Users, 
   Check, 
-  RefreshCw,
-  Phone,
-  MapPin,
-  Calendar,
-  Award,
-  Hash
+  RefreshCw, 
+  Phone, 
+  MapPin, 
+  Calendar, 
+  Award, 
+  Hash 
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { buildStudentQrPayload, serializeStudentQr } from '../lib/qrCodeService';
 import { useSchool } from '../context/SchoolContext';
 
 export default function StudentIdCardModal({ 
@@ -45,7 +47,6 @@ export default function StudentIdCardModal({
     affiliationNo: activeSchoolInfo?.affiliationBadge || systemConfig?.affiliationNo || 'MBSE Affiliated',
     validThru: 'March 2027',
     showQrCode: true,
-    showBarcode: true,
     showPrincipalSignature: true,
     showWatermark: true,
     emergencyPhone: activeSchoolInfo?.contactPhone || systemConfig?.contactPhone || '',
@@ -199,20 +200,35 @@ export default function StudentIdCardModal({
             </div>
           </div>
 
-          {/* Barcode & QR Block */}
+          {/* Official Cryptographic Student QR Code & Signature Block */}
           <div className="w-full flex items-center justify-between pt-2 border-t border-slate-800 mt-2 px-1">
-            {cardConfig.showBarcode && (
-              <div className="space-y-0.5 text-left">
-                {/* Simulated High-Res Code128 Barcode */}
-                <div className="h-6 flex items-center gap-[2px] bg-white p-1 rounded">
-                  {Array.from({ length: 28 }).map((_, i) => (
-                    <div 
-                      key={i} 
-                      className={`h-full bg-slate-950 ${i % 3 === 0 ? 'w-[3px]' : i % 2 === 0 ? 'w-[1.5px]' : 'w-[1px]'}`} 
-                    />
-                  ))}
+            {cardConfig.showQrCode && (
+              <div className="flex items-center gap-2.5">
+                <div className="p-1 bg-white rounded-lg shadow-sm border border-slate-300 shrink-0">
+                  <QRCodeSVG 
+                    value={serializeStudentQr(buildStudentQrPayload({
+                      id: student.id,
+                      name: `${student.firstName} ${student.lastName}`,
+                      rollNo: student.rollNo || student.rollNumber || 1,
+                      classId: student.classId,
+                      className: studentClass?.name || 'Class 12',
+                      stage: studentClass?.stage || 'higher_secondary',
+                      stream: studentClass?.stream || 'science',
+                      parentPhone: student.guardianPhone || student.parentPhone || '',
+                      bloodGroup: student.bloodGroup || 'O+'
+                    }))} 
+                    size={46} 
+                    level="M"
+                    includeMargin={false}
+                  />
                 </div>
-                <div className="text-[8px] font-mono text-slate-400">ID: {student.id}</div>
+                <div className="text-left space-y-0.5">
+                  <span className="text-[9px] font-bold text-cyan-400 block font-mono leading-none">STUDENT QR</span>
+                  <div className="text-[8px] font-mono text-slate-300 font-semibold">ID: {student.id}</div>
+                  <div className="text-[7px] text-emerald-400 font-semibold flex items-center gap-0.5">
+                    <ShieldCheck className="w-2.5 h-2.5" /> In-App Scannable
+                  </div>
+                </div>
               </div>
             )}
 
@@ -352,6 +368,35 @@ export default function StudentIdCardModal({
             <div className="text-center">
               <div className="border-t border-slate-700 w-28 pt-1 text-[9px] font-mono text-slate-400">
                 Candidate Signature
+              </div>
+            </div>
+
+            {/* Official Admit Card Exam Hall Entry QR Code */}
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 shadow-sm">
+              <div className="p-1 bg-white rounded-lg shrink-0">
+                <QRCodeSVG
+                  value={serializeStudentQr(buildStudentQrPayload({
+                    id: student.id,
+                    name: `${student.firstName} ${student.lastName}`,
+                    rollNo: student.rollNo || student.rollNumber || 1,
+                    classId: student.classId,
+                    className: studentClass?.name || 'Class 12',
+                    stage: studentClass?.stage || 'higher_secondary',
+                    stream: studentClass?.stream || 'science',
+                    parentPhone: student.guardianPhone || student.parentPhone || '',
+                    bloodGroup: student.bloodGroup || 'O+'
+                  }))}
+                  size={42}
+                  level="M"
+                  includeMargin={false}
+                />
+              </div>
+              <div className="text-left font-mono">
+                <span className="text-[9px] text-cyan-400 font-bold block leading-tight">HALL PASS QR</span>
+                <span className="text-[8px] text-slate-400 block">Scan at Exam Gate</span>
+                <span className="text-[7px] text-emerald-400 font-semibold flex items-center gap-0.5">
+                  <ShieldCheck className="w-2.5 h-2.5" /> Verified Pass
+                </span>
               </div>
             </div>
 
@@ -580,42 +625,43 @@ export default function StudentIdCardModal({
               {/* Toggles */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-800">
                 <label className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between cursor-pointer">
-                  <span className="text-slate-200">Print Code128 Barcode</span>
-                  <input
-                    type="checkbox"
-                    checked={cardConfig.showBarcode}
-                    onChange={(e) => setCardConfig({ ...cardConfig, showBarcode: e.target.checked })}
-                    className="w-4 h-4 rounded text-indigo-500"
-                  />
-                </label>
-
-                <label className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between cursor-pointer">
-                  <span className="text-slate-200">Include Principal Signature</span>
-                  <input
-                    type="checkbox"
-                    checked={cardConfig.showPrincipalSignature}
-                    onChange={(e) => setCardConfig({ ...cardConfig, showPrincipalSignature: e.target.checked })}
-                    className="w-4 h-4 rounded text-indigo-500"
-                  />
-                </label>
-
-                <label className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between cursor-pointer">
-                  <span className="text-slate-200">Emboss Crest Watermark</span>
-                  <input
-                    type="checkbox"
-                    checked={cardConfig.showWatermark}
-                    onChange={(e) => setCardConfig({ ...cardConfig, showWatermark: e.target.checked })}
-                    className="w-4 h-4 rounded text-indigo-500"
-                  />
-                </label>
-
-                <label className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between cursor-pointer">
-                  <span className="text-slate-200">Enable Smart QR Code</span>
+                  <div>
+                    <span className="text-slate-200 text-xs font-bold block flex items-center gap-1.5">
+                      <QrCode className="w-3.5 h-3.5 text-cyan-400" /> Smart Student QR Code
+                    </span>
+                    <span className="text-[10px] text-slate-400">Encodes student profile for in-app live camera scanner</span>
+                  </div>
                   <input
                     type="checkbox"
                     checked={cardConfig.showQrCode}
                     onChange={(e) => setCardConfig({ ...cardConfig, showQrCode: e.target.checked })}
-                    className="w-4 h-4 rounded text-indigo-500"
+                    className="w-4 h-4 rounded text-indigo-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between cursor-pointer">
+                  <div>
+                    <span className="text-slate-200 text-xs font-bold block">Principal Signature</span>
+                    <span className="text-[10px] text-slate-400">Official digital seal &amp; controller endorsement</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={cardConfig.showPrincipalSignature}
+                    onChange={(e) => setCardConfig({ ...cardConfig, showPrincipalSignature: e.target.checked })}
+                    className="w-4 h-4 rounded text-indigo-500 cursor-pointer"
+                  />
+                </label>
+
+                <label className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between cursor-pointer">
+                  <div>
+                    <span className="text-slate-200 text-xs font-bold block">Emboss Crest Watermark</span>
+                    <span className="text-[10px] text-slate-400">Anti-counterfeit institutional background emblem</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={cardConfig.showWatermark}
+                    onChange={(e) => setCardConfig({ ...cardConfig, showWatermark: e.target.checked })}
+                    className="w-4 h-4 rounded text-indigo-500 cursor-pointer"
                   />
                 </label>
               </div>

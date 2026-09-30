@@ -77,7 +77,7 @@ const INITIAL_CHAT_CONFIG = {
 
 export default function StaffChatView() {
   const { currentUser } = useAuth();
-  const { triggerNativePush } = useSchool();
+  const { triggerNativePush, startPrivateCall } = useSchool();
   const [channels, setChannels] = useState(INITIAL_CHANNELS);
   const [activeChannelId, setActiveChannelId] = useState("ch_001");
   const [activeTab, setActiveTab] = useState("chat");
@@ -315,8 +315,46 @@ export default function StaffChatView() {
                   <div className="flex items-center gap-2">
                     {activeChannel.type === "dm" && (
                       <>
-                        <button onClick={() => showToast("Initiating voice call...")} className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"><Phone className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => showToast("Initiating video call...")} className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"><Video className="w-3.5 h-3.5" /></button>
+                        <button 
+                          onClick={() => {
+                            if (startPrivateCall) {
+                              startPrivateCall({
+                                id: activeChannel.id,
+                                name: activeChannel.name,
+                                role: 'Colleague Staff',
+                                phone: '+91 94361 00000',
+                                photoUrl: null,
+                                info: activeChannel.description || 'Staff Direct Channel'
+                              }, 'voice');
+                            } else {
+                              showToast("Initiating voice call...");
+                            }
+                          }} 
+                          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+                          title="Start Private Voice Call"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                          onClick={() => {
+                            if (startPrivateCall) {
+                              startPrivateCall({
+                                id: activeChannel.id,
+                                name: activeChannel.name,
+                                role: 'Colleague Staff',
+                                phone: '+91 94361 00000',
+                                photoUrl: null,
+                                info: activeChannel.description || 'Staff Direct Channel'
+                              }, 'video');
+                            } else {
+                              showToast("Initiating video call...");
+                            }
+                          }} 
+                          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 hover:text-white transition"
+                          title="Start Private Video Call"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                        </button>
                       </>
                     )}
                     <button onClick={() => { setChannels(prev => prev.map(c => c.id === activeChannelId ? { ...c, muted: !c.muted } : c)); showToast(activeChannel.muted ? "Channel unmuted." : "Channel muted."); }} className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition">
