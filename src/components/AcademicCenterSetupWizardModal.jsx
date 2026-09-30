@@ -455,7 +455,9 @@ export default function AcademicCenterSetupWizardModal({ isOpen, onClose, inline
         contactPhone: formData.contactPhone,
         contactEmail: formData.contactEmail,
         affiliationBadge: `${formData.affiliationBoard}`,
-        establishedYear: Number(formData.establishedYear) || 2026
+        establishedYear: Number(formData.establishedYear) || 2026,
+        isLiveProduction: true,
+        disableFastLogin: true
       });
     }
 

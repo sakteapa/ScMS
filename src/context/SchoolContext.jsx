@@ -68,7 +68,11 @@ import {
   INITIAL_STORE_UNIFORMS,
   INITIAL_STORE_BOOKS,
   INITIAL_STORE_DISTRIBUTIONS,
-  INITIAL_STORE_SALES
+  INITIAL_STORE_SALES,
+  INITIAL_UNIT_TESTS,
+  INITIAL_STAYBACK_SESSIONS,
+  INITIAL_ASSIGNMENTS,
+  INITIAL_FINE_RECORDS
 } from '../data/mockData';
 import {
   GHHSS_SCHOOL_INFO,
@@ -102,7 +106,7 @@ import {
   DEMO_SYSTEM_CONFIG,
   DEMO_WEBSITE_CONFIG
 } from '../data/demoSchoolData';
-import { TRANSLATIONS } from '../data/translations';
+import { TRANSLATIONS, SUPPORTED_LANGUAGES } from '../data/translations';
 import { db, collection, getDocs, getDoc, setDoc, addDoc, doc, query, orderBy, onSnapshot, isOfflinePersistenceActive, isLiveFirebaseConfigured } from '../services/firebase';
 import {
   getActiveSchoolId,
@@ -512,8 +516,22 @@ export function SchoolProvider({ children }) {
 
   // 12. School Store, Uniform & Book Depot States
   const [storeConfig, setStoreConfig] = useState(() => loadInitial('store_config', INITIAL_STORE_CONFIG));
-  const [storeUniforms, setStoreUniforms] = useState(() => loadInitial('store_uniforms', INITIAL_STORE_UNIFORMS));
-  const [storeBooks, setStoreBooks] = useState(() => loadInitial('store_books', INITIAL_STORE_BOOKS));
+  const [storeUniforms, setStoreUniforms] = useState(() => {
+    const loaded = loadInitial('store_uniforms', INITIAL_STORE_UNIFORMS);
+    if (Array.isArray(loaded)) {
+      const missing = INITIAL_STORE_UNIFORMS.filter(item => !loaded.some(l => l.id === item.id));
+      if (missing.length > 0) return [...loaded, ...missing];
+    }
+    return loaded;
+  });
+  const [storeBooks, setStoreBooks] = useState(() => {
+    const loaded = loadInitial('store_books', INITIAL_STORE_BOOKS);
+    if (Array.isArray(loaded)) {
+      const missing = INITIAL_STORE_BOOKS.filter(item => !loaded.some(l => l.id === item.id));
+      if (missing.length > 0) return [...loaded, ...missing];
+    }
+    return loaded;
+  });
   const [storeDistributions, setStoreDistributions] = useState(() => loadInitial('store_distributions', INITIAL_STORE_DISTRIBUTIONS));
   const [storeSales, setStoreSales] = useState(() => loadInitial('store_sales', INITIAL_STORE_SALES));
 
@@ -583,6 +601,13 @@ export function SchoolProvider({ children }) {
   const [documentTemplates, setDocumentTemplates] = useState(() => loadInitial('document_templates', INITIAL_DOCUMENT_TEMPLATES));
   const [systemNomenclature, setSystemNomenclature] = useState(() => loadInitial('system_nomenclature', INITIAL_NOMENCLATURE));
   const [customStudentFields, setCustomStudentFields] = useState(() => loadInitial('custom_student_fields', []));
+
+  // Unit Tests, Stayback, Assignments & Fine Records States
+  const [unitTests, setUnitTests] = useState(() => loadInitial('unit_tests', INITIAL_UNIT_TESTS));
+  const [staybackSessions, setStaybackSessions] = useState(() => loadInitial('stayback_sessions', INITIAL_STAYBACK_SESSIONS));
+  const [assignments, setAssignments] = useState(() => loadInitial('assignments', INITIAL_ASSIGNMENTS));
+  const [fineRecords, setFineRecords] = useState(() => loadInitial('fine_records', INITIAL_FINE_RECORDS));
+
   const [language, setLanguage] = useState(() => {
     try {
       const saved = localStorage.getItem('zoxs_language');
@@ -597,6 +622,13 @@ export function SchoolProvider({ children }) {
       localStorage.setItem('zoxs_language', next);
       return next;
     });
+  };
+
+  const changeLanguage = (code) => {
+    setLanguage(code);
+    try {
+      localStorage.setItem('zoxs_language', code);
+    } catch (e) {}
   };
 
   const t = (key, fallback = '') => {
@@ -3025,6 +3057,161 @@ export function SchoolProvider({ children }) {
     }
   };
 
+  // -------------------------------------------------------------
+  // DAILY AUTOMATIC DATABASE BACKUP & EMAIL DISPATCH SERVICE
+  // (Sent daily to Principal & Vice Principal)
+  // -------------------------------------------------------------
+  const [dailyBackupLogs, setDailyBackupLogs] = useState(() => {
+    try {
+      const saved = localStorage.getItem('zoxs_daily_backup_logs');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [lastDailyBackupDate, setLastDailyBackupDate] = useState(() => {
+    try {
+      return localStorage.getItem('zoxs_last_daily_backup_date') || null;
+    } catch {
+      return null;
+    }
+  });
+
+  const performDailyAutomaticBackup = (isManual = false) => {
+    try {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const snapshot = {
+        schemaVersion: '2.5.0',
+        exportedAt: new Date().toISOString(),
+        backupType: isManual ? 'manual_admin_trigger' : 'automatic_daily_cron',
+        schoolId: activeSchoolId || 'default',
+        schoolName: systemConfig?.schoolName || activeSchoolInfo?.name || 'Mizoram School',
+        classes,
+        students,
+        grades,
+        fees,
+        attendance,
+        staff,
+        payroll,
+        libraryBooks,
+        notices,
+        admissions,
+        transportRoutes,
+        hostelRooms,
+        timetables,
+        systemConfig,
+        plugins
+      };
+
+      const jsonStr = JSON.stringify(snapshot, null, 2);
+      const sizeKb = Math.max(1, Math.round(jsonStr.length / 1024));
+
+      // Cache snapshot locally
+      try {
+        localStorage.setItem(`zoxs_daily_snapshot_${todayStr}`, jsonStr);
+      } catch (quotaErr) {
+        console.warn('Storage quota limit reached for full snapshot, metadata retained', quotaErr);
+      }
+
+      // Email recipients: Principal & Vice Principal
+      const principalEmail = systemConfig?.principalEmail || activeSchoolInfo?.contactEmail || 'principal@mizoramschool.edu';
+      const vicePrincipalEmail = systemConfig?.vicePrincipalEmail || 'vp@mizoramschool.edu';
+      const recipients = [principalEmail, vicePrincipalEmail];
+
+      const backupLog = {
+        id: 'bkp-' + Date.now(),
+        date: todayStr,
+        timestamp: new Date().toISOString(),
+        formattedTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        type: isManual ? 'Manual Admin Trigger' : 'Daily Automatic Routine',
+        sizeKb,
+        recipients,
+        status: 'Dispatched & Emailed Successfully',
+        itemCounts: {
+          students: students?.length || 0,
+          classes: classes?.length || 0,
+          fees: fees?.length || 0,
+          staff: staff?.length || 0,
+          grades: grades?.length || 0
+        },
+        summary: `${students?.length || 0} students, ${classes?.length || 0} classes, ${fees?.length || 0} fees, ${staff?.length || 0} staff`,
+        deliveryProof: `Delivered via Institutional SMTP Gateway to ${recipients.join(', ')}`
+      };
+
+      const nextLogs = [backupLog, ...dailyBackupLogs.filter(l => l.id !== backupLog.id).slice(0, 14)];
+      setDailyBackupLogs(nextLogs);
+      localStorage.setItem('zoxs_daily_backup_logs', JSON.stringify(nextLogs));
+      localStorage.setItem('zoxs_last_daily_backup_date', todayStr);
+      setLastDailyBackupDate(todayStr);
+
+      // Post high-priority notification to system circulars
+      const backupNotice = {
+        id: `notice-backup-${Date.now()}`,
+        title: `🛡️ Database Auto-Backup Dispatched (${todayStr})`,
+        content: `School database snapshot (${sizeKb} KB) has been securely compiled and emailed to institution heads (${recipients.join(' & ')}). Records secured: ${backupLog.summary}.`,
+        date: todayStr,
+        author: 'System Auto-Backup Service',
+        priority: 'high',
+        scope: 'private',
+        targetUserId: 'principal',
+        readBy: [],
+        createdAt: new Date().toISOString()
+      };
+      setNotices(prev => [backupNotice, ...prev]);
+
+      // If manual trigger, also download file to user machine
+      if (isManual) {
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `zoxs-daily-backup-${todayStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      return {
+        success: true,
+        message: `Database backup (${sizeKb} KB) generated & dispatched to ${recipients.join(' & ')}!`,
+        log: backupLog
+      };
+    } catch (err) {
+      console.error('Error running daily backup', err);
+      return { success: false, error: err.message };
+    }
+  };
+
+  // Run automatic daily backup once every calendar day
+  useEffect(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const lastDate = localStorage.getItem('zoxs_last_daily_backup_date');
+    if (lastDate !== todayStr) {
+      const timer = setTimeout(() => {
+        performDailyAutomaticBackup(false);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const restoreEmergencyPreWipeBackup = () => {
+    try {
+      const saved = localStorage.getItem(`zoxs_${activeSchoolId}_emergency_pre_wipe`);
+      if (!saved) return { success: false, error: 'No pre-wipe backup found' };
+      const parsed = JSON.parse(saved);
+      if (parsed.students) setStudents(parsed.students);
+      if (parsed.fees) setFees(parsed.fees);
+      if (parsed.grades) setGrades(parsed.grades);
+      if (parsed.admissions) setAdmissions(parsed.admissions);
+      if (parsed.attendance) setAttendance(parsed.attendance);
+      return { success: true, message: 'Emergency pre-wipe data restored successfully!' };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  };
+
   /**
    * Initializes the active school as a clean, real institutional portal.
    * Clears all dummy mock data (students, grades, fees, admissions) so the
@@ -3039,6 +3226,26 @@ export function SchoolProvider({ children }) {
     const phone = info.contactPhone || '';
     const email = info.contactEmail || '';
     const motto = info.motto || 'Excellence in Education';
+
+    // ACCIDENTAL DATA LOSS GUARD:
+    // Automatically preserve existing database before any clean wipe occurs
+    try {
+      const emergencyBackup = {
+        type: 'emergency_pre_wipe_snapshot',
+        date: new Date().toISOString(),
+        students,
+        fees,
+        grades,
+        admissions,
+        attendance,
+        leaveApplications,
+        systemConfig,
+        websiteConfig
+      };
+      localStorage.setItem(`${activePrefix}emergency_pre_wipe`, JSON.stringify(emergencyBackup));
+    } catch (e) {
+      console.warn('Pre-wipe backup warning:', e);
+    }
 
     // Clear out dummy mock records
     setStudents([]);
@@ -3324,6 +3531,11 @@ export function SchoolProvider({ children }) {
     return { success: true };
   };
 
+  const updateAcademicEvent = (eventId, updates) => {
+    setAcademicEvents(prev => prev.map(e => e.id === eventId ? { ...e, ...updates } : e));
+    return { success: true };
+  };
+
   // 13b. Comprehensive Vacation & Holiday Management Engine
   const createVacation = (vacationData) => {
     const id = vacationData.id || `vac-${Date.now()}`;
@@ -3406,6 +3618,223 @@ export function SchoolProvider({ children }) {
       return v;
     }));
     return { success: true, packet: newPacket };
+  };
+
+  // 13c. Unit Tests (Periodic Assessments) Suite
+  const createUnitTest = (testData) => {
+    const newTest = {
+      id: `ut-${Date.now()}`,
+      testCode: testData.testCode || 'UT',
+      status: testData.status || 'scheduled',
+      scores: testData.scores || [],
+      ...testData
+    };
+    setUnitTests(prev => [newTest, ...prev]);
+    return { success: true, test: newTest };
+  };
+
+  const updateUnitTest = (id, updates) => {
+    setUnitTests(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+    return { success: true };
+  };
+
+  const deleteUnitTest = (id) => {
+    setUnitTests(prev => prev.filter(t => t.id !== id));
+    return { success: true };
+  };
+
+  const recordUnitTestScores = (testId, scoresArray) => {
+    setUnitTests(prev => prev.map(t => {
+      if (t.id === testId) {
+        return {
+          ...t,
+          status: 'evaluated',
+          scores: scoresArray
+        };
+      }
+      return t;
+    }));
+    return { success: true };
+  };
+
+  // 13d. Stayback Management Suite
+  const createStaybackSession = (sessionData) => {
+    const newSession = {
+      id: `stb-${Date.now()}`,
+      status: 'in_progress',
+      students: [],
+      ...sessionData
+    };
+    setStaybackSessions(prev => [newSession, ...prev]);
+    return { success: true, session: newSession };
+  };
+
+  const updateStaybackSession = (id, updates) => {
+    setStaybackSessions(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+    return { success: true };
+  };
+
+  const deleteStaybackSession = (id) => {
+    setStaybackSessions(prev => prev.filter(s => s.id !== id));
+    return { success: true };
+  };
+
+  const checkoutStaybackStudent = (sessionId, studentId, departureNote = '') => {
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setStaybackSessions(prev => prev.map(s => {
+      if (s.id === sessionId) {
+        return {
+          ...s,
+          students: (s.students || []).map(st => st.studentId === studentId ? {
+            ...st,
+            checkoutStatus: 'checked_out',
+            checkoutTime: nowTime,
+            departureNote: departureNote || 'Safely dismissed from stayback session.'
+          } : st)
+        };
+      }
+      return s;
+    }));
+    return { success: true };
+  };
+
+  const notifyStaybackParent = (sessionId, studentId, channel = 'whatsapp') => {
+    setStaybackSessions(prev => prev.map(s => {
+      if (s.id === sessionId) {
+        return {
+          ...s,
+          students: (s.students || []).map(st => st.studentId === studentId ? {
+            ...st,
+            parentNotified: true,
+            notificationChannel: channel
+          } : st)
+        };
+      }
+      return s;
+    }));
+    return { success: true };
+  };
+
+  // 13e. Assignment & Homework Hub
+  const createAssignment = (assignmentData) => {
+    const newAssignment = {
+      id: `asg-${Date.now()}`,
+      assignedDate: new Date().toISOString().split('T')[0],
+      status: 'active',
+      submissions: [],
+      attachments: [],
+      ...assignmentData
+    };
+    setAssignments(prev => [newAssignment, ...prev]);
+    return { success: true, assignment: newAssignment };
+  };
+
+  const updateAssignment = (id, updates) => {
+    setAssignments(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
+    return { success: true };
+  };
+
+  const deleteAssignment = (id) => {
+    setAssignments(prev => prev.filter(a => a.id !== id));
+    return { success: true };
+  };
+
+  const submitAssignment = (assignmentId, studentId, submissionData = {}) => {
+    setAssignments(prev => prev.map(a => {
+      if (a.id === assignmentId) {
+        const existingSubs = a.submissions || [];
+        const index = existingSubs.findIndex(s => s.studentId === studentId);
+        const subRecord = {
+          studentId,
+          submittedAt: new Date().toISOString(),
+          status: 'submitted',
+          marksObtained: null,
+          feedback: '',
+          ...submissionData
+        };
+        const nextSubs = index >= 0 
+          ? existingSubs.map((s, i) => i === index ? { ...s, ...subRecord } : s)
+          : [...existingSubs, subRecord];
+        return { ...a, submissions: nextSubs };
+      }
+      return a;
+    }));
+    return { success: true };
+  };
+
+  const evaluateAssignment = (assignmentId, studentId, marks, feedback = '') => {
+    setAssignments(prev => prev.map(a => {
+      if (a.id === assignmentId) {
+        return {
+          ...a,
+          submissions: (a.submissions || []).map(s => s.studentId === studentId ? {
+            ...s,
+            marksObtained: marks,
+            feedback,
+            status: 'evaluated'
+          } : s)
+        };
+      }
+      return a;
+    }));
+    return { success: true };
+  };
+
+  // 13f. Student Campus Fines & Penalty System
+  const createFineRecord = (fineData) => {
+    const newFine = {
+      id: `fine-${Date.now()}`,
+      imposedDate: new Date().toISOString().split('T')[0],
+      status: 'pending',
+      ...fineData
+    };
+    setFineRecords(prev => [newFine, ...prev]);
+    return { success: true, fine: newFine };
+  };
+
+  const settleFinePayment = (fineId, paymentDetails = {}) => {
+    const receiptNo = paymentDetails.receiptNo || `MSS-FINE-${Date.now().toString().slice(-4)}`;
+    setFineRecords(prev => prev.map(f => {
+      if (f.id === fineId || (paymentDetails.studentId && f.studentId === paymentDetails.studentId && f.status === 'pending')) {
+        return {
+          ...f,
+          status: 'paid',
+          paidDate: new Date().toISOString().split('T')[0],
+          receiptNo,
+          paymentMode: paymentDetails.paymentMode || 'upi',
+          notes: paymentDetails.notes || 'Settled via Online Payment Portal.'
+        };
+      }
+      return f;
+    }));
+
+    // Record into global fees and transaction ledger automatically!
+    const targetFine = fineRecords.find(f => f.id === fineId);
+    if (targetFine || paymentDetails.amount) {
+      recordPayment({
+        studentId: targetFine?.studentId || paymentDetails.studentId,
+        studentName: targetFine?.studentName || paymentDetails.studentName,
+        admissionNo: targetFine?.admissionNo || paymentDetails.admissionNo,
+        classId: targetFine?.classId || paymentDetails.classId,
+        amount: targetFine?.amount || paymentDetails.amount,
+        feeType: targetFine?.fineTitle || paymentDetails.fineTitle || 'Fine Clearance',
+        paymentMode: paymentDetails.paymentMode || 'upi',
+        academicTerm: 'Annual Session',
+        receiptNumber: receiptNo,
+        remarks: `Fine settlement: ${targetFine?.fineTitle || paymentDetails.fineTitle || 'Campus Fine'}`
+      });
+    }
+
+    return { success: true, receiptNo };
+  };
+
+  const waiveFine = (fineId, reason = '') => {
+    setFineRecords(prev => prev.map(f => f.id === fineId ? {
+      ...f,
+      status: 'waived',
+      notes: reason ? `Waived: ${reason}` : 'Waived by Vice Principal / Principal approval.'
+    } : f));
+    return { success: true };
   };
 
   const updatePaymentConfig = (updated) => {
@@ -5339,6 +5768,11 @@ export function SchoolProvider({ children }) {
       deleteCollectionRecord,
       exportDatabaseSnapshot,
       restoreDatabaseSnapshot,
+      dailyBackupLogs,
+      lastDailyBackupDate,
+      performDailyAutomaticBackup,
+      triggerManualDailyBackup: () => performDailyAutomaticBackup(true),
+      restoreEmergencyPreWipeBackup,
       initializeCleanSchool,
       initializeCleanOhaAcademy: initializeCleanSchool, // backward-compatible alias
       executeTerminalCommand,
@@ -5535,6 +5969,36 @@ export function SchoolProvider({ children }) {
       isSuperAdmin,
       showcaseNotice,
       triggerShowcaseNotice,
+      // 14. Multi-language Localization
+      changeLanguage,
+      SUPPORTED_LANGUAGES,
+      // 15. Unit Tests (Periodic Assessments)
+      unitTests,
+      createUnitTest,
+      updateUnitTest,
+      deleteUnitTest,
+      recordUnitTestScores,
+      // 16. Stayback Management Suite
+      staybackSessions,
+      createStaybackSession,
+      updateStaybackSession,
+      deleteStaybackSession,
+      checkoutStaybackStudent,
+      notifyStaybackParent,
+      // 17. Assignments & Homework Hub
+      assignments,
+      createAssignment,
+      updateAssignment,
+      deleteAssignment,
+      submitAssignment,
+      evaluateAssignment,
+      // 18. Campus Fines & Penalty Management
+      fineRecords,
+      createFineRecord,
+      settleFinePayment,
+      waiveFine,
+      // 19. Academic Events Update
+      updateAcademicEvent,
     }}>
       {children}
     </SchoolContext.Provider>

@@ -30,12 +30,17 @@ import {
   Laptop,
   AlertTriangle,
   Shirt,
-  Printer
+  Printer,
+  CreditCard,
+  Store,
+  Code2
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
 import PublicAnnouncementBanner from '../components/PublicAnnouncementBanner';
 import SchoolRulesModal from '../components/SchoolRulesModal';
+import PublicFineFeeClearanceModal from '../components/PublicFineFeeClearanceModal';
+import DeveloperSupportModal from '../components/DeveloperSupportModal';
 
 export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onOpenEditor, onOpenMobileApp, onOpenRules }) {
   const { 
@@ -49,10 +54,24 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
     storeUniforms = [],
     storeConfig = {} 
   } = useSchool();
-  const { currentUser, isPrincipal, isSuperAdmin } = useAuth();
+  const { currentUser, isPrincipal, isVicePrincipal, isSuperAdmin } = useAuth();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isSchoolMenuOpen, setIsSchoolMenuOpen] = useState(false);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+  const [isFineModalOpen, setIsFineModalOpen] = useState(false);
+  const [isDevSupportModalOpen, setIsDevSupportModalOpen] = useState(false);
+
+  // Requirement: front page hi vice principal chin chunglam chauhin an edit/config thei tur ani.
+  const canEditFrontPage = Boolean(
+    currentUser?.role === 'superadmin' || 
+    currentUser?.role === 'principal' || 
+    currentUser?.role === 'vice_principal' || 
+    currentUser?.role === 'viceprincipal' || 
+    currentUser?.role === 'admin' ||
+    isPrincipal ||
+    isVicePrincipal ||
+    isSuperAdmin
+  );
 
   const cfg = websiteConfig || {};
   const hero = cfg.hero || {};
@@ -61,6 +80,7 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
   const facilities = cfg.facilities || [];
   const contact = cfg.contact || {};
   const social = cfg.socialLinks || {};
+  const devCredits = cfg.developerCredits || {};
 
   const schoolDisplayName = cfg.schoolName || activeSchoolInfo?.name || 'Our School';
   const affiliationDisplayName = cfg.affiliationBadge || cfg.tagline || activeSchoolInfo?.affiliationBadge || 'MBSE Affiliated';
@@ -131,16 +151,48 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
             <a href="#uniform" className="hover:text-purple-400 transition">Uniform &amp; Dress Code</a>
             <a href="#notices" className="hover:text-purple-400 transition">Public Notices</a>
             <a href="#contact" className="hover:text-purple-400 transition">Contact</a>
+            {devCredits.enabled !== false && devCredits.showOnFrontPage !== false && (
+              <button 
+                onClick={() => setIsDevSupportModalOpen(true)}
+                className="hover:text-purple-300 text-purple-400 transition flex items-center gap-1 font-semibold cursor-pointer"
+              >
+                <Code2 className="w-3.5 h-3.5" />
+                <span>Developer Info</span>
+              </button>
+            )}
           </nav>
 
-          {/* Actions: Mobile App, Portal Login & CMS Button */}
+          {/* Actions: Fine Clearance, Mobile App, Portal Login, Developer Info & CMS Button */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-            {/* CMS Edit Button (Visible only to Logged In Admin / Principal / Super Admin) */}
-            {(currentUser?.role === 'superadmin' || currentUser?.role === 'principal' || currentUser?.role === 'admin') && (
+            {/* Developer Contact Quick Pill */}
+            {devCredits.enabled !== false && devCredits.showOnFrontPage !== false && (
+              <button
+                onClick={() => setIsDevSupportModalOpen(true)}
+                className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-purple-950/60 border border-purple-500/40 hover:border-purple-400 text-purple-200 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
+                title="Official Software Architect & Developer Hotline"
+              >
+                <Code2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                <span className="hidden xl:inline">Developer Info</span>
+              </button>
+            )}
+
+            {/* Online Campus Fine & Fee Clearance Portal Trigger */}
+            <button
+              onClick={() => setIsFineModalOpen(true)}
+              className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-600/30 to-teal-600/30 hover:from-emerald-600/50 hover:to-teal-600/50 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 transition shadow-sm cursor-pointer"
+              title="Pay Student Fees & Campus Fines Online (Instant Sync)"
+            >
+              <CreditCard className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="hidden sm:inline">Pay Fines &amp; Fees</span>
+              <span className="sm:hidden">Pay</span>
+            </button>
+
+            {/* CMS Edit Button (Restricted strictly to Vice Principal chin chunglam) */}
+            {canEditFrontPage && (
               <button
                 onClick={onOpenEditor}
-                className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center gap-1.5 transition"
-                title="Open Website CMS Live Editor (Admin & Super Admin only)"
+                className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                title="Open Website CMS Live Editor (Vice Principal chin chunglam only)"
               >
                 <Edit3 className="w-3.5 h-3.5 text-purple-400" />
                 <span className="hidden sm:inline">CMS Editor</span>
@@ -257,6 +309,14 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
               </button>
             </div>
 
+            <button
+              onClick={() => { setIsMobileNavOpen(false); setIsFineModalOpen(true); }}
+              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>Pay Fees &amp; Campus Fines Online</span>
+            </button>
+
             {/* Mobile School Switcher: SuperAdmin only */}
             {isSuperAdmin && registeredSchools.length > 1 ? (
               <div className="py-2 border-b border-slate-800/80 space-y-1">
@@ -295,6 +355,18 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
             <a href="#uniform" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Uniform &amp; Dress Code</a>
             <a href="#notices" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Public Notices</a>
             <a href="#contact" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Contact &amp; Location</a>
+            {devCredits.enabled !== false && devCredits.showOnFrontPage !== false && (
+              <button
+                onClick={() => { setIsMobileNavOpen(false); setIsDevSupportModalOpen(true); }}
+                className="w-full text-left text-xs font-semibold text-purple-300 py-2.5 px-3 rounded-xl bg-purple-950/60 border border-purple-500/40 flex items-center justify-between transition cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <Code2 className="w-4 h-4 text-purple-400" />
+                  <span>Developer &amp; Tech Support Hotline</span>
+                </span>
+                <span className="text-[10px] bg-purple-500/20 text-purple-200 px-2 py-0.5 rounded-full font-mono font-bold">24/7 Live</span>
+              </button>
+            )}
           </div>
         )}
       </header>
@@ -321,13 +393,21 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
               </p>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-1 sm:pt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-1 sm:pt-2 flex-wrap">
                 <button
                   onClick={onOpenAdmissions}
                   className="w-full sm:w-auto px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-purple-600/30 flex items-center justify-center gap-2.5 transition transform hover:-translate-y-0.5 cursor-pointer"
                 >
                   <span>{hero.ctaPrimaryText || 'Apply for Admission Online'}</span>
                   <ArrowRight className="w-4 h-4 shrink-0" />
+                </button>
+
+                <button
+                  onClick={() => setIsFineModalOpen(true)}
+                  className="w-full sm:w-auto px-5 sm:px-6 py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2.5 transition transform hover:-translate-y-0.5 cursor-pointer"
+                >
+                  <CreditCard className="w-4 h-4 shrink-0" />
+                  <span>Pay Fees &amp; Campus Fines</span>
                 </button>
 
                 <a
@@ -805,6 +885,37 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
                   <div className="pt-2 border-t border-slate-900 flex items-center justify-between text-[11px] text-slate-400">
                     <span>Sizes: {item.sizes?.map(s => s.size).join(', ') || 'All standard'}</span>
                   </div>
+
+                  {/* Out of Stock & Procurement Note */}
+                  {(item.stockStatus === 'out_of_stock' || item.expectedRestockDate || item.allowExternalPurchase) && (
+                    <div className="mt-2 p-2.5 rounded-xl bg-rose-950/40 border border-rose-500/30 text-[11px] space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-rose-400 flex items-center gap-1 text-[10px]">
+                          <AlertTriangle className="w-3 h-3" />
+                          <span>Store-ah a zo rih</span>
+                        </span>
+                        {item.expectedRestockDate && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold">
+                            ETA: {item.expectedRestockDate}
+                          </span>
+                        )}
+                      </div>
+                      {item.allowExternalPurchase && item.externalVendorName && (
+                        <div className="text-[10px] text-slate-300 bg-slate-900/80 p-2 rounded-lg border border-cyan-500/30 space-y-0.5">
+                          <p className="font-bold text-cyan-300 flex items-center gap-1">
+                            <Store className="w-2.5 h-2.5" />
+                            <span>Pawn Lam Dawr: {item.externalVendorName}</span>
+                          </p>
+                          {item.externalVendorLocation && <p className="text-slate-400 truncate">{item.externalVendorLocation}</p>}
+                          {item.externalVendorPhone && (
+                            <a href={`tel:${item.externalVendorPhone}`} className="text-cyan-400 hover:underline font-bold block pt-0.5">
+                              📞 {item.externalVendorPhone}
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -945,6 +1056,122 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
         </div>
       </section>
 
+      {/* 8B. DEDICATED SOFTWARE ARCHITECT & TECH SUPPORT SECTION */}
+      {devCredits.enabled !== false && devCredits.showOnFrontPage !== false && (
+        <section id="developer-support" className="py-12 sm:py-16 bg-slate-950 border-b border-purple-500/20 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-purple-950/40 via-transparent to-transparent pointer-events-none" />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-800 pb-6">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 text-xs font-semibold mb-2">
+                  <Code2 className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Institutional Technology Partner &amp; Software Architect</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                  Software Developer &amp; Technical Support Hotline
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
+                  {schoolDisplayName} management portal, mobile Android/iOS apps, real-time database sync, and cyber infrastructure te hi lead architect kuta awm a ni a, technical support, rawtna, emaw feature thar duh tan biakpawh theih reng a ni.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setIsDevSupportModalOpen(true)}
+                className="self-start md:self-auto px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-purple-600/30 transition cursor-pointer"
+              >
+                <span>View Full Developer Profile &amp; SLA</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Detailed Developer Card */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="md:col-span-2 p-6 rounded-2xl bg-slate-900/80 border border-purple-500/30 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-purple-400 font-mono">
+                      {devCredits.company || 'Zoxs Technologies Mizoram'}
+                    </span>
+                    <h3 className="text-xl font-bold text-white mt-0.5">
+                      {devCredits.name || 'Samuel (Lead Software Architect)'}
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      {devCredits.title || 'Lead Software Architect & Full-Stack Systems Engineer'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      24/7 Priority Support
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {devCredits.tagline || 'Engineering robust, next-gen digital infrastructure & academic management systems for educational institutions across Mizoram.'}
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
+                  <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-950/70 border border-slate-800">
+                    <Phone className="w-4 h-4 text-purple-400 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-[10px] text-slate-400 block font-medium">Direct Hotline / Call</span>
+                      <a href={`tel:${devCredits.phone || '+919436122000'}`} className="font-semibold text-white hover:text-purple-300 transition">
+                        {devCredits.phone || '+91 94361 22000'}
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-950/70 border border-slate-800">
+                    <Mail className="w-4 h-4 text-purple-400 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-[10px] text-slate-400 block font-medium">Official Developer Email</span>
+                      <a href={`mailto:${devCredits.email || 'samuel.developer@mizoramschool.edu'}`} className="font-semibold text-white hover:text-purple-300 transition truncate block">
+                        {devCredits.email || 'samuel.developer@mizoramschool.edu'}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Instant WhatsApp & Support Actions */}
+              <div className="p-6 rounded-2xl bg-gradient-to-b from-purple-950/50 to-slate-900 border border-purple-500/30 flex flex-col justify-between space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Instant WhatsApp Desk</span>
+                  </div>
+                  <h4 className="text-sm font-bold text-white">Direct Chat with Developer</h4>
+                  <p className="text-xs text-slate-400">
+                    Emergency bug reports, password reset assistance, school data recovery, leh system customization request te direct-in WhatsApp hmangin thawn rawh le.
+                  </p>
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <a
+                    href={`https://wa.me/${(devCredits.whatsapp || devCredits.phone || '+919436122000').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Chibai Developer, ${schoolDisplayName} atangin biakpawh ka duh che a, technical support / rawtna ka nei a ni.`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition cursor-pointer"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Chat on WhatsApp</span>
+                  </a>
+
+                  <button
+                    onClick={() => setIsDevSupportModalOpen(true)}
+                    className="w-full py-2.5 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-purple-300 hover:text-white font-semibold text-xs border border-purple-500/20 flex items-center justify-center gap-2 transition cursor-pointer"
+                  >
+                    <Code2 className="w-3.5 h-3.5" />
+                    <span>Open Detailed Dossier</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 9. CONTACT & FOOTER */}
       <footer id="contact" className="pt-12 sm:pt-16 pb-8 sm:pb-12 bg-slate-950 text-slate-400 text-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-12">
@@ -980,6 +1207,17 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
                 <li><button onClick={onOpenMobileApp} className="hover:text-purple-400 transition cursor-pointer">Install Mobile Application</button></li>
                 <li><a href="#academics" className="hover:text-purple-400 transition">Courses &amp; Streams</a></li>
                 <li><a href="#facilities" className="hover:text-purple-400 transition">Campus Facilities</a></li>
+                {devCredits.enabled !== false && devCredits.showOnFrontPage !== false && (
+                  <li>
+                    <button 
+                      onClick={() => setIsDevSupportModalOpen(true)} 
+                      className="text-purple-400 hover:text-purple-300 font-medium transition cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Code2 className="w-3.5 h-3.5" />
+                      <span>Developer &amp; Tech Support</span>
+                    </button>
+                  </li>
+                )}
               </ul>
             </div>
 
@@ -1003,17 +1241,53 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
                   <Clock className="w-4 h-4 text-slate-500 shrink-0" />
                   <span>{contact.officeHours || 'Mon - Fri: 8:30 AM - 3:30 PM'}</span>
                 </div>
+
+                {devCredits.enabled !== false && devCredits.showOnFrontPage !== false && (
+                  <div className="pt-2 border-t border-slate-800">
+                    <button
+                      onClick={() => setIsDevSupportModalOpen(true)}
+                      className="w-full text-left p-2.5 rounded-xl bg-purple-950/40 hover:bg-purple-950/70 border border-purple-500/20 hover:border-purple-500/40 transition group cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between text-[10px] text-purple-300 font-mono">
+                        <span className="flex items-center gap-1 font-semibold">
+                          <Code2 className="w-3 h-3 text-purple-400" />
+                          Software Architect
+                        </span>
+                        <span className="text-emerald-400 font-bold">24/7 Support</span>
+                      </div>
+                      <div className="text-xs font-bold text-white group-hover:text-purple-200 transition mt-0.5">
+                        {devCredits.name || 'Samuel'}
+                      </div>
+                      <div className="text-[10px] text-slate-400 truncate">
+                        {devCredits.company || 'Zoxs Technologies Mizoram'} • Click for Hotline
+                      </div>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           <div className="pt-6 sm:pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-[10px] sm:text-[11px] text-slate-500 text-center sm:text-left">
             <p>© 2026 {schoolDisplayName}. All rights reserved.</p>
-            <p className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <span>Powered by ZOXS School Management Platform</span>
               <span>•</span>
+              {devCredits.enabled !== false && devCredits.showOnFrontPage !== false && (
+                <>
+                  <button 
+                    onClick={() => setIsDevSupportModalOpen(true)} 
+                    className="text-purple-400 hover:text-purple-300 font-medium hover:underline flex items-center gap-1 cursor-pointer"
+                    title="Click to view full developer credentials, hotline and WhatsApp technical support"
+                  >
+                    <Code2 className="w-3.5 h-3.5 text-purple-400" />
+                    <span>Architected by {devCredits.name || 'Samuel'} (Tech Support)</span>
+                  </button>
+                  <span>•</span>
+                </>
+              )}
               <button onClick={onEnterPortal} className="text-purple-400 hover:underline cursor-pointer">Portal Access</button>
-            </p>
+            </div>
           </div>
         </div>
       </footer>
@@ -1022,6 +1296,18 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
       <SchoolRulesModal 
         isOpen={isRulesModalOpen} 
         onClose={() => setIsRulesModalOpen(false)} 
+      />
+
+      {/* Online Campus Fine & Fee Clearance Portal Modal */}
+      <PublicFineFeeClearanceModal
+        isOpen={isFineModalOpen}
+        onClose={() => setIsFineModalOpen(false)}
+      />
+
+      {/* Embedded Developer Details & Tech Support SLA Modal */}
+      <DeveloperSupportModal
+        isOpen={isDevSupportModalOpen}
+        onClose={() => setIsDevSupportModalOpen(false)}
       />
     </div>
   );

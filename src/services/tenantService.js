@@ -132,7 +132,9 @@ export function registerNewSchool(schoolData = {}) {
     affiliationBadge: schoolData.affiliationBadge || 'MBSE Affiliated',
     primaryColor: schoolData.primaryColor || '#6366f1',
     secondaryColor: schoolData.secondaryColor || '#8b5cf6',
-    establishedYear: Number(schoolData.establishedYear) || new Date().getFullYear()
+    establishedYear: Number(schoolData.establishedYear) || new Date().getFullYear(),
+    isLiveProduction: schoolData.isLiveProduction !== undefined ? schoolData.isLiveProduction : true,
+    disableFastLogin: schoolData.disableFastLogin !== undefined ? schoolData.disableFastLogin : true
   };
 
   const updated = [newSchool, ...currentSchools.filter(s => s.id !== newSchool.id)];

@@ -170,6 +170,26 @@ function SchoolAppContent() {
   const [isIdCardFromScannerOpen, setIsIdCardFromScannerOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [selectedStudentForReport, setSelectedStudentForReport] = useState(null);
+
+  // Requirement: front page hi vice principal chin chunglam chauhin an edit/config thei tur ani.
+  const canEditWebsite = Boolean(
+    currentUser?.role === 'superadmin' || 
+    currentUser?.role === 'principal' || 
+    currentUser?.role === 'vice_principal' || 
+    currentUser?.role === 'viceprincipal' || 
+    currentUser?.role === 'admin' ||
+    isPrincipal ||
+    isVicePrincipal ||
+    isSuperAdmin
+  );
+
+  const handleOpenWebsiteEditor = () => {
+    if (!canEditWebsite) {
+      alert('Access Restricted: Front page website configuration can only be edited by the Vice Principal, Principal, or Super Admin (Vice Principal chin chunglam).');
+      return;
+    }
+    setIsWebsiteEditorOpen(true);
+  };
   
   const { 
     activePrivateCall, 
@@ -411,7 +431,7 @@ function SchoolAppContent() {
             <PublicWebsiteView
               onEnterPortal={() => setCurrentTab('login')}
               onOpenAdmissions={() => setIsPublicAdmissionModalOpen(true)}
-              onOpenEditor={() => setIsWebsiteEditorOpen(true)}
+              onOpenEditor={handleOpenWebsiteEditor}
               onOpenMobileApp={() => setIsMobileAppModalOpen(true)}
             />
 
@@ -466,7 +486,7 @@ function SchoolAppContent() {
           <PublicWebsiteView
             onEnterPortal={() => setCurrentTab((isStudent || isParent) ? 'portal' : 'dashboard')}
           onOpenAdmissions={() => setIsPublicAdmissionModalOpen(true)}
-          onOpenEditor={() => setIsWebsiteEditorOpen(true)}
+          onOpenEditor={handleOpenWebsiteEditor}
           onOpenMobileApp={() => setIsMobileAppModalOpen(true)}
         />
 
@@ -543,12 +563,14 @@ function SchoolAppContent() {
               </span>
             </div>
             <div className="flex items-center gap-2 shrink-0 text-[11px]">
-              <button
-                onClick={() => setIsRoleModalOpen(true)}
-                className="text-amber-400 hover:text-amber-300 font-semibold underline text-[11px] cursor-pointer"
-              >
-                Switch Demo Role
-              </button>
+              {currentUser?.role === 'superadmin' && (
+                <button
+                  onClick={() => setIsRoleModalOpen(true)}
+                  className="text-amber-400 hover:text-amber-300 font-semibold underline text-[11px] cursor-pointer"
+                >
+                  Switch Demo Role
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -561,7 +583,7 @@ function SchoolAppContent() {
           openFirebaseModal={() => setIsFirebaseModalOpen(true)}
           openExportModal={() => setIsExportModalOpen(true)}
           openMobileAppModal={() => setIsMobileAppModalOpen(true)}
-          openWebsiteEditor={() => setIsWebsiteEditorOpen(true)}
+          openWebsiteEditor={handleOpenWebsiteEditor}
           openSmsHubModal={() => setIsSmsHubOpen(true)}
           openSchoolRulesModal={() => setIsSchoolRulesModalOpen(true)}
           openCloudStorageModal={() => setIsCloudStorageModalOpen(true)}

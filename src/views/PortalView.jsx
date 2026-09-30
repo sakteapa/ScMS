@@ -28,7 +28,9 @@ import {
   Search,
   ChevronDown,
   Shirt,
-  BookOpen
+  BookOpen,
+  Store,
+  AlertTriangle
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../context/AuthContext';
@@ -1061,18 +1063,53 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
                 </div>
 
                 <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                  {myClassBooks.map(bk => (
-                    <div key={bk.id} className="p-1.5 bg-slate-900 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
-                      <div className="min-w-0 flex items-center gap-2">
-                        <img src={bk.photoUrl} alt="" className="w-6 h-8 rounded object-cover shrink-0 bg-slate-950" />
-                        <div className="truncate">
-                          <p className="font-semibold text-white truncate">{bk.title}</p>
-                          <p className="text-[10px] text-slate-400">{bk.publisher} • {bk.subject}</p>
+                  {myClassBooks.map(bk => {
+                    const isOutOfStock = Number(bk.stockQuantity) === 0 || bk.stockStatus === 'out_of_stock';
+                    return (
+                      <div key={bk.id} className="p-2 bg-slate-900 rounded-lg border border-slate-800 space-y-1.5 text-xs">
+                        <div className="flex items-center justify-between">
+                          <div className="min-w-0 flex items-center gap-2">
+                            <img src={bk.photoUrl} alt="" className="w-6 h-8 rounded object-cover shrink-0 bg-slate-950" />
+                            <div className="truncate">
+                              <p className="font-semibold text-white truncate">{bk.title}</p>
+                              <p className="text-[10px] text-slate-400">{bk.publisher} • {bk.subject}</p>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="text-emerald-400 font-bold text-xs block">₹{bk.price}</span>
+                            {isOutOfStock ? (
+                              <span className="text-[9px] font-bold text-rose-400 bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-500/30">
+                                Zo Rih
+                              </span>
+                            ) : (
+                              <span className="text-[9px] text-slate-400">Stock: {bk.stockQuantity}</span>
+                            )}
+                          </div>
                         </div>
+
+                        {isOutOfStock && (
+                          <div className="p-1.5 rounded bg-slate-950 border border-amber-500/30 text-[10px] space-y-1">
+                            {bk.expectedRestockDate && (
+                              <p className="text-amber-300 font-semibold flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                                <span>A awm leh hun: {bk.expectedRestockDate} {bk.restockNotes && `(${bk.restockNotes})`}</span>
+                              </p>
+                            )}
+                            {bk.allowExternalPurchase && bk.externalVendorName && (
+                              <p className="text-cyan-300 flex items-center justify-between gap-1">
+                                <span>Pawn dawr: <strong>{bk.externalVendorName}</strong> ({bk.externalVendorLocation || ''})</span>
+                                {bk.externalVendorPhone && (
+                                  <a href={`tel:${bk.externalVendorPhone}`} className="text-emerald-400 font-bold hover:underline shrink-0">
+                                    📞 {bk.externalVendorPhone}
+                                  </a>
+                                )}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <span className="text-emerald-400 font-bold text-xs shrink-0">₹{bk.price}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {myClassBooks.length === 0 && (
                     <p className="text-xs text-slate-500">
                       Standard syllabus books available at the Depot room.

@@ -27,7 +27,14 @@ import {
   Server,
   Wifi,
   ShieldCheck,
-  ArrowRight
+  ArrowRight,
+  Code2,
+  MessageCircle,
+  Mail,
+  MapPin,
+  Clock,
+  Award,
+  Headphones
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { INITIAL_WEBSITE_CONFIG } from '../data/mockData';
@@ -76,6 +83,16 @@ export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
       ...prev,
       announcementBanner: {
         ...(prev.announcementBanner || banner),
+        ...updates
+      }
+    }));
+  };
+
+  const updateDevCredits = (updates) => {
+    setFormData((prev) => ({
+      ...prev,
+      developerCredits: {
+        ...(prev.developerCredits || {}),
         ...updates
       }
     }));
@@ -169,6 +186,7 @@ export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
             { id: 'facilities', label: 'Campus Facilities (4)', icon: ImageIcon },
             { id: 'contact', label: 'Contact & Social Links', icon: Phone },
             { id: 'domain', label: 'Domain & Web Address (DNS)', icon: Globe },
+            { id: 'developer', label: 'Developer & Tech Support Identity', icon: Code2 },
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -1479,6 +1497,248 @@ export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
                     <strong className="text-slate-200">DNS Thawh Hun (Propagation):</strong> DNS update hnuah minute 5 atanga darkar reilote chhungin internet khawvel pumah a rawn nung nghal thin.
                   </li>
                 </ul>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 8: DEVELOPER & TECH SUPPORT PROFILE */}
+          {activeTab === 'developer' && (
+            <div className="space-y-6">
+              {/* Header explanation & live status card */}
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-purple-950/40 via-indigo-950/40 to-slate-900 border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-600/20 text-purple-400 border border-purple-500/30 flex items-center justify-center shrink-0">
+                    <Code2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                      <span>Developer &amp; Technical Support Profile</span>
+                      <span className="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-mono">
+                        Super Admin Config
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Main website front page leh school portal a developer biakpawhna, WhatsApp direct chat, leh technical support SLA tarlan tur edit-na.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 font-semibold cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.developerCredits?.enabled !== false}
+                      onChange={(e) => updateDevCredits({ enabled: e.target.checked })}
+                      className="rounded text-purple-600 focus:ring-0 cursor-pointer"
+                    />
+                    <span>Developer Support Active</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Visibility Toggles */}
+              <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <label className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 cursor-pointer transition">
+                  <input
+                    type="checkbox"
+                    checked={formData.developerCredits?.showOnFrontPage !== false}
+                    onChange={(e) => updateDevCredits({ showOnFrontPage: e.target.checked })}
+                    className="rounded text-purple-600 focus:ring-0 cursor-pointer w-4 h-4"
+                  />
+                  <div>
+                    <span className="font-bold text-white block">Main Web Front Page-ah Tarlang Rawh</span>
+                    <span className="text-[11px] text-slate-400">Website public footer-ah "Software Architect &amp; Support" badge leh modal a lang ang.</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 cursor-pointer transition">
+                  <input
+                    type="checkbox"
+                    checked={formData.developerCredits?.showInPortalHelp !== false}
+                    onChange={(e) => updateDevCredits({ showInPortalHelp: e.target.checked })}
+                    className="rounded text-purple-600 focus:ring-0 cursor-pointer w-4 h-4"
+                  />
+                  <div>
+                    <span className="font-bold text-white block">Portal &amp; Staff Navigation-ah Tarlang Rawh</span>
+                    <span className="text-[11px] text-slate-400">School portal navbar-ah "Developer &amp; Tech Support" link awm se zirtirtu leh admin ten an be thei ang.</span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Developer Identity Details */}
+              <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-purple-400" />
+                  Primary Developer &amp; Studio Credentials
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Developer / Architect Name</label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.name || ''}
+                      onChange={(e) => updateDevCredits({ name: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                      placeholder="e.g. Samuel (Lead Architect)"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Professional Title / Designation</label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.title || ''}
+                      onChange={(e) => updateDevCredits({ title: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                      placeholder="e.g. Lead Software Architect & Systems Engineer"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Studio / Agency / Organization</label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.company || ''}
+                      onChange={(e) => updateDevCredits({ company: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                      placeholder="e.g. Zoxs Technologies Mizoram"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Verification Badge Text</label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.badgeText || ''}
+                      onChange={(e) => updateDevCredits({ badgeText: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+                      placeholder="e.g. Verified Institutional Developer"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Location / Operating Base</label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.location || ''}
+                      onChange={(e) => updateDevCredits({ location: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                      placeholder="e.g. Aizawl & Lunglei, Mizoram"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Portfolio / Studio Website URL</label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.website || ''}
+                      onChange={(e) => updateDevCredits({ website: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+                      placeholder="e.g. https://zoxs.dev"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1">Tagline / Architectural Bio Statement</label>
+                  <textarea
+                    rows={2}
+                    value={formData.developerCredits?.tagline || ''}
+                    onChange={(e) => updateDevCredits({ tagline: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500"
+                    placeholder="Brief description of engineering standards, mission or background..."
+                  />
+                </div>
+              </div>
+
+              {/* Direct Communication Channels */}
+              <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono flex items-center gap-2">
+                  <Headphones className="w-4 h-4 text-emerald-400" />
+                  Direct Technical Support Channels &amp; Emergency Hotline
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-emerald-400 uppercase mb-1 flex items-center gap-1">
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      WhatsApp Direct Number (with Country Code)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.whatsapp || ''}
+                      onChange={(e) => updateDevCredits({ whatsapp: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
+                      placeholder="e.g. +91 94361 22000"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">One-click WhatsApp chat link automatically opens with this number.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-indigo-400 uppercase mb-1 flex items-center gap-1">
+                      <Phone className="w-3.5 h-3.5" />
+                      Voice Hotline / Telephone
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.developerCredits?.phone || ''}
+                      onChange={(e) => updateDevCredits({ phone: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                      placeholder="e.g. +91 94361 22000"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">Direct click-to-call phone number on mobile & desktop.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-purple-400 uppercase mb-1 flex items-center gap-1">
+                      <Mail className="w-3.5 h-3.5" />
+                      Technical Support Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.developerCredits?.email || ''}
+                      onChange={(e) => updateDevCredits({ email: e.target.value })}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+                      placeholder="e.g. dev.samuel@mizoramschool.edu"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">Direct inquiries & support tickets will be routed here.</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-400 uppercase mb-1 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                    Support Availability &amp; Emergency Hours (SLA)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.developerCredits?.supportHours || ''}
+                    onChange={(e) => updateDevCredits({ supportHours: e.target.value })}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                    placeholder="e.g. Mon - Sat: 8:00 AM - 8:00 PM (24/7 Critical System Alerts)"
+                  />
+                </div>
+              </div>
+
+              {/* Supported Services / Architecture Highlights */}
+              <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    Engineering Services &amp; Capabilities List
+                  </h4>
+                  <span className="text-[10px] text-slate-500">Lines separated (1 per line)</span>
+                </div>
+                <textarea
+                  rows={4}
+                  value={Array.isArray(formData.developerCredits?.services) ? formData.developerCredits.services.join('\n') : ''}
+                  onChange={(e) => updateDevCredits({ 
+                    services: e.target.value.split('\n').filter(s => s.trim().length > 0)
+                  })}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-purple-500 leading-relaxed font-mono"
+                  placeholder="24/7 Priority Emergency Technical Support & Bug Resolving&#10;Custom Academic Modules, Class Tests & Examination Tools&#10;Cloud Firestore Sync & Daily Automated Database Backups&#10;Campus Hardware, Biometrics & Audio Bell Infrastructure"
+                />
               </div>
             </div>
           )}

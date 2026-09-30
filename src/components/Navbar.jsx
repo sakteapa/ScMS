@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Menu, 
   Bell, 
@@ -20,12 +20,18 @@ import {
   MessageSquare,
   Laptop,
   UploadCloud,
-  QrCode
+  QrCode,
+  Sliders,
+  Sparkles,
+  X,
+  Code2,
+  Headphones
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
 import NotificationDrawer from './NotificationDrawer';
 import ProfileSettingsModal from './ProfileSettingsModal';
+import DeveloperSupportModal from './DeveloperSupportModal';
 
 export default function Navbar({ 
   currentTab, 
@@ -50,15 +56,20 @@ export default function Navbar({
     tasks = [], 
     language, 
     toggleLanguage, 
+    changeLanguage,
+    SUPPORTED_LANGUAGES,
     t,
     activeSchoolId,
     activeSchoolInfo,
     registeredSchools = [],
-    switchSchool
+    switchSchool,
+    websiteConfig
   } = useSchool();
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [isSchoolMenuOpen, setIsSchoolMenuOpen] = useState(false);
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isDevSupportModalOpen, setIsDevSupportModalOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isAlreadyInstalled, setIsAlreadyInstalled] = useState(() => {
@@ -69,6 +80,18 @@ export default function Navbar({
       document.referrer.includes('android-app://')
     );
   });
+  const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
+  const toolsMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target)) {
+        setIsToolsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const handler = (e) => {
@@ -294,120 +317,322 @@ export default function Navbar({
           </div>
         )}
 
-        {/* Global Language Localization Switcher Toggle */}
-        <button
-          onClick={toggleLanguage}
-          className="p-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white transition flex items-center gap-1 text-xs font-bold"
-          title={language === 'en' ? 'Thlak rawh: Mizo Ṭawng' : 'Switch to: English Language'}
-        >
-          <span className="text-xs sm:text-sm">{language === 'en' ? '🇬🇧' : '🇲🇿'}</span>
-          <span className="font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-cyan-400">
-            {language === 'en' ? 'EN' : 'MZ'}
-          </span>
-        </button>
+        {/* Global Multi-Language Localization Selector */}
+        <div className="relative">
+          <button
+            onClick={() => setIsLangMenuOpen(prev => !prev)}
+            className="p-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-bold shadow-sm"
+            title="Switch Language (India Multi-Language Suite)"
+          >
+            <Globe className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span className="font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-cyan-400 font-extrabold">
+              {language ? language.toUpperCase() : 'EN'}
+            </span>
+            <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isLangMenuOpen ? 'rotate-180' : ''}`} />
+          </button>
 
-        {/* Public Website Switcher */}
+          {isLangMenuOpen && (
+            <div 
+              className="absolute right-0 mt-2 w-56 rounded-2xl bg-slate-900/95 border border-slate-700/80 shadow-2xl backdrop-blur-xl p-1.5 z-50 animate-in fade-in slide-in-from-top-2"
+              onMouseLeave={() => setIsLangMenuOpen(false)}
+            >
+              <div className="px-3 py-1.5 border-b border-slate-800/80 mb-1 flex items-center justify-between">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Ṭawng Thlanna (Language)</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 font-mono font-semibold">India</span>
+              </div>
+              <div className="space-y-0.5 max-h-64 overflow-y-auto">
+                {(SUPPORTED_LANGUAGES || []).map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      changeLanguage(lang.code);
+                      setIsLangMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition flex items-center justify-between ${
+                      language === lang.code
+                        ? 'bg-cyan-600/20 text-cyan-300 border border-cyan-500/30'
+                        : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold text-slate-100">{lang.native}</div>
+                      <div className="text-[10px] text-slate-400">{lang.name} • {lang.region}</div>
+                    </div>
+                    {language === lang.code && (
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 shrink-0"></span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Large Screen Shortcuts (Visible only on 2xl+ to avoid horizontal overflow on standard laptops) */}
         <button
           onClick={onViewWebsite}
-          className="hidden md:flex p-1.5 sm:px-2.5 sm:py-2 rounded-xl bg-purple-950/40 border border-purple-800/40 hover:border-purple-500 text-purple-300 hover:text-white transition items-center gap-1.5 text-xs font-semibold shadow-md shadow-purple-950/30"
+          className="hidden 2xl:flex p-1.5 px-2.5 py-1.5 rounded-xl bg-purple-950/40 border border-purple-800/40 hover:border-purple-500 text-purple-300 hover:text-white transition items-center gap-1.5 text-xs font-semibold shadow-md shadow-purple-950/30 shrink-0 cursor-pointer"
           title="View Public School Website & Landing Page"
         >
           <Globe className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-          <span className="hidden xl:inline">Public Web</span>
+          <span>Public Web</span>
         </button>
 
-        {/* Mobile Application & PC Standalone Software Download Trigger */}
         {!isAlreadyInstalled && (
           <button
             onClick={openMobileAppModal}
-            className="hidden md:flex px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-950/80 to-purple-950/80 border border-indigo-700/40 hover:border-indigo-500 text-slate-200 hover:text-white transition items-center gap-2 text-xs font-semibold shadow-md shadow-indigo-950/40"
-            title="Download & Install PC Desktop Software & Mobile App for this School"
+            className="hidden 2xl:flex px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-950/80 to-purple-950/80 border border-indigo-700/40 hover:border-indigo-500 text-slate-200 hover:text-white transition items-center gap-2 text-xs font-semibold shadow-md shadow-indigo-950/40 shrink-0 cursor-pointer"
+            title="Download & Install PC Desktop Software & Mobile App"
           >
             <Laptop className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
             <Smartphone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span className="hidden lg:inline">PC & Phone App</span>
-            <span className="lg:hidden">App</span>
+            <span>PC &amp; App</span>
             {isInstallable && (
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
             )}
           </button>
         )}
 
-        {/* Export Data button (Principal / Vice Principal / SuperAdmin only) */}
-        {(isPrincipal || isVicePrincipal || isSuperAdmin) && (
-          <button
-            onClick={openExportModal}
-            className="hidden lg:flex p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition items-center gap-2 text-xs font-medium"
-            title="Export Excel / CSV Data Center"
-          >
-            <Download className="w-4 h-4 text-cyan-400" />
-            <span className="hidden sm:inline">Export Data</span>
-          </button>
-        )}
-
-        {/* Firebase Config Modal Trigger (Principal / SuperAdmin only) */}
-        {(isPrincipal || isSuperAdmin) && (
-          <button
-            onClick={openFirebaseModal}
-            className="hidden lg:flex p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition text-xs"
-            title="Firebase Web SDK v10.8.0 Settings"
-          >
-            <Database className="w-4 h-4 text-indigo-400" />
-          </button>
-        )}
-
-        {/* SMS & WhatsApp Notification Hub Trigger (Staff, Principal, SuperAdmin) */}
         {(isPrincipal || isVicePrincipal || isSuperAdmin || currentUser?.role === 'teacher') && (
           <button
             onClick={openSmsHubModal}
-            className="p-1.5 sm:px-2.5 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-950/70 to-teal-950/70 border border-emerald-500/40 hover:border-emerald-400 text-emerald-300 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold shadow-md shadow-emerald-950/30 shrink-0"
-            title="SMS & WhatsApp Parent Notification Studio (Absent, Fee Due & Exam Results)"
+            className="hidden 2xl:flex p-1.5 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-950/70 to-teal-950/70 border border-emerald-500/40 hover:border-emerald-400 text-emerald-300 hover:text-white transition items-center gap-1.5 text-xs font-semibold shadow-md shadow-emerald-950/30 shrink-0 cursor-pointer"
+            title="SMS & WhatsApp Parent Notification Studio"
           >
             <MessageSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span className="hidden xl:inline">SMS &amp; WhatsApp</span>
+            <span>SMS &amp; WA</span>
           </button>
         )}
 
-        {/* Cloud Photo & Media Studio Trigger */}
-        {(isPrincipal || isVicePrincipal || isSuperAdmin || currentUser?.role === 'teacher') && (
+        {/* Direct Developer & Tech Support Hotline Button */}
+        {websiteConfig?.developerCredits?.showInPortalHelp !== false && (
           <button
             type="button"
-            onClick={openCloudStorageModal}
-            className="p-1.5 sm:px-2.5 sm:py-2 rounded-xl bg-gradient-to-r from-cyan-950/70 to-blue-950/70 border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold shadow-md shadow-cyan-950/30 shrink-0 cursor-pointer"
-            title="Cloud Photo & Media Studio (Cloudinary & Firebase Storage)"
+            onClick={() => setIsDevSupportModalOpen(true)}
+            className="p-1.5 sm:px-2.5 sm:py-2 rounded-xl bg-purple-950/60 hover:bg-purple-900/60 border border-purple-500/40 hover:border-purple-400 text-purple-200 hover:text-white transition flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer shadow-sm"
+            title="Official Developer Identity & 24/7 Tech Support Hotline"
           >
-            <UploadCloud className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span className="hidden xl:inline">Cloud Photos</span>
+            <Code2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+            <span className="hidden md:inline">Dev Support</span>
           </button>
         )}
 
-        {/* Universal Student QR Scanner Trigger (Teachers, Principal, Staff, Admin) */}
-        {(isPrincipal || isVicePrincipal || isSuperAdmin || currentUser?.role === 'teacher' || currentUser?.role === 'admin') && (
+        {/* Universal Quick Tools Dropdown Menu (Guarantees no overflow on any screen size) */}
+        <div className="relative shrink-0" ref={toolsMenuRef}>
           <button
             type="button"
-            onClick={openQrScannerModal}
-            className="p-1.5 sm:px-2.5 sm:py-2 rounded-xl bg-gradient-to-r from-sky-950/80 to-cyan-950/80 border border-cyan-500/50 hover:border-cyan-300 text-cyan-300 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold shadow-md shadow-cyan-950/40 shrink-0 cursor-pointer"
-            title="Scan Student QR Code (Live Camera Attendance, ID & Gate Pass Verification)"
+            onClick={() => setIsToolsMenuOpen(!isToolsMenuOpen)}
+            className={`p-1.5 sm:px-2.5 sm:py-2 rounded-xl transition flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer ${
+              isToolsMenuOpen 
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-lg shadow-cyan-950/50 ring-1 ring-cyan-400/40' 
+                : 'bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white'
+            }`}
+            title="Quick Action Tools & Institutional Utility Launchers"
           >
-            <QrCode className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span className="hidden xl:inline">Scan QR</span>
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span className="hidden sm:inline">Quick Tools</span>
+            <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isToolsMenuOpen ? 'rotate-180 text-cyan-400' : ''}`} />
           </button>
-        )}
 
-        {/* Institutional Rules & Regulations Quick Trigger */}
-        <button
-          onClick={openSchoolRulesModal}
-          className="hidden sm:flex p-1.5 sm:px-2.5 sm:py-2 rounded-xl bg-amber-950/40 border border-amber-500/30 hover:border-amber-400 text-amber-300 hover:text-white transition items-center gap-1.5 text-xs font-semibold shrink-0 cursor-pointer"
-          title="Institutional Rules & Code of Conduct (Dan & Hrai)"
-        >
-          <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-          <span className="hidden xl:inline">Dan &amp; Hrai</span>
-        </button>
+          {isToolsMenuOpen && (
+            <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in zoom-in-95 space-y-2">
+              <div className="px-3 py-1.5 border-b border-slate-800/80 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">System Utilities</span>
+                  <span className="text-xs text-white font-bold">Quick Action Launchers</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsToolsMenuOpen(false)}
+                  className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
 
-        {/* Notifications & Private Alerts Bell Trigger */}
+              {/* Group 1: Apps & Portals */}
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold text-slate-400 px-2.5 uppercase tracking-wider">Web &amp; Devices</p>
+                <button
+                  type="button"
+                  onClick={() => { setIsToolsMenuOpen(false); onViewWebsite(); }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-purple-950/40 border border-transparent hover:border-purple-800/40 text-left transition group cursor-pointer"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-bold text-white group-hover:text-purple-300 transition">Public School Website</div>
+                    <div className="text-[10px] text-slate-400 truncate">Official public landing page &amp; admissions</div>
+                  </div>
+                </button>
+
+                {!isAlreadyInstalled && (
+                  <button
+                    type="button"
+                    onClick={() => { setIsToolsMenuOpen(false); openMobileAppModal(); }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-indigo-950/40 border border-transparent hover:border-indigo-800/40 text-left transition group cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center shrink-0">
+                      <Smartphone className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-white group-hover:text-indigo-300 transition flex items-center gap-1.5">
+                        <span>PC &amp; Phone App Installer</span>
+                        {isInstallable && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />}
+                      </div>
+                      <div className="text-[10px] text-slate-400 truncate">Install standalone app on Android &amp; Windows</div>
+                    </div>
+                  </button>
+                )}
+              </div>
+
+              {/* Group 2: Communication & Verification */}
+              {(isPrincipal || isVicePrincipal || isSuperAdmin || currentUser?.role === 'teacher' || currentUser?.role === 'admin') && (
+                <div className="space-y-1 pt-1 border-t border-slate-800/80">
+                  <p className="text-[10px] font-semibold text-slate-400 px-2.5 uppercase tracking-wider">Communication &amp; QR</p>
+                  
+                  <button
+                    type="button"
+                    onClick={() => { setIsToolsMenuOpen(false); openSmsHubModal(); }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-emerald-950/40 border border-transparent hover:border-emerald-800/40 text-left transition group cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0">
+                      <MessageSquare className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-white group-hover:text-emerald-300 transition">SMS &amp; WhatsApp Studio</div>
+                      <div className="text-[10px] text-slate-400 truncate">Broadcast fee dues, marks &amp; absences</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setIsToolsMenuOpen(false); openCloudStorageModal(); }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-cyan-950/40 border border-transparent hover:border-cyan-800/40 text-left transition group cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0">
+                      <UploadCloud className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-white group-hover:text-cyan-300 transition">Cloud Photos &amp; Media</div>
+                      <div className="text-[10px] text-slate-400 truncate">Student ID photos &amp; certificates</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { setIsToolsMenuOpen(false); openQrScannerModal(); }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-sky-950/40 border border-transparent hover:border-sky-800/40 text-left transition group cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-300 flex items-center justify-center shrink-0">
+                      <QrCode className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-white group-hover:text-sky-300 transition">Live QR Camera Scanner</div>
+                      <div className="text-[10px] text-slate-400 truncate">Instant gate pass &amp; student verification</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+
+              {/* Group 3: Institutional Data & Rules */}
+              <div className="space-y-1 pt-1 border-t border-slate-800/80">
+                <p className="text-[10px] font-semibold text-slate-400 px-2.5 uppercase tracking-wider">Governance &amp; Settings</p>
+                
+                <button
+                  type="button"
+                  onClick={() => { setIsToolsMenuOpen(false); openSchoolRulesModal(); }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-amber-950/40 border border-transparent hover:border-amber-800/40 text-left transition group cursor-pointer"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-bold text-white group-hover:text-amber-300 transition">Dan &amp; Hrai (Rules &amp; Code)</div>
+                    <div className="text-[10px] text-slate-400 truncate">School constitution &amp; disciplinary rules</div>
+                  </div>
+                </button>
+
+                {(isPrincipal || isVicePrincipal || isSuperAdmin) && (
+                  <button
+                    type="button"
+                    onClick={() => { setIsToolsMenuOpen(false); openExportModal(); }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-slate-800 border border-transparent text-left transition group cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-slate-800 text-cyan-400 flex items-center justify-center shrink-0">
+                      <Download className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-white group-hover:text-cyan-300 transition">Export Data Center</div>
+                      <div className="text-[10px] text-slate-400 truncate">Download Excel, CSV &amp; student registers</div>
+                    </div>
+                  </button>
+                )}
+
+                {(isPrincipal || isSuperAdmin) && (
+                  <button
+                    type="button"
+                    onClick={() => { setIsToolsMenuOpen(false); openFirebaseModal(); }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-slate-800 border border-transparent text-left transition group cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-slate-800 text-indigo-400 flex items-center justify-center shrink-0">
+                      <Database className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-white group-hover:text-indigo-300 transition">Database &amp; Cloud Config</div>
+                      <div className="text-[10px] text-slate-400 truncate">Firebase v10.8 keys &amp; sync diagnostic</div>
+                    </div>
+                  </button>
+                )}
+              </div>
+
+              {/* Group: Developer & Tech Support Hotline */}
+              {websiteConfig?.developerCredits?.showInPortalHelp !== false && (
+                <div className="pt-1 border-t border-slate-800/80">
+                  <button
+                    type="button"
+                    onClick={() => { setIsToolsMenuOpen(false); setIsDevSupportModalOpen(true); }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-purple-950/40 border border-transparent hover:border-purple-800/40 text-left transition group cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0">
+                      <Code2 className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-white group-hover:text-purple-300 transition flex items-center gap-1.5">
+                        <span>Developer &amp; Tech Support</span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      </div>
+                      <div className="text-[10px] text-slate-400 truncate">WhatsApp chat, hotline &amp; feature desk</div>
+                    </div>
+                  </button>
+                </div>
+              )}
+
+              {/* Group 4: Logout inside menu for mobile/compact */}
+              <div className="pt-1 border-t border-slate-800/80">
+                <button
+                  type="button"
+                  onClick={() => { setIsToolsMenuOpen(false); handleLogout(); }}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-rose-950/40 border border-transparent hover:border-rose-800/40 text-left transition group cursor-pointer"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                    <LogOut className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-bold text-rose-300 group-hover:text-rose-200 transition">Logout Session</div>
+                    <div className="text-[10px] text-slate-400 truncate">Sign out safely and return to portal</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Notifications & Private Alerts Bell Trigger (Pinned - Always Visible) */}
         <button
           onClick={() => setIsNotificationDrawerOpen(true)}
-          className="relative p-1.5 sm:p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white transition text-xs shrink-0"
+          className="relative p-1.5 sm:p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-white transition text-xs shrink-0 cursor-pointer"
           title="Notifications, Circulars & Private Direct Alerts"
         >
           <Bell className="w-4 h-4 text-cyan-400" />
@@ -450,7 +675,7 @@ export default function Navbar({
           })()}
         </button>
 
-        {/* Unified User Profile & Role Trigger — opens Profile Settings & Switcher */}
+        {/* Unified User Profile & Role Trigger — Pinned - Always Visible */}
         <button
           type="button"
           onClick={() => setIsProfileOpen(true)}
@@ -478,14 +703,14 @@ export default function Navbar({
           <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:text-violet-300 transition shrink-0 ml-0.5 hidden sm:block" />
         </button>
 
-        {/* Logout Action Button (Desktop only, mobile has it inside profile & drawer) */}
+        {/* Logout Action Button (Desktop 2xl only, smaller screens have it inside Quick Tools & Profile) */}
         <button
           onClick={handleLogout}
-          className="hidden sm:flex p-2 sm:px-3 sm:py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 transition items-center gap-1.5 text-xs font-bold shrink-0 shadow-sm"
+          className="hidden 2xl:flex p-2 px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 transition items-center gap-1.5 text-xs font-bold shrink-0 shadow-sm cursor-pointer"
           title="Log out and return to Public Website"
         >
           <LogOut className="w-4 h-4 text-rose-400" />
-          <span className="hidden xl:inline">Logout</span>
+          <span>Logout</span>
         </button>
       </div>
 
@@ -500,6 +725,12 @@ export default function Navbar({
       <ProfileSettingsModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
+      />
+
+      {/* Developer & Technical Support Modal */}
+      <DeveloperSupportModal
+        isOpen={isDevSupportModalOpen}
+        onClose={() => setIsDevSupportModalOpen(false)}
       />
     </header>
   );

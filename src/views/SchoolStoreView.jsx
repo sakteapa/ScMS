@@ -32,7 +32,16 @@ import {
   Layers,
   ArrowRight,
   RefreshCw,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Phone,
+  MapPin,
+  Calendar,
+  Share2,
+  Copy,
+  MessageSquare,
+  Store,
+  Truck,
+  AlertTriangle
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
@@ -166,6 +175,204 @@ export default function SchoolStoreView({ setCurrentTab }) {
       return matchesSearch && matchesClass && matchesStatus;
     });
   }, [storeDistributions, searchQuery, classFilter, categoryFilter]);
+
+  // ==========================================
+  // OUT-OF-STOCK & PROCUREMENT HUB DATA & HOOKS
+  // ==========================================
+  const [procurementCategoryFilter, setProcurementCategoryFilter] = useState('all'); // 'all' | 'uniforms' | 'books'
+  const [procurementSearch, setProcurementSearch] = useState('');
+  const [copiedNoticeToast, setCopiedNoticeToast] = useState(false);
+  const [isParentCircularModalOpen, setIsParentCircularModalOpen] = useState(false);
+
+  // Out of stock uniforms
+  const outOfStockUniforms = useMemo(() => {
+    return storeUniforms.filter(u => {
+      const totalStock = (u.sizes || []).reduce((sum, s) => sum + (Number(s.stock) || 0), 0);
+      return totalStock === 0 || u.stockStatus === 'out_of_stock' || !!u.expectedRestockDate || !!u.allowExternalPurchase;
+    });
+  }, [storeUniforms]);
+
+  // Out of stock books
+  const outOfStockBooks = useMemo(() => {
+    return storeBooks.filter(b => {
+      const stock = Number(b.stockQuantity) || 0;
+      return stock === 0 || b.stockStatus === 'out_of_stock' || !!b.expectedRestockDate || !!b.allowExternalPurchase;
+    });
+  }, [storeBooks]);
+
+  const totalOutOfStockCount = outOfStockUniforms.length + outOfStockBooks.length;
+
+  const filteredProcurementItems = useMemo(() => {
+    const list = [];
+    if (procurementCategoryFilter === 'all' || procurementCategoryFilter === 'uniforms') {
+      outOfStockUniforms.forEach(u => {
+        const totalStock = (u.sizes || []).reduce((sum, s) => sum + (Number(s.stock) || 0), 0);
+        list.push({ ...u, itemType: 'uniform', displayStock: `${totalStock} pcs` });
+      });
+    }
+    if (procurementCategoryFilter === 'all' || procurementCategoryFilter === 'books') {
+      outOfStockBooks.forEach(b => {
+        list.push({ ...b, itemType: 'book', name: b.title, displayStock: `${b.stockQuantity} copies` });
+      });
+    }
+    return list.filter(item => {
+      const q = procurementSearch.toLowerCase();
+      return (
+        (item.name || '').toLowerCase().includes(q) ||
+        (item.code || '').toLowerCase().includes(q) ||
+        (item.externalVendorName || '').toLowerCase().includes(q) ||
+        (item.externalVendorLocation || '').toLowerCase().includes(q) ||
+        (item.applicableClasses || item.className || '').toLowerCase().includes(q)
+      );
+    });
+  }, [outOfStockUniforms, outOfStockBooks, procurementCategoryFilter, procurementSearch]);
+
+  // Copy Pre-Formatted WhatsApp Parent Broadcast
+  const handleCopyWhatsAppNotice = () => {
+    const schoolName = activeSchoolInfo?.name || 'School Store & Bookstore';
+    let text = `📢 *OFFICIAL NOTICE / HRIATTIRNA: SCHOOL STORE ITEMS*\n`;
+    text += `*${schoolName}* - Campus Depot\n`;
+    text += `Nu leh pa leh zirlaite hriattirna:\nKan School Store-ah heng items te hi an zo rih (out of stock) a, a hnuaia hun bi (ETA) leh pawn lam dawr (authorized market shops) ruahman ang hian in lo ngaihven dawn nia:\n\n`;
+
+    filteredProcurementItems.forEach((item, idx) => {
+      text += `*${idx + 1}. ${item.name}* (${item.itemType === 'uniform' ? 'Uniform' : 'Textbook'})\n`;
+      if (item.code) text += `   • Code: ${item.code}\n`;
+      if (item.applicableClasses || item.className) text += `   • Class: ${item.applicableClasses || item.className}\n`;
+      text += `   • Store Stock: ${item.displayStock || '0 (A zo rih)'}\n`;
+      if (item.expectedRestockDate) {
+        text += `   • 📅 A awm leh hun (ETA): ${item.expectedRestockDate}\n`;
+      }
+      if (item.restockNotes) {
+        text += `   • ℹ️ Hriattirna: ${item.restockNotes}\n`;
+      }
+      if (item.allowExternalPurchase && item.externalVendorName) {
+        text += `   • 🏬 Pawn lam dawr: ${item.externalVendorName}\n`;
+        if (item.externalVendorLocation) text += `     📍 Location: ${item.externalVendorLocation}\n`;
+        if (item.externalVendorPhone) text += `     📞 Phone: ${item.externalVendorPhone}\n`;
+        if (item.externalVendorPrice) text += `     💰 Man: ${item.externalVendorPrice}\n`;
+        if (item.externalPurchaseInstructions) text += `     ⚠️ Notice: ${item.externalPurchaseInstructions}\n`;
+      }
+      text += `\n`;
+    });
+
+    text += `Khawngaihin zawhna nei chuan Depot In-charge (${storeConfig.inChargeName || 'Store In-Charge'} - ${storeConfig.contactPhone || ''}) be pawp rawh u.\n`;
+
+    navigator.clipboard.writeText(text);
+    setCopiedNoticeToast(true);
+    setTimeout(() => setCopiedNoticeToast(false), 3500);
+  };
+
+  // Direct Print Parent Circular
+  const handlePrintParentCircular = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Parent Circular - Store Restock & Market Vendors</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 28px; color: #0f172a; line-height: 1.5; }
+          .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 18px; }
+          .header h1 { margin: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+          .header p { margin: 3px 0 0; color: #475569; font-size: 13px; }
+          .title-box { background: #f8fafc; border-left: 4px solid #e11d48; padding: 10px 14px; margin-bottom: 16px; border-radius: 4px; }
+          .title-box h2 { margin: 0; font-size: 15px; color: #9f1239; font-weight: 700; }
+          .title-box p { margin: 2px 0 0; font-size: 12px; color: #475569; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
+          th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; vertical-align: top; }
+          th { background: #f1f5f9; font-weight: 700; color: #1e293b; }
+          .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; background: #ffe4e6; color: #e11d48; }
+          .vendor-box { font-size: 11px; color: #334155; }
+          .vendor-title { font-weight: 700; color: #0f172a; }
+          .signature-grid { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; }
+          .sign-col { text-align: center; width: 200px; }
+          .sign-line { border-top: 1px dashed #64748b; margin-top: 45px; padding-top: 6px; font-size: 12px; font-weight: 600; }
+          @media print {
+            body { padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>${activeSchoolInfo?.name || 'Central School'}</h1>
+          <p>${storeConfig.storeName || 'Official Campus Store & Textbook Depot'}</p>
+          <p>Location: ${storeConfig.location || 'Depot Room'} | Contact: ${storeConfig.contactPhone || ''} | In-Charge: ${storeConfig.inChargeName || ''}</p>
+        </div>
+
+        <div class="title-box">
+          <h2>OFFICIAL CIRCULAR / HRIATTIRNA: ITEM A ZO RIH LEH PAWN LAM DAWR HRIATTIRNA</h2>
+          <p>Date: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} &bull; Academic Session 2026-2027</p>
+        </div>
+
+        <p style="font-size: 12px; margin-bottom: 14px;">
+          School zirlai leh chhungkaw zawng zawngte hriat atan: Kan campus store counter-ah heng a hnuaia item te hi stock a zawh rih avangin a lo thlen leh hun tur (Restock ETA) leh school thuneitute remtihpui pawn lam dawr (authorized vendors/tailors) hriattirna kan rawn chhuah e.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 30px;">#</th>
+              <th>Item Name & Details</th>
+              <th style="width: 75px;">Category</th>
+              <th style="width: 110px;">A Lo Thlen Leh Hun (ETA)</th>
+              <th>Pawn Lam Dawr (Authorized Market Vendor)</th>
+              <th style="width: 65px;">Man</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredProcurementItems.map((item, idx) => `
+              <tr>
+                <td>${idx + 1}</td>
+                <td>
+                  <strong>${item.name}</strong><br/>
+                  <span style="color: #64748b; font-size: 11px;">${item.applicableClasses || item.className || 'All Classes'} &bull; Code: ${item.code || 'N/A'}</span>
+                  ${item.restockNotes ? `<div style="font-size: 10px; color: #475569; font-style: italic; margin-top: 2px;">Note: ${item.restockNotes}</div>` : ''}
+                </td>
+                <td><span class="badge">${item.itemType === 'uniform' ? 'Uniform' : 'Textbook'}</span></td>
+                <td>
+                  <strong>${item.expectedRestockDate || 'Pending'}</strong>
+                </td>
+                <td>
+                  ${item.allowExternalPurchase && item.externalVendorName ? `
+                    <div class="vendor-box">
+                      <div class="vendor-title">${item.externalVendorName}</div>
+                      ${item.externalVendorLocation ? `<div>📍 ${item.externalVendorLocation}</div>` : ''}
+                      ${item.externalVendorPhone ? `<div>📞 ${item.externalVendorPhone}</div>` : ''}
+                      ${item.externalPurchaseInstructions ? `<div style="color: #d97706; font-size: 10px; margin-top: 2px;">⚠️ ${item.externalPurchaseInstructions}</div>` : ''}
+                    </div>
+                  ` : '<span style="color: #94a3b8;">Store restock chauh nghah tur</span>'}
+                </td>
+                <td><strong>₹${item.price}</strong></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div style="font-size: 11px; background: #fffbeb; border: 1px solid #fde68a; padding: 10px 14px; border-radius: 4px; margin-top: 14px;">
+          <strong>Chhungkaw Tan Thurawn (Parent Advisory):</strong> Pawn lam dawra uniform thui tir hian School Crest Monogram Badge an neih loh chuan Store counter atangin ₹30 in monogram a hranin a lei theih e. Textbook pawh MBSE / CBSE prescribed edition approved chauh zirlaiin hmang tura hriattir in ni e.
+        </div>
+
+        <div class="signature-grid">
+          <div class="sign-col">
+            <div class="sign-line">Store In-Charge</div>
+            <div style="font-size: 10px; color: #64748b;">${storeConfig.inChargeName || 'Store In-Charge'}</div>
+          </div>
+          <div class="sign-col">
+            <div class="sign-line">Principal / Vice-Principal</div>
+            <div style="font-size: 10px; color: #64748b;">${activeSchoolInfo?.name || 'School Authority'}</div>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   // Handler for opening photo editor
   const handleOpenPhotoEditor = (type, item) => {
@@ -479,6 +686,23 @@ export default function SchoolStoreView({ setCurrentTab }) {
           <ShoppingBag className="w-4 h-4" />
           <span>4. Quick POS & Counter Sales</span>
         </button>
+
+        <button
+          onClick={() => { setActiveTab('procurement'); setSearchQuery(''); }}
+          className={`flex items-center gap-2 px-4 py-2.5 font-semibold text-sm rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+            activeTab === 'procurement'
+              ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+          }`}
+        >
+          <Store className="w-4 h-4" />
+          <span>5. A Zo Rih & Pawn Lam Dawr (Out-of-Stock ETA & Vendors)</span>
+          {totalOutOfStockCount > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-xs bg-rose-500/30 text-rose-200 border border-rose-400/40 font-bold">
+              {totalOutOfStockCount}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* ========================================================= */}
@@ -649,6 +873,81 @@ export default function SchoolStoreView({ setCurrentTab }) {
                           ))}
                         </div>
                       </div>
+
+                      {/* Out of Stock & Procurement Notice */}
+                      {(totalStock === 0 || uniform.stockStatus === 'out_of_stock' || uniform.expectedRestockDate || uniform.allowExternalPurchase) && (
+                        <div className="p-2.5 rounded-xl bg-rose-950/40 border border-rose-500/30 text-xs space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold flex items-center gap-1.5 text-rose-400">
+                              <AlertTriangle className="w-3.5 h-3.5" />
+                              <span>Store-ah a zo rih (Out of Stock)</span>
+                            </span>
+                            {uniform.expectedRestockDate && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono font-semibold">
+                                ETA: {uniform.expectedRestockDate}
+                              </span>
+                            )}
+                          </div>
+
+                          {uniform.expectedRestockDate && (
+                            <div className="text-[11px] text-slate-300 flex items-start gap-1.5 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                              <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                              <div>
+                                <p className="font-semibold text-amber-300">A awm leh hun: {uniform.expectedRestockDate}</p>
+                                {uniform.restockNotes && (
+                                  <p className="text-[10px] text-slate-400 italic mt-0.5">{uniform.restockNotes}</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {uniform.allowExternalPurchase && uniform.externalVendorName && (
+                            <div className="text-[11px] text-slate-300 bg-slate-900/90 p-2 rounded-lg border border-cyan-500/30 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-cyan-400 uppercase flex items-center gap-1">
+                                  <Store className="w-3 h-3" />
+                                  <span>Pawn Lam Dawr</span>
+                                </span>
+                                {uniform.externalVendorPrice && (
+                                  <span className="text-[10px] font-bold text-emerald-400">{uniform.externalVendorPrice}</span>
+                                )}
+                              </div>
+                              <p className="font-bold text-white">{uniform.externalVendorName}</p>
+                              {uniform.externalVendorLocation && (
+                                <p className="text-[10px] text-slate-400 flex items-center gap-1">
+                                  <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                                  <span className="truncate">{uniform.externalVendorLocation}</span>
+                                </p>
+                              )}
+                              {uniform.externalVendorPhone && (
+                                <div className="flex items-center gap-2 pt-1">
+                                  <a
+                                    href={`tel:${uniform.externalVendorPhone}`}
+                                    className="text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1"
+                                  >
+                                    <Phone className="w-3 h-3" />
+                                    <span>{uniform.externalVendorPhone}</span>
+                                  </a>
+                                  <a
+                                    href={`https://wa.me/${uniform.externalVendorPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Chibai, ${activeSchoolInfo?.name || 'School'} atangin ${uniform.name} lei tur in nei em le?`)}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-600/30 text-emerald-300 font-bold hover:bg-emerald-600/50 border border-emerald-500/30 flex items-center gap-1"
+                                  >
+                                    <MessageSquare className="w-2.5 h-2.5" />
+                                    <span>WhatsApp</span>
+                                  </a>
+                                </div>
+                              )}
+                              {uniform.externalPurchaseInstructions && (
+                                <p className="text-[10px] text-amber-300/90 pt-0.5 leading-tight">
+                                  ℹ️ {uniform.externalPurchaseInstructions}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Card Actions */}
@@ -859,6 +1158,81 @@ export default function SchoolStoreView({ setCurrentTab }) {
                           </span>
                         )}
                       </div>
+
+                      {/* Out of Stock & Procurement Notice */}
+                      {(Number(book.stockQuantity) === 0 || book.stockStatus === 'out_of_stock' || book.expectedRestockDate || book.allowExternalPurchase) && (
+                        <div className="p-2.5 rounded-xl bg-rose-950/40 border border-rose-500/30 text-xs space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold flex items-center gap-1.5 text-rose-400">
+                              <AlertTriangle className="w-3.5 h-3.5" />
+                              <span>Store-ah a zo rih (Out of Stock)</span>
+                            </span>
+                            {book.expectedRestockDate && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono font-semibold">
+                                ETA: {book.expectedRestockDate}
+                              </span>
+                            )}
+                          </div>
+
+                          {book.expectedRestockDate && (
+                            <div className="text-[11px] text-slate-300 flex items-start gap-1.5 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                              <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                              <div>
+                                <p className="font-semibold text-amber-300">A awm leh hun: {book.expectedRestockDate}</p>
+                                {book.restockNotes && (
+                                  <p className="text-[10px] text-slate-400 italic mt-0.5">{book.restockNotes}</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {book.allowExternalPurchase && book.externalVendorName && (
+                            <div className="text-[11px] text-slate-300 bg-slate-900/90 p-2 rounded-lg border border-cyan-500/30 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-cyan-400 uppercase flex items-center gap-1">
+                                  <Store className="w-3 h-3" />
+                                  <span>Pawn Lam Dawr (Book Depot)</span>
+                                </span>
+                                {book.externalVendorPrice && (
+                                  <span className="text-[10px] font-bold text-emerald-400">{book.externalVendorPrice}</span>
+                                )}
+                              </div>
+                              <p className="font-bold text-white">{book.externalVendorName}</p>
+                              {book.externalVendorLocation && (
+                                <p className="text-[10px] text-slate-400 flex items-center gap-1">
+                                  <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                                  <span className="truncate">{book.externalVendorLocation}</span>
+                                </p>
+                              )}
+                              {book.externalVendorPhone && (
+                                <div className="flex items-center gap-2 pt-1">
+                                  <a
+                                    href={`tel:${book.externalVendorPhone}`}
+                                    className="text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1"
+                                  >
+                                    <Phone className="w-3 h-3" />
+                                    <span>{book.externalVendorPhone}</span>
+                                  </a>
+                                  <a
+                                    href={`https://wa.me/${book.externalVendorPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Chibai, ${activeSchoolInfo?.name || 'School'} atangin "${book.title}" bu lei tur in nei em le?`)}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-600/30 text-emerald-300 font-bold hover:bg-emerald-600/50 border border-emerald-500/30 flex items-center gap-1"
+                                  >
+                                    <MessageSquare className="w-2.5 h-2.5" />
+                                    <span>WhatsApp</span>
+                                  </a>
+                                </div>
+                              )}
+                              {book.externalPurchaseInstructions && (
+                                <p className="text-[10px] text-amber-300/90 pt-0.5 leading-tight">
+                                  ℹ️ {book.externalPurchaseInstructions}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Card Actions */}
@@ -1328,6 +1702,332 @@ export default function SchoolStoreView({ setCurrentTab }) {
       )}
 
       {/* ========================================================= */}
+      {/* TAB 5: OUT-OF-STOCK ETA & EXTERNAL VENDORS HUB            */}
+      {/* (A ZO RIH LEH PAWN LAM DAWR HRIATTIRNA)                   */}
+      {/* ========================================================= */}
+      {activeTab === 'procurement' && (
+        <div className="space-y-6">
+          {/* Header Hero Banner */}
+          <div className="bg-gradient-to-r from-rose-950/70 via-slate-900 to-indigo-950/70 border border-rose-500/30 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 text-xs font-bold border border-rose-500/30">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Out-of-Stock ETA & Authorized Vendors Center</span>
+                </div>
+                <h2 className="text-xl md:text-2xl font-black text-white">
+                  A Zo Rih &amp; Pawn Lam Dawr Hriattirna
+                </h2>
+                <p className="text-xs md:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                  School store item (uniform, textbook, journal) stock a zawh rih huna a lo thlen leh hun tur (Restock ETA) ruahmanna leh, pawn lam dawr (authorized vendors/tailors/stationeries) atanga chhungkaw ten awlsam taka an lei theihna hriattirna system.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  onClick={handleCopyWhatsAppNotice}
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition-all cursor-pointer"
+                  title="WhatsApp Parent Notice copy rawh"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>{copiedNoticeToast ? '✓ Copy Fel Tawh!' : 'WhatsApp Broadcast Copy'}</span>
+                </button>
+
+                <button
+                  onClick={handlePrintParentCircular}
+                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-lg shadow-rose-600/20 transition-all cursor-pointer"
+                  title="Parent Circular printable official letterhead chhuah rawh"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Print Parent Circular</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Notification Toast */}
+            {copiedNoticeToast && (
+              <div className="mt-4 p-3 bg-emerald-950/90 border border-emerald-500 text-emerald-200 text-xs rounded-xl flex items-center gap-2 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>
+                  Bilingual WhatsApp Notice (Mizo &amp; English) clipboard-ah copy a ni ta! WhatsApp group-ah i paste nghal thei e.
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* KPI Stat Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-slate-900/90 border border-rose-500/20 rounded-xl p-4 flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 font-medium">A Zo Rih (Out of Stock)</p>
+                <p className="text-xl font-bold text-white">{totalOutOfStockCount} Items</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">{outOfStockUniforms.length} Uniforms, {outOfStockBooks.length} Books</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/90 border border-amber-500/20 rounded-xl p-4 flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                <Truck className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 font-medium">Lo Thleng Leh Tur (ETA)</p>
+                <p className="text-xl font-bold text-white">
+                  {filteredProcurementItems.filter(i => i.expectedRestockDate).length} Consignments
+                </p>
+                <p className="text-[10px] text-amber-400/80 mt-0.5">Scheduled Restock Dates</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/90 border border-cyan-500/20 rounded-xl p-4 flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
+                <Store className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 font-medium">Pawn Lam Dawr (Vendors)</p>
+                <p className="text-xl font-bold text-white">
+                  {filteredProcurementItems.filter(i => i.allowExternalPurchase && i.externalVendorName).length} Authorized
+                </p>
+                <p className="text-[10px] text-cyan-400/80 mt-0.5">Direct Tailors &amp; Bookshops</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/90 border border-indigo-500/20 rounded-xl p-4 flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+                <MessageSquare className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 font-medium">Parent Circular Broadcast</p>
+                <p className="text-xl font-bold text-white">Ready</p>
+                <p className="text-[10px] text-indigo-400/80 mt-0.5">1-Click WhatsApp &amp; Print</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Filter & Search Bar */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex-1 relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search out-of-stock items, vendor name, location, code..."
+                value={procurementSearch}
+                onChange={e => setProcurementSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-400 focus:outline-none focus:border-rose-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                value={procurementCategoryFilter}
+                onChange={e => setProcurementCategoryFilter(e.target.value)}
+                className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white focus:outline-none"
+              >
+                <option value="all">All Out-of-Stock Items ({filteredProcurementItems.length})</option>
+                <option value="uniforms">Uniforms Only ({outOfStockUniforms.length})</option>
+                <option value="books">Textbooks Only ({outOfStockBooks.length})</option>
+              </select>
+
+              {canManage && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => { setEditingUniform(null); setIsUniformModalOpen(true); }}
+                    className="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Uniform</span>
+                  </button>
+                  <button
+                    onClick={() => { setEditingBook(null); setIsBookModalOpen(true); }}
+                    className="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Book</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Items Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredProcurementItems.map(item => {
+              const isUniform = item.itemType === 'uniform';
+
+              return (
+                <div
+                  key={`${item.itemType}-${item.id}`}
+                  className="bg-slate-900 border border-rose-500/30 hover:border-rose-500/60 rounded-2xl overflow-hidden shadow-xl transition-all flex flex-col group"
+                >
+                  {/* Top Photo & Quick Badges */}
+                  <div className="relative h-44 bg-slate-950 overflow-hidden">
+                    <img
+                      src={item.photoUrl}
+                      alt={item.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                        isUniform ? 'bg-indigo-600 text-white' : 'bg-emerald-600 text-white'
+                      }`}>
+                        {isUniform ? 'Uniform' : 'Textbook'}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-rose-600 text-white text-[10px] font-bold">
+                        A Zo Rih (0 Stock)
+                      </span>
+                    </div>
+
+                    <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+                      <div>
+                        {item.code && (
+                          <span className="text-[10px] font-mono text-indigo-300 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800/60">
+                            {item.code}
+                          </span>
+                        )}
+                        <h3 className="text-base font-bold text-white mt-1 leading-tight line-clamp-1">
+                          {item.name}
+                        </h3>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-lg font-black text-emerald-400">₹{item.price}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Body Content */}
+                  <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
+                    <div className="space-y-3">
+                      <div className="text-xs text-slate-400 flex items-center justify-between">
+                        <span>Class: <strong className="text-slate-200">{item.applicableClasses || item.className || 'All Classes'}</strong></span>
+                        <span className="px-2 py-0.5 rounded-md font-bold text-[11px] bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                          {item.displayStock}
+                        </span>
+                      </div>
+
+                      {/* Expected Restock Date Card */}
+                      <div className="p-3 rounded-xl bg-slate-950 border border-amber-500/30 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                            <span>A Awm Leh Hun (Restock ETA):</span>
+                          </span>
+                          <span className="text-xs font-mono font-bold text-white bg-amber-500/20 px-2 py-0.5 rounded">
+                            {item.expectedRestockDate || 'A hun bi a la fel lo'}
+                          </span>
+                        </div>
+                        {item.restockNotes && (
+                          <p className="text-xs text-slate-300 italic leading-relaxed">
+                            "{item.restockNotes}"
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Authorized External Vendor Card */}
+                      {item.allowExternalPurchase && item.externalVendorName ? (
+                        <div className="p-3.5 rounded-xl bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950/30 border border-cyan-500/30 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1">
+                              <Store className="w-3.5 h-3.5 text-cyan-400" />
+                              <span>Pawn Lam Dawr (Authorized)</span>
+                            </span>
+                            {item.externalVendorPrice && (
+                              <span className="text-xs font-bold text-emerald-400">{item.externalVendorPrice}</span>
+                            )}
+                          </div>
+
+                          <div>
+                            <h4 className="text-xs font-bold text-white">{item.externalVendorName}</h4>
+                            {item.externalVendorLocation && (
+                              <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                                <span>{item.externalVendorLocation}</span>
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Quick Actions: Call & WhatsApp */}
+                          <div className="flex items-center gap-2 pt-1 border-t border-slate-800">
+                            {item.externalVendorPhone ? (
+                              <>
+                                <a
+                                  href={`tel:${item.externalVendorPhone}`}
+                                  className="flex-1 py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+                                >
+                                  <Phone className="w-3.5 h-3.5" />
+                                  <span>Call</span>
+                                </a>
+                                <a
+                                  href={`https://wa.me/${item.externalVendorPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Chibai, ${activeSchoolInfo?.name || 'School'} zirlai chhungte kan ni a, "${item.name}" in neih leh neih loh kan rawn zawt duh e.`)}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="flex-1 py-1.5 px-2 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/30 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                                  <span>WhatsApp</span>
+                                </a>
+                              </>
+                            ) : (
+                              <span className="text-[10px] text-slate-500">Contact phone a la dah lo</span>
+                            )}
+                          </div>
+
+                          {item.externalPurchaseInstructions && (
+                            <p className="text-[10px] text-amber-200/90 pt-1 leading-normal border-t border-slate-800/80">
+                              ℹ️ <strong>Zirlai/Nu leh pa tan:</strong> {item.externalPurchaseInstructions}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 text-slate-400 text-xs">
+                          <p className="font-semibold text-slate-300">Pawn lam dawr rawtna a la awm lo</p>
+                          <p className="text-[11px] mt-0.5">School store restock consignment chauh nghah rih tur a ni e.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer Actions */}
+                    {canManage && (
+                      <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            if (isUniform) {
+                              setEditingUniform(item);
+                              setIsUniformModalOpen(true);
+                            } else {
+                              setEditingBook(item);
+                              setIsBookModalOpen(true);
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                        >
+                          <Edit className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>Update ETA / Vendor Info</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {filteredProcurementItems.length === 0 && (
+            <div className="text-center py-16 bg-slate-900 border border-slate-800 rounded-2xl p-8 space-y-3">
+              <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
+              <h3 className="text-base font-bold text-white">Item Zawng Zawng Stock A Kim Vek E!</h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                Tunah rih chuan school store uniform leh textbook zingah stock zo rih (out of stock) an awm lo.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================= */}
       {/* MODAL: PHOTO EDITOR (ADD / EDIT UNIFORM & BOOK PHOTOS)     */}
       {/* ========================================================= */}
       {photoModalItem && (
@@ -1690,7 +2390,16 @@ function UniformFormModal({ isOpen, onClose, initialData, onSave }) {
       { size: '30', stock: 20 },
       { size: '32', stock: 25 },
       { size: '34', stock: 15 }
-    ]
+    ],
+    stockStatus: initialData?.stockStatus || 'in_stock',
+    expectedRestockDate: initialData?.expectedRestockDate || '',
+    restockNotes: initialData?.restockNotes || '',
+    allowExternalPurchase: initialData?.allowExternalPurchase !== undefined ? initialData.allowExternalPurchase : false,
+    externalVendorName: initialData?.externalVendorName || '',
+    externalVendorLocation: initialData?.externalVendorLocation || '',
+    externalVendorPhone: initialData?.externalVendorPhone || '',
+    externalVendorPrice: initialData?.externalVendorPrice || '',
+    externalPurchaseInstructions: initialData?.externalPurchaseInstructions || ''
   });
 
   const handleSizeChange = (idx, field, value) => {
@@ -1870,6 +2579,128 @@ function UniformFormModal({ isOpen, onClose, initialData, onSave }) {
             </div>
           </div>
 
+          {/* Out of Stock ETA & Outside Vendor Procurement Settings */}
+          <div className="p-4 rounded-xl bg-slate-950 border border-rose-500/30 space-y-3">
+            <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+              <Store className="w-4 h-4 text-rose-400" />
+              <h4 className="text-xs font-bold text-white">
+                A Zo Rih &amp; Pawn Lam Dawr Rawtna (Out-of-Stock ETA &amp; Referral)
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Stock Status:</label>
+                <select
+                  value={formData.stockStatus}
+                  onChange={e => setFormData({ ...formData, stockStatus: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                >
+                  <option value="in_stock">In Stock (A awm reng)</option>
+                  <option value="low_stock">Low Stock (A tlem tawh)</option>
+                  <option value="out_of_stock">Out of Stock (A zo rih)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">A Awm Leh Hun Tur (ETA):</label>
+                <input
+                  type="date"
+                  value={formData.expectedRestockDate}
+                  onChange={e => setFormData({ ...formData, expectedRestockDate: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">Restock Chanchin / Hriattirna:</label>
+              <input
+                type="text"
+                value={formData.restockNotes}
+                onChange={e => setFormData({ ...formData, restockNotes: e.target.value })}
+                placeholder="e.g. Guwahati consignment thar lo thleng tur a ni a, advance booking a theih e."
+                className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+              />
+            </div>
+
+            <div className="pt-2 border-t border-slate-800 space-y-2.5">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="uniformAllowExternalPurchase"
+                  checked={formData.allowExternalPurchase}
+                  onChange={e => setFormData({ ...formData, allowExternalPurchase: e.target.checked })}
+                  className="rounded bg-slate-800 border-slate-700 text-rose-500 focus:ring-0"
+                />
+                <label htmlFor="uniformAllowExternalPurchase" className="text-slate-200 font-bold">
+                  Pawn lam dawr / thui mi hnen atanga an lei/neih theihna hriattir rawh
+                </label>
+              </div>
+
+              {formData.allowExternalPurchase && (
+                <div className="space-y-2.5 pl-5 border-l-2 border-rose-500/40">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Dawr / Tailor Hming:</label>
+                      <input
+                        type="text"
+                        value={formData.externalVendorName}
+                        onChange={e => setFormData({ ...formData, externalVendorName: e.target.value })}
+                        placeholder="e.g. Zoram Uniform & Tailoring Store"
+                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Pawn Lam Dawr Man (Approx):</label>
+                      <input
+                        type="text"
+                        value={formData.externalVendorPrice}
+                        onChange={e => setFormData({ ...formData, externalVendorPrice: e.target.value })}
+                        placeholder="e.g. ₹1,450 approx"
+                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Dawr Awmna (Address / Location):</label>
+                      <input
+                        type="text"
+                        value={formData.externalVendorLocation}
+                        onChange={e => setFormData({ ...formData, externalVendorLocation: e.target.value })}
+                        placeholder="e.g. Near Main Petrol Pump, Bazar Veng"
+                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Contact Phone / WhatsApp:</label>
+                      <input
+                        type="text"
+                        value={formData.externalVendorPhone}
+                        onChange={e => setFormData({ ...formData, externalVendorPhone: e.target.value })}
+                        placeholder="e.g. +91 9862345678"
+                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1">Nu Leh Pa / Zirlai Tan Kaihhruaina:</label>
+                    <textarea
+                      rows={2}
+                      value={formData.externalPurchaseInstructions}
+                      onChange={e => setFormData({ ...formData, externalPurchaseInstructions: e.target.value })}
+                      placeholder="e.g. Pawn lam dawra an thui hian school crest monogram badge an neih loh chuan, school store counter-ah a hranin badge a lei theih reng e."
+                      className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
             <button
               type="button"
@@ -1906,7 +2737,16 @@ function BookFormModal({ isOpen, onClose, initialData, classes, onSave }) {
     price: initialData?.price || 280,
     stockQuantity: initialData?.stockQuantity || 35,
     isMandatory: initialData?.isMandatory !== undefined ? initialData.isMandatory : true,
-    photoUrl: initialData?.photoUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80'
+    photoUrl: initialData?.photoUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80',
+    stockStatus: initialData?.stockStatus || (initialData?.stockQuantity === 0 ? 'out_of_stock' : 'in_stock'),
+    expectedRestockDate: initialData?.expectedRestockDate || '',
+    restockNotes: initialData?.restockNotes || '',
+    allowExternalPurchase: initialData?.allowExternalPurchase !== undefined ? initialData.allowExternalPurchase : false,
+    externalVendorName: initialData?.externalVendorName || '',
+    externalVendorLocation: initialData?.externalVendorLocation || '',
+    externalVendorPhone: initialData?.externalVendorPhone || '',
+    externalVendorPrice: initialData?.externalVendorPrice || '',
+    externalPurchaseInstructions: initialData?.externalPurchaseInstructions || ''
   });
 
   return (
@@ -2050,6 +2890,128 @@ function BookFormModal({ isOpen, onClose, initialData, classes, onSave }) {
             <label htmlFor="isMandatory" className="text-slate-300 font-medium">
               Mandatory prescribed syllabus book (Zirlai zawng zawng chhiar ngei ngei tur)
             </label>
+          </div>
+
+          {/* Out of Stock ETA & Outside Book Depot/Vendor Settings */}
+          <div className="p-4 rounded-xl bg-slate-950 border border-rose-500/30 space-y-3">
+            <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+              <Store className="w-4 h-4 text-rose-400" />
+              <h4 className="text-xs font-bold text-white">
+                A Zo Rih &amp; Pawn Lam Dawr Rawtna (Out-of-Stock ETA &amp; Referral)
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Stock Status:</label>
+                <select
+                  value={formData.stockStatus}
+                  onChange={e => setFormData({ ...formData, stockStatus: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                >
+                  <option value="in_stock">In Stock (A awm reng)</option>
+                  <option value="low_stock">Low Stock (A tlem tawh)</option>
+                  <option value="out_of_stock">Out of Stock (A zo rih)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">A Awm Leh Hun Tur (ETA):</label>
+                <input
+                  type="date"
+                  value={formData.expectedRestockDate}
+                  onChange={e => setFormData({ ...formData, expectedRestockDate: e.target.value })}
+                  className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">Restock Chanchin / Hriattirna:</label>
+              <input
+                type="text"
+                value={formData.restockNotes}
+                onChange={e => setFormData({ ...formData, restockNotes: e.target.value })}
+                placeholder="e.g. MBSE Central Godown Aizawl atangin rawn thawn mek a ni a, kartawpah a thleng ang."
+                className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+              />
+            </div>
+
+            <div className="pt-2 border-t border-slate-800 space-y-2.5">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="bookAllowExternalPurchase"
+                  checked={formData.allowExternalPurchase}
+                  onChange={e => setFormData({ ...formData, allowExternalPurchase: e.target.checked })}
+                  className="rounded bg-slate-800 border-slate-700 text-rose-500 focus:ring-0"
+                />
+                <label htmlFor="bookAllowExternalPurchase" className="text-slate-200 font-bold">
+                  Pawn lam lehkhabu dawr (Book Depot) atanga lei theihna hriattir rawh
+                </label>
+              </div>
+
+              {formData.allowExternalPurchase && (
+                <div className="space-y-2.5 pl-5 border-l-2 border-rose-500/40">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Dawr (Book Depot) Hming:</label>
+                      <input
+                        type="text"
+                        value={formData.externalVendorName}
+                        onChange={e => setFormData({ ...formData, externalVendorName: e.target.value })}
+                        placeholder="e.g. Hmingthanga Book Depot & School Supplies"
+                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Pawn Lam Dawr Man (₹):</label>
+                      <input
+                        type="text"
+                        value={formData.externalVendorPrice}
+                        onChange={e => setFormData({ ...formData, externalVendorPrice: e.target.value })}
+                        placeholder="e.g. ₹160"
+                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Dawr Awmna (Address / Location):</label>
+                      <input
+                        type="text"
+                        value={formData.externalVendorLocation}
+                        onChange={e => setFormData({ ...formData, externalVendorLocation: e.target.value })}
+                        placeholder="e.g. Chanmari Veng Main Road, Lunglei"
+                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Contact Phone / WhatsApp:</label>
+                      <input
+                        type="text"
+                        value={formData.externalVendorPhone}
+                        onChange={e => setFormData({ ...formData, externalVendorPhone: e.target.value })}
+                        placeholder="e.g. +91 9436155555"
+                        className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1">Nu Leh Pa / Zirlai Tan Kaihhruaina:</label>
+                    <textarea
+                      rows={2}
+                      value={formData.externalPurchaseInstructions}
+                      onChange={e => setFormData({ ...formData, externalPurchaseInstructions: e.target.value })}
+                      placeholder="e.g. MBSE approved 2026 edition official journal chauh hi exam practical-ah pawm a ni a, lei dawnin kum leh publisher fiah ngei ngei tur a ni e."
+                      className="w-full px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-white"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">

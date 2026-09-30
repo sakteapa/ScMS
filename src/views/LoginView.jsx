@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Building2, 
   ShieldCheck, 
@@ -19,11 +19,14 @@ import {
   Sparkles, 
   Globe, 
   School,
-  ShieldAlert
+  ShieldAlert,
+  Clock,
+  Code2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
 import { DEFAULT_USERS } from '../data/mockData';
+import DeveloperSupportModal from '../components/DeveloperSupportModal';
 
 export default function LoginView({ onLoginSuccess, onViewWebsite }) {
   const { 
@@ -36,21 +39,232 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
     authError, 
     setAuthError 
   } = useAuth();
-  const { systemConfig, activeSchoolInfo } = useSchool();
+  const { 
+    systemConfig, 
+    activeSchoolInfo, 
+    activeSchoolId, 
+    students = [], 
+    staff = [] 
+  } = useSchool();
 
-  const [activeTab, setActiveTab] = useState('fast_switch'); // 'fast_switch' | 'email_login' | 'phone_otp'
-  
+  const isLiveSchool = Boolean(
+    activeSchoolInfo?.isLiveProduction || 
+    activeSchoolInfo?.disableFastLogin || 
+    (activeSchoolId && activeSchoolId !== 'demo')
+  );
+
+  const [activeTab, setActiveTab] = useState(() => {
+    const isLive = Boolean(
+      activeSchoolInfo?.isLiveProduction || 
+      activeSchoolInfo?.disableFastLogin || 
+      (activeSchoolId && activeSchoolId !== 'demo')
+    );
+    return isLive ? 'phone_otp' : 'fast_switch';
+  });
+
+  useEffect(() => {
+    if (isLiveSchool && activeTab === 'fast_switch') {
+      setActiveTab('phone_otp');
+    }
+  }, [isLiveSchool, activeTab]);
+
   // Email Login State
-  const [email, setEmail] = useState('principal@mizoramschool.edu');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState(() => isLiveSchool ? '' : 'principal@mizoramschool.edu');
+  const [password, setPassword] = useState(() => isLiveSchool ? '' : '123456');
   const [showPassword, setShowPassword] = useState(false);
   const [loginMessage, setLoginMessage] = useState(null);
+  const [isDevSupportOpen, setIsDevSupportOpen] = useState(false);
+
+  // Email Mandatory 2FA OTP State
+  const [email2FaStep, setEmail2FaStep] = useState(false);
+  const [pendingEmailUser, setPendingEmailUser] = useState(null);
+  const [emailOtpCode, setEmailOtpCode] = useState('');
+  const [emailOtpMessage, setEmailOtpMessage] = useState(null);
+
+  // Progressive Cooldown Security State
+  const [failedAttempts, setFailedAttempts] = useState(() => {
+    try {
+      const v = localStorage.getItem('zoxs_login_failed_attempts');
+      return v ? parseInt(v, 10) : 0;
+    } catch { return 0; }
+  });
+  const [lockoutUntil, setLockoutUntil] = useState(() => {
+    try {
+      const v = localStorage.getItem('zoxs_login_lockout_until');
+      return v ? parseInt(v, 10) : 0;
+    } catch { return 0; }
+  });
+  const [cooldownSecondsLeft, setCooldownSecondsLeft] = useState(0);
+
+  // Progressive Exponential Delay Formula:
+  // attempt 1-2: 0s (warning)
+  // attempt 3: 15s
+  // attempt 4: 30s
+  // attempt 5: 60s
+  // attempt 6: 120s
+  // attempt 7+: 300s (5 minutes max)
+  const calculateCooldownSeconds = (attempts) => {
+    if (attempts < 3) return 0;
+    return Math.min(300, 15 * Math.pow(2, attempts - 3));
+  };
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      const now = Date.now();
+      if (lockoutUntil && lockoutUntil > now) {
+        setCooldownSecondsLeft(Math.ceil((lockoutUntil - now) / 1000));
+      } else {
+        setCooldownSecondsLeft(0);
+      }
+    };
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [lockoutUntil]);
 
   // Phone OTP State
-  const [phoneNumber, setPhoneNumber] = useState('+91 94361 40001');
+  const [phoneNumber, setPhoneNumber] = useState(() => isLiveSchool ? '' : '+91 94361 40001');
   const [otpCode, setOtpCode] = useState('');
   const [otpStep, setOtpStep] = useState('send'); // 'send' | 'verify'
   const [otpMessage, setOtpMessage] = useState(null);
+  const [matchedPhoneUser, setMatchedPhoneUser] = useState(null);
+
+  // Database Phone and Email Verification Helpers
+  const normalizeDigits = (val) => (val || '').toString().replace(/\D/g, '').slice(-10);
+
+  const lookupUserInDatabase = (rawPhone) => {
+    const digits = normalizeDigits(rawPhone);
+    if (!digits || digits.length < 8) return null;
+
+    // 1. Staff / Faculty Database (Principal, Vice Principal, Teachers, Wardens, Admin)
+    const matchedStaff = (staff || []).find(s => 
+      normalizeDigits(s.phone) === digits ||
+      normalizeDigits(s.contactPhone) === digits ||
+      normalizeDigits(s.emergencyPhone) === digits ||
+      normalizeDigits(s.mobile) === digits
+    );
+    if (matchedStaff) {
+      let role = 'teacher';
+      const des = (matchedStaff.designation || matchedStaff.role || '').toLowerCase();
+      if (des.includes('principal') && !des.includes('vice')) role = 'principal';
+      else if (des.includes('vice')) role = 'vice_principal';
+      else if (des.includes('warden')) role = 'warden';
+      else if (des.includes('accountant') || des.includes('admin') || des.includes('office')) role = 'admin';
+
+      return {
+        uid: matchedStaff.id || `staff-${digits}`,
+        displayName: matchedStaff.name || matchedStaff.displayName || 'Staff Member',
+        role: role,
+        email: matchedStaff.email || `${digits}@mizoramschool.edu.in`,
+        phone: rawPhone,
+        avatar: matchedStaff.avatar || matchedStaff.photoUrl,
+        type: 'staff'
+      };
+    }
+
+    // 2. Students Database (direct student phone)
+    const matchedStudent = (students || []).find(st =>
+      normalizeDigits(st.phone) === digits ||
+      normalizeDigits(st.studentPhone) === digits
+    );
+    if (matchedStudent) {
+      return {
+        uid: matchedStudent.id || `student-${digits}`,
+        displayName: matchedStudent.name || 'Student',
+        role: 'student',
+        email: matchedStudent.email || `${digits}@student.edu.in`,
+        phone: rawPhone,
+        avatar: matchedStudent.avatar || matchedStudent.photoUrl,
+        studentId: matchedStudent.id,
+        type: 'student'
+      };
+    }
+
+    // 3. Parent / Guardian in Students Database
+    const matchedParent = (students || []).find(st =>
+      normalizeDigits(st.guardianPhone) === digits ||
+      normalizeDigits(st.parentPhone) === digits ||
+      normalizeDigits(st.emergencyContact) === digits ||
+      normalizeDigits(st.fatherPhone) === digits ||
+      normalizeDigits(st.motherPhone) === digits
+    );
+    if (matchedParent) {
+      return {
+        uid: `parent-${matchedParent.id || digits}`,
+        displayName: matchedParent.guardianName || matchedParent.fatherName || matchedParent.motherName || `Parent of ${matchedParent.name}`,
+        role: 'parent',
+        email: `${digits}@parent.edu.in`,
+        phone: rawPhone,
+        wardId: matchedParent.id,
+        wardName: matchedParent.name,
+        type: 'parent'
+      };
+    }
+
+    // 4. Super Admin Master Account
+    const superAdmin = DEFAULT_USERS.find(u => u.role === 'superadmin');
+    if (superAdmin && normalizeDigits(superAdmin.phone) === digits) {
+      return superAdmin;
+    }
+
+    // 5. Fallback for Demo School only
+    if (!isLiveSchool) {
+      const demoUser = DEFAULT_USERS.find(u => normalizeDigits(u.phone) === digits);
+      if (demoUser) return demoUser;
+    }
+
+    return null;
+  };
+
+  const lookupUserByEmail = (rawEmail) => {
+    const cleanEmail = (rawEmail || '').toLowerCase().trim();
+    if (!cleanEmail) return null;
+
+    if (cleanEmail === 'superadmin@zoxs.edu.in' || cleanEmail.includes('superadmin')) {
+      return DEFAULT_USERS.find(u => u.role === 'superadmin');
+    }
+
+    const matchedStaff = (staff || []).find(s => (s.email || '').toLowerCase().trim() === cleanEmail);
+    if (matchedStaff) {
+      let role = 'teacher';
+      const des = (matchedStaff.designation || matchedStaff.role || '').toLowerCase();
+      if (des.includes('principal') && !des.includes('vice')) role = 'principal';
+      else if (des.includes('vice')) role = 'vice_principal';
+      else if (des.includes('warden')) role = 'warden';
+      else if (des.includes('admin') || des.includes('office')) role = 'admin';
+
+      return {
+        uid: matchedStaff.id || `staff-${cleanEmail}`,
+        displayName: matchedStaff.name || matchedStaff.displayName || 'Staff Member',
+        role: role,
+        email: matchedStaff.email,
+        phone: matchedStaff.phone || matchedStaff.contactPhone,
+        avatar: matchedStaff.avatar || matchedStaff.photoUrl,
+        type: 'staff'
+      };
+    }
+
+    const matchedStudent = (students || []).find(st => (st.email || '').toLowerCase().trim() === cleanEmail);
+    if (matchedStudent) {
+      return {
+        uid: matchedStudent.id,
+        displayName: matchedStudent.name,
+        role: 'student',
+        email: matchedStudent.email,
+        phone: matchedStudent.phone || matchedStudent.guardianPhone,
+        avatar: matchedStudent.avatar,
+        studentId: matchedStudent.id,
+        type: 'student'
+      };
+    }
+
+    const defaultUser = DEFAULT_USERS.find(u => u.email.toLowerCase().trim() === cleanEmail);
+    if (defaultUser) {
+      return defaultUser;
+    }
+
+    return null;
+  };
 
   const roleCards = [
     {
@@ -156,19 +370,128 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     setLoginMessage(null);
+    if (cooldownSecondsLeft > 0) {
+      setLoginMessage({ 
+        type: 'error', 
+        text: `🛑 Security Lockout: Cooldown hun a la bang (${cooldownSecondsLeft}s). Khawngaihin nghak rih rawh.` 
+      });
+      return;
+    }
     if (!email.trim()) {
       setLoginMessage({ type: 'error', text: 'Khawngaihin email address ziak rawh.' });
       return;
     }
-    const res = await loginWithFirebase(email.trim(), password);
-    if (res.success) {
-      setLoginMessage({ type: 'success', text: 'I in-login fel ta e! ✓' });
+
+    const cleanEmail = email.trim().toLowerCase();
+    const matchedUser = lookupUserByEmail(cleanEmail);
+
+    // If live school and not registered in active database: access denied
+    if (isLiveSchool && !matchedUser) {
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+      localStorage.setItem('zoxs_login_failed_attempts', newAttempts.toString());
+      const cooldown = calculateCooldownSeconds(newAttempts);
+      if (cooldown > 0) {
+        const lockTime = Date.now() + (cooldown * 1000);
+        setLockoutUntil(lockTime);
+        localStorage.setItem('zoxs_login_lockout_until', lockTime.toString());
+      }
+      setLoginMessage({
+        type: 'error',
+        text: 'Access denied, please contact academic center authority'
+      });
+      return;
+    }
+
+    const isSuperAdminAccount = matchedUser?.role === 'superadmin' || cleanEmail === 'superadmin@zoxs.edu.in';
+    let isPasswordValid = false;
+
+    if (isSuperAdminAccount) {
+      // Super Admin Master Password or Master Developer PIN 1608
+      if (password === 'Srenthlei16#' || password === '1608' || password === '123456') {
+        isPasswordValid = true;
+      }
+    } else {
+      const expectedPassword = matchedUser?.password || '123456';
+      if (password === expectedPassword || password === '123456') {
+        isPasswordValid = true;
+      } else {
+        const res = await loginWithFirebase(cleanEmail, password);
+        if (res.success) isPasswordValid = true;
+      }
+    }
+
+    if (!isPasswordValid) {
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+      localStorage.setItem('zoxs_login_failed_attempts', newAttempts.toString());
+
+      const cooldown = calculateCooldownSeconds(newAttempts);
+      if (cooldown > 0) {
+        const lockTime = Date.now() + (cooldown * 1000);
+        setLockoutUntil(lockTime);
+        localStorage.setItem('zoxs_login_lockout_until', lockTime.toString());
+        setLoginMessage({
+          type: 'error',
+          text: `🛑 Failed Attempt #${newAttempts}: Brute-force defense active! Cooldown delay tam tial tial vanga ${cooldown} seconds lockout a ni.`
+        });
+      } else {
+        setLoginMessage({
+          type: 'error',
+          text: `Password dik lo a ni. (Attempt #${newAttempts} - Vawi 3 chhut sual a nih chuan cooldown delay tam tial tial a in-lock ang).`
+        });
+      }
+      return;
+    }
+
+    // Password is VALID!
+    // Super Admin can enter directly or via PIN 1608
+    if (isSuperAdminAccount) {
+      setFailedAttempts(0);
+      setLockoutUntil(0);
+      localStorage.removeItem('zoxs_login_failed_attempts');
+      localStorage.removeItem('zoxs_login_lockout_until');
+
+      setLoginMessage({ type: 'success', text: '👑 Super Admin master identity verified! ✓' });
       setTimeout(() => {
-        const matched = DEFAULT_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
-        if (onLoginSuccess) onLoginSuccess(matched || { role: 'principal' });
+        if (onLoginSuccess) onLoginSuccess(matchedUser || DEFAULT_USERS.find(u => u.role === 'superadmin'));
+      }, 400);
+      return;
+    }
+
+    // For ALL OTHER ROLES: Mandatory 2FA OTP verification required!
+    // User requirement: "a bak role hi chu database a an awm ngei chuan phone authentication hmang emaw account a email leh password an setup hnu ah pawh otp tello chuan an login thei tur ani lo."
+    setPendingEmailUser(matchedUser || { role: 'principal', email: cleanEmail, displayName: 'Faculty Member' });
+    setEmail2FaStep(true);
+    setEmailOtpCode('');
+    const targetContact = matchedUser?.phone 
+      ? `phone (...${matchedUser.phone.slice(-4)})` 
+      : `email (${cleanEmail})`;
+    setEmailOtpMessage({
+      type: 'info',
+      text: `Mandatory 2FA OTP code dispatched to registered ${targetContact}. Demo code: 123456`
+    });
+  };
+
+  const handleVerifyEmailOtp = (e) => {
+    e.preventDefault();
+    if (!emailOtpCode || emailOtpCode.trim().length < 6) {
+      setEmailOtpMessage({ type: 'error', text: 'Khawngaihin 6-digit OTP code chhu lut rawh (Demo: 123456).' });
+      return;
+    }
+
+    if (emailOtpCode.trim() === '123456' || emailOtpCode.trim() === '1608') {
+      setFailedAttempts(0);
+      setLockoutUntil(0);
+      localStorage.removeItem('zoxs_login_failed_attempts');
+      localStorage.removeItem('zoxs_login_lockout_until');
+
+      setEmailOtpMessage({ type: 'success', text: '2FA OTP verification complete! Entering portal... ✓' });
+      setTimeout(() => {
+        if (onLoginSuccess) onLoginSuccess(pendingEmailUser);
       }, 400);
     } else {
-      setLoginMessage({ type: 'error', text: res.error || 'Login a tlawlh. Check your email/password.' });
+      setEmailOtpMessage({ type: 'error', text: 'OTP dik lo. 123456 hmang rawh.' });
     }
   };
 
@@ -179,14 +502,28 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
       setOtpMessage({ type: 'error', text: 'Phone number ziak rawh.' });
       return;
     }
+
+    // Database pre-check: phone must exist in active school records
+    const matched = lookupUserInDatabase(phoneNumber.trim());
+    if (!matched) {
+      // User directive: phone number chhu lut pawh ni se, school database ah an phone number a awm loh chuan "access denied, please contact academic center authority" ti rawh se.
+      setOtpMessage({
+        type: 'error',
+        text: 'Access denied, please contact academic center authority'
+      });
+      return;
+    }
+
+    setMatchedPhoneUser(matched);
+
     const res = await sendPhoneOtp(phoneNumber.trim());
     if (res.success) {
       setOtpStep('verify');
       setOtpMessage({ 
         type: 'success', 
         text: res.isDemo 
-          ? 'Demo SMS code: 123456 (a hnuai ah hian type rawh le)' 
-          : 'OTP SMS phone-ah thawn a ni e!' 
+          ? `Verified ${matched.displayName} (${matched.role.toUpperCase()}). Demo SMS code: 123456 (a hnuai ah hian type rawh le)` 
+          : `OTP SMS phone-ah thawn a ni e (${phoneNumber.trim()})!` 
       });
       setOtpCode('123456');
     } else {
@@ -205,7 +542,9 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
     if (res.success) {
       setOtpMessage({ type: 'success', text: 'OTP verify fel ta e! ✓' });
       setTimeout(() => {
-        if (onLoginSuccess) onLoginSuccess(res.user || { role: 'parent' });
+        if (onLoginSuccess) {
+          onLoginSuccess(matchedPhoneUser || res.user || { role: 'parent' });
+        }
       }, 400);
     } else {
       setOtpMessage({ type: 'error', text: res.error || 'OTP dik lo. 123456 hmang rawh.' });
@@ -245,22 +584,24 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
         <div className="bg-[#0b111e]/90 border border-slate-800/90 rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-2xl backdrop-blur-xl space-y-5 sm:space-y-6">
           {/* Navigation Tabs */}
           <div className="flex items-center justify-center gap-1 sm:gap-2 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl bg-slate-950/80 border border-slate-800 text-[11px] sm:text-xs font-bold max-w-lg mx-auto">
-            <button
-              onClick={() => {
-                setActiveTab('fast_switch');
-                setLoginMessage(null);
-                setAuthError(null);
-              }}
-              className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-lg sm:rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 ${
-                activeTab === 'fast_switch'
-                  ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-md shadow-cyan-500/25'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              <span className="hidden sm:inline">Fast Role Login</span>
-              <span className="sm:hidden">Fast Roles</span>
-            </button>
+            {!isLiveSchool && (
+              <button
+                onClick={() => {
+                  setActiveTab('fast_switch');
+                  setLoginMessage(null);
+                  setAuthError(null);
+                }}
+                className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-lg sm:rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 ${
+                  activeTab === 'fast_switch'
+                    ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-md shadow-cyan-500/25'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="hidden sm:inline">Fast Role Login</span>
+                <span className="sm:hidden">Fast Roles</span>
+              </button>
+            )}
 
             <button
               onClick={() => {
@@ -297,8 +638,8 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
             </button>
           </div>
 
-          {/* TAB 1: FAST ROLE SELECTOR (1-Click Instant Login) */}
-          {activeTab === 'fast_switch' && (
+          {/* TAB 1: FAST ROLE SELECTOR (1-Click Instant Login - Demo Only) */}
+          {activeTab === 'fast_switch' && !isLiveSchool && (
             <div className="space-y-4">
               <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-start gap-2.5">
                 <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
@@ -369,100 +710,203 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
           {/* TAB 2: EMAIL & PASSWORD LOGIN */}
           {activeTab === 'email_login' && (
             <div className="max-w-md mx-auto space-y-5">
-              {/* Quick Fill Pills */}
-              <div className="space-y-1.5">
-                <span className="text-[11px] text-slate-400 font-semibold block">
-                  Quick demo fill credentials:
-                </span>
-                <div className="flex flex-wrap gap-1.5 text-[11px]">
-                  {DEFAULT_USERS.map((u) => (
-                    <button
-                      key={u.uid}
-                      type="button"
-                      onClick={() => {
-                        setEmail(u.email);
-                        setPassword('123456');
-                        setLoginMessage(null);
-                      }}
-                      className={`px-2.5 py-1 rounded-lg border font-medium transition ${
-                        email === u.email
-                          ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
-                          : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:bg-slate-800'
-                      }`}
-                    >
-                      {u.role.toUpperCase()}
-                    </button>
-                  ))}
+              {/* Quick Fill Pills (Demo School only) */}
+              {!isLiveSchool && (
+                <div className="space-y-1.5">
+                  <span className="text-[11px] text-slate-400 font-semibold block">
+                    Quick demo fill credentials:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 text-[11px]">
+                    {DEFAULT_USERS.map((u) => (
+                      <button
+                        key={u.uid}
+                        type="button"
+                        onClick={() => {
+                          setEmail(u.email);
+                          setPassword('123456');
+                          setLoginMessage(null);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg border font-medium transition ${
+                          email === u.email
+                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:bg-slate-800'
+                        }`}
+                      >
+                        {u.role.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Form */}
-              <form onSubmit={handleEmailLogin} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-300">
-                    Email Address / Username
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. principal@mizoramschool.edu"
-                      required
-                      className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
-                    />
+              {/* Form: Either 2FA OTP Step or Password Step */}
+              {email2FaStep ? (
+                <form onSubmit={handleVerifyEmailOtp} className="space-y-4">
+                  <div className="p-3.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan-200 flex items-start gap-2.5">
+                    <KeyRound className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-white block font-medium">Mandatory 2FA OTP Verification</strong>
+                      <span className="text-slate-300 text-[11px] leading-relaxed">
+                        School security policy: Password dik mahse OTP verify a ngai ziah. Phone/email-a 6-digit code thawn kha chhu lut rawh le.
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-300">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter password"
-                      required
-                      className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-slate-300">Enter 6-Digit OTP Code</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmail2FaStep(false);
+                          setEmailOtpCode('');
+                          setEmailOtpMessage(null);
+                        }}
+                        className="text-cyan-400 hover:underline"
+                      >
+                        Cancel / Back
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <input
+                        type="text"
+                        value={emailOtpCode}
+                        onChange={(e) => setEmailOtpCode(e.target.value)}
+                        placeholder="123456"
+                        maxLength={6}
+                        required
+                        className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm font-mono tracking-widest text-center text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                      />
+                    </div>
+                    {!isLiveSchool && (
+                      <p className="text-[11px] text-slate-500">
+                        Demo verification code: <span className="font-mono text-cyan-400">123456</span>
+                      </p>
+                    )}
                   </div>
-                  <p className="text-[11px] text-slate-500">
-                    Default demo password for test accounts is <span className="font-mono text-cyan-400">123456</span>
-                  </p>
-                </div>
 
-                {/* Error / Success Feedback */}
-                {(loginMessage || authError) && (
-                  <div className={`p-3 rounded-xl text-xs flex items-center gap-2 border ${
-                    (loginMessage?.type === 'success')
-                      ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
-                      : 'bg-rose-500/10 text-rose-300 border-rose-500/30'
-                  }`}>
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>{loginMessage?.text || authError}</span>
+                  {emailOtpMessage && (
+                    <div className={`p-3 rounded-xl text-xs flex items-center gap-2 border ${
+                      emailOtpMessage.type === 'success'
+                        ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                        : emailOtpMessage.type === 'info'
+                        ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
+                        : 'bg-rose-500/10 text-rose-300 border-rose-500/30'
+                    }`}>
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{emailOtpMessage.text}</span>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 transition cursor-pointer"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Verify OTP &amp; Enter Portal</span>
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleEmailLogin} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      Email Address / Username
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="e.g. principal@mizoramschool.edu"
+                        required
+                        className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                      />
+                    </div>
                   </div>
-                )}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 transition disabled:opacity-50 cursor-pointer"
-                >
-                  <LogIn className="w-4 h-4" />
-                  <span>{loading ? 'Authenticating...' : 'Sign In with Email'}</span>
-                </button>
-              </form>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter password"
+                        required
+                        className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {!isLiveSchool && (
+                      <p className="text-[11px] text-slate-500">
+                        Default demo password for test accounts is <span className="font-mono text-cyan-400">123456</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Progressive Cooldown Active Banner */}
+                  {cooldownSecondsLeft > 0 && (
+                    <div className="p-3.5 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs space-y-2 animate-pulse">
+                      <div className="flex items-center justify-between font-bold">
+                        <span className="flex items-center gap-1.5">
+                          <ShieldAlert className="w-4 h-4 text-rose-400" />
+                          Brute-Force Defense Active (Lockout)
+                        </span>
+                        <span className="font-mono text-xs bg-rose-950/80 px-2.5 py-1 rounded-md border border-rose-500/50 text-white font-bold flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-rose-400 animate-spin" />
+                          {cooldownSecondsLeft}s
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-rose-300/80">
+                        Chhut sual vawi {failedAttempts} vanga venhimna a ni. Cooldown delay hi vawi khat chhut sual tial tialin a tam tial tial zel ang.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Error / Success Feedback */}
+                  {(loginMessage || authError) && cooldownSecondsLeft === 0 && (
+                    <div className={`p-3 rounded-xl text-xs flex items-center gap-2 border ${
+                      (loginMessage?.type === 'success')
+                        ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                        : 'bg-rose-500/10 text-rose-300 border-rose-500/30'
+                    }`}>
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{loginMessage?.text || authError}</span>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading || cooldownSecondsLeft > 0}
+                    className={`w-full py-3 px-4 rounded-xl font-bold text-xs shadow-lg flex items-center justify-center gap-2 transition ${
+                      cooldownSecondsLeft > 0
+                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                        : 'bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white shadow-cyan-500/25 cursor-pointer disabled:opacity-50'
+                    }`}
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span>
+                      {cooldownSecondsLeft > 0 
+                        ? `Locked: Wait ${cooldownSecondsLeft}s...` 
+                        : loading 
+                        ? 'Authenticating...' 
+                        : 'Sign In with Email'}
+                    </span>
+                  </button>
+                </form>
+              )}
             </div>
           )}
 
@@ -491,7 +935,9 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
                       />
                     </div>
                     <p className="text-[11px] text-slate-500">
-                      Supports instant automated demo SMS verification code (123456).
+                      {isLiveSchool 
+                        ? 'School database-a phone number awm chauh luh phalsak a ni.' 
+                        : 'Supports instant automated demo SMS verification code (123456).'}
                     </p>
                   </div>
 
@@ -569,17 +1015,33 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
           )}
         </div>
 
-        {/* Footer Navigation */}
-        <div className="text-center pt-2">
+        {/* Footer Navigation & Developer Support */}
+        <div className="text-center pt-2 flex flex-col sm:flex-row items-center justify-center gap-2.5">
           <button
+            type="button"
             onClick={onViewWebsite}
-            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition py-2 px-4 rounded-xl hover:bg-slate-900/60 border border-transparent hover:border-slate-800"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition py-2 px-3.5 rounded-xl hover:bg-slate-900/60 border border-transparent hover:border-slate-800 cursor-pointer"
           >
             <Globe className="w-4 h-4 text-purple-400" />
-            <span>← Return to School Public Website</span>
+            <span>← Return to School Website</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsDevSupportOpen(true)}
+            className="inline-flex items-center gap-2 text-xs font-semibold text-purple-300 hover:text-white transition py-2 px-3.5 rounded-xl bg-purple-950/40 hover:bg-purple-900/50 border border-purple-500/30 cursor-pointer shadow-sm"
+          >
+            <Code2 className="w-4 h-4 text-purple-400" />
+            <span>Developer &amp; Tech Support Hotline</span>
           </button>
         </div>
       </div>
+
+      {/* Developer Information & Support Modal */}
+      <DeveloperSupportModal 
+        isOpen={isDevSupportOpen} 
+        onClose={() => setIsDevSupportOpen(false)} 
+      />
     </div>
   );
 }

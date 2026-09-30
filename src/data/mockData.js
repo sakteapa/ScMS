@@ -3297,6 +3297,8 @@ export const INITIAL_SYSTEM_CONFIG = {
   address: 'Lunglawn, Lunglei, Mizoram - 796701',
   contactPhone: '+91 372 2322104 / +91 94361 40552',
   contactEmail: 'oha.lunglawn@gmail.com',
+  principalEmail: 'principal@mizoramschool.edu',
+  vicePrincipalEmail: 'vp@mizoramschool.edu',
   primaryColor: '#6366f1',
   currency: 'INR',
   currencySymbol: '₹',
@@ -4976,6 +4978,28 @@ export const INITIAL_WEBSITE_CONFIG = {
     youtube: 'https://youtube.com',
     instagram: 'https://instagram.com',
     whatsapp: 'https://wa.me/919436140552'
+  },
+  developerCredits: {
+    enabled: true,
+    showOnFrontPage: true,
+    showInPortalHelp: true,
+    name: 'Samuel (Lead Software Architect)',
+    title: 'Lead Software Architect & Full-Stack Systems Engineer',
+    company: 'Zoxs Technologies Mizoram',
+    phone: '+91 94361 22000',
+    whatsapp: '+91 94361 22000',
+    email: 'samuel.developer@mizoramschool.edu',
+    location: 'Aizawl & Lunglei, Mizoram',
+    website: 'https://zoxs.dev',
+    tagline: 'Engineering next-gen digital infrastructure, secure databases & academic portals for educational institutions across Mizoram.',
+    services: [
+      '24/7 Priority Emergency Technical Support & Bug Resolving',
+      'Custom Academic Modules, Class Tests & Examination Tools',
+      'Cloud Firestore Sync & Daily Automated Database Backups',
+      'Campus Hardware, Biometrics & Audio Bell Infrastructure'
+    ],
+    supportHours: 'Mon - Sat: 8:00 AM - 8:00 PM (24/7 Critical System Alerts)',
+    badgeText: 'Verified Institutional Developer'
   }
 };
 
@@ -5403,6 +5427,32 @@ export const INITIAL_STORE_UNIFORMS = [
     sizes: [
       { size: 'Regular (Free Size)', stock: 60 }
     ]
+  },
+  {
+    id: 'uni-013',
+    name: 'Official School Crest Blazer (Deep Navy)',
+    code: 'UNI-WIN-BLAZER',
+    category: 'winter',
+    gender: 'unisex',
+    applicableClasses: 'Class 8 to 12',
+    price: 1450,
+    photoUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&auto=format&fit=crop&q=80',
+    description: 'Official tailored navy blazer with brass buttons and gold embroidered school crest monogram. Mandatory for Monday morning chapel & winter assemblies.',
+    sizes: [
+      { size: '32', stock: 0 },
+      { size: '34', stock: 0 },
+      { size: '36', stock: 0 },
+      { size: '38', stock: 0 }
+    ],
+    stockStatus: 'out_of_stock',
+    expectedRestockDate: '2026-10-18',
+    restockNotes: 'Vendor Guwahati atangin consignment thar lak mek a ni a, October ni 18 velah Depot-ah a lo thleng ang.',
+    allowExternalPurchase: true,
+    externalVendorName: 'Zoram Uniform & Tailoring Store',
+    externalVendorLocation: 'Near Main Petrol Pump, Bazar Veng, Lunglei',
+    externalVendorPhone: '+91 9862345678',
+    externalVendorPrice: '₹1,450 approx',
+    externalPurchaseInstructions: 'Pawn lam dawra an thui hian school crest monogram badge an neih loh chuan, school store counter-ah Rs 30 in a hranin badge a lei theih reng e.'
   }
 ];
 
@@ -5602,6 +5652,29 @@ export const INITIAL_STORE_BOOKS = [
     stockQuantity: 85,
     isMandatory: false,
     photoUrl: 'https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-015',
+    title: 'MBSE Class 10 Science Practical Notebook & Lab Manual',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    subject: 'Science',
+    author: 'MBSE Practical Directorate',
+    publisher: 'Mizoram Board of School Education',
+    edition: '2026 Practical Edition',
+    price: 160,
+    stockQuantity: 0,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=500&auto=format&fit=crop&q=80',
+    stockStatus: 'out_of_stock',
+    expectedRestockDate: '2026-10-12',
+    restockNotes: 'MBSE Central Godown Aizawl atangin rawn thawn mek a ni a, chawlhkar tharah Store-ah sem theih a ni ang.',
+    allowExternalPurchase: true,
+    externalVendorName: 'Hmingthanga Book Depot & School Supplies',
+    externalVendorLocation: 'Chanmari Veng Main Road, Lunglei',
+    externalVendorPhone: '+91 9436155555',
+    externalVendorPrice: '₹160',
+    externalPurchaseInstructions: 'MBSE approved 2026 edition official journal chauh hi exam practical-ah pawm a ni a, bookstore ah edition ennawn theih a ni.'
   }
 ];
 
@@ -5728,5 +5801,317 @@ export const INITIAL_STORE_SALES = [
     notes: 'Extra socks set.'
   }
 ];
+
+export const INITIAL_UNIT_TESTS = [
+  {
+    id: 'ut-2026-001',
+    testCode: 'UT-1',
+    name: 'Unit Test 1 (Periodic Assessment I)',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    subject: 'Physics',
+    date: '2026-08-18',
+    startTime: '09:30 AM',
+    durationMinutes: 60,
+    maxMarks: 25,
+    passMarks: 10,
+    chaptersCovered: 'Chapter 1: Electric Charges & Fields, Chapter 2: Electrostatic Potential',
+    weightagePercent: 10,
+    status: 'evaluated',
+    scores: [
+      { studentId: 'stu-101', studentName: 'Lalmuanpuia Sailo', rollNo: '01', marksObtained: 23, grade: 'A1', remarks: 'Excellent derivation work' },
+      { studentId: 'stu-102', studentName: 'R. Lalrinawmi', rollNo: '02', marksObtained: 21, grade: 'A2', remarks: 'Good conceptual clarity' },
+      { studentId: 'stu-103', studentName: 'Lalduhawma Colney', rollNo: '03', marksObtained: 8, grade: 'E', remarks: 'Needs remedial stayback coaching' },
+      { studentId: 'stu-104', studentName: 'Zodinpuii Khiangte', rollNo: '04', marksObtained: 19, grade: 'B1', remarks: 'Good attempt' }
+    ]
+  },
+  {
+    id: 'ut-2026-002',
+    testCode: 'UT-2',
+    name: 'Unit Test 2 (Periodic Assessment II)',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    subject: 'Chemistry',
+    date: '2026-09-12',
+    startTime: '10:00 AM',
+    durationMinutes: 60,
+    maxMarks: 25,
+    passMarks: 10,
+    chaptersCovered: 'Solutions & Electrochemistry (Nernst equation & conductance)',
+    weightagePercent: 10,
+    status: 'evaluated',
+    scores: [
+      { studentId: 'stu-101', studentName: 'Lalmuanpuia Sailo', rollNo: '01', marksObtained: 24, grade: 'A1', remarks: 'Perfect score in numericals' },
+      { studentId: 'stu-102', studentName: 'R. Lalrinawmi', rollNo: '02', marksObtained: 22, grade: 'A1', remarks: 'Great answers' },
+      { studentId: 'stu-103', studentName: 'Lalduhawma Colney', rollNo: '03', marksObtained: 12, grade: 'D', remarks: 'Marginal pass' },
+      { studentId: 'stu-104', studentName: 'Zodinpuii Khiangte', rollNo: '04', marksObtained: 20, grade: 'A2', remarks: 'Very neat presentation' }
+    ]
+  },
+  {
+    id: 'ut-2026-003',
+    testCode: 'UT-3',
+    name: 'Unit Test 3 (Pre-Board Assessment)',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    subject: 'Mathematics',
+    date: '2026-10-15',
+    startTime: '09:00 AM',
+    durationMinutes: 90,
+    maxMarks: 40,
+    passMarks: 14,
+    chaptersCovered: 'Quadratic Equations, Arithmetic Progressions & Triangles',
+    weightagePercent: 15,
+    status: 'scheduled',
+    scores: []
+  }
+];
+
+export const INITIAL_STAYBACK_SESSIONS = [
+  {
+    id: 'stb-2026-01',
+    date: '2026-09-30',
+    startTime: '03:30 PM',
+    endTime: '05:00 PM',
+    title: 'Class 12 Physics & Maths Remedial Coaching',
+    category: 'remedial',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    venue: 'Room 204 (Senior Science Wing)',
+    supervisorId: 'stf-002',
+    supervisorName: 'Lalthlamuana Sailo (PGT Physics)',
+    reason: 'Follow-up remedial revision for students scoring below pass marks in Unit Test 1.',
+    transportArrangement: 'School Bus 2 delayed departure (05:15 PM) & Parent Self-Pickup',
+    status: 'in_progress',
+    students: [
+      {
+        studentId: 'stu-103',
+        studentName: 'Lalduhawma Colney',
+        rollNo: '03',
+        parentPhone: '9862000003',
+        parentNotified: true,
+        notificationChannel: 'whatsapp',
+        checkoutStatus: 'in_session',
+        checkoutTime: null,
+        departureNote: ''
+      },
+      {
+        studentId: 'stu-105',
+        studentName: 'Lalruatfela Varte',
+        rollNo: '05',
+        parentPhone: '9862000005',
+        parentNotified: true,
+        notificationChannel: 'sms',
+        checkoutStatus: 'in_session',
+        checkoutTime: null,
+        departureNote: ''
+      }
+    ]
+  },
+  {
+    id: 'stb-2026-02',
+    date: '2026-09-28',
+    startTime: '03:30 PM',
+    endTime: '04:45 PM',
+    title: 'Disciplinary Detention: Campus Uniform & Late Arrival Breach',
+    category: 'disciplinary',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    venue: 'Library Study Hall Room B',
+    supervisorId: 'stf-005',
+    supervisorName: 'Pi C. Laldinpuii (Discipline Mistress)',
+    reason: 'Repeated unexcused late arrivals and non-uniform footwear.',
+    transportArrangement: 'Parent Self-Pickup authorized',
+    status: 'completed',
+    students: [
+      {
+        studentId: 'stu-108',
+        studentName: 'K. Lalrinzuala',
+        rollNo: '08',
+        parentPhone: '9862000008',
+        parentNotified: true,
+        notificationChannel: 'whatsapp',
+        checkoutStatus: 'checked_out',
+        checkoutTime: '04:50 PM',
+        departureNote: 'Picked up by father Mr. K. Sangzuala.'
+      }
+    ]
+  },
+  {
+    id: 'stb-2026-03',
+    date: '2026-10-02',
+    startTime: '03:45 PM',
+    endTime: '05:30 PM',
+    title: 'Inter-School Subroto Cup Football Team Practice',
+    category: 'sports',
+    classId: 'all',
+    className: 'School Senior Football Squad',
+    venue: 'Main School Football Ground',
+    supervisorId: 'stf-008',
+    supervisorName: 'Coach Benjamin Lalrammuana',
+    reason: 'Tactical drills and penalty shootout practice before District Tournament.',
+    transportArrangement: 'Hostel Students return to Dorm; Day-scholars by Parent Pickup',
+    status: 'scheduled',
+    students: [
+      {
+        studentId: 'stu-101',
+        studentName: 'Lalmuanpuia Sailo',
+        rollNo: '01',
+        parentPhone: '9862000001',
+        parentNotified: true,
+        notificationChannel: 'whatsapp',
+        checkoutStatus: 'in_session',
+        checkoutTime: null,
+        departureNote: ''
+      }
+    ]
+  }
+];
+
+export const INITIAL_ASSIGNMENTS = [
+  {
+    id: 'asg-2026-01',
+    title: 'Physics Practical Analysis & Electromagnetic Induction Numericals',
+    subject: 'Physics',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    teacherId: 'stf-002',
+    teacherName: 'Lalthlamuana Sailo',
+    assignedDate: '2026-09-24',
+    dueDate: '2026-10-03',
+    maxMarks: 10,
+    weightage: 'Continuous Assessment Portfolio (5%)',
+    description: 'Solve textbook problems 4.1 to 4.12 on Faraday\'s Law, Lenz\'s rule, and self-inductance. Submit handwritten solutions in homework notebook or upload PDF.',
+    attachments: [
+      { name: 'EMI_Problem_Set_2026.pdf', size: '1.2 MB', url: '#' }
+    ],
+    status: 'active',
+    submissions: [
+      {
+        studentId: 'stu-101',
+        studentName: 'Lalmuanpuia Sailo',
+        rollNo: '01',
+        submittedAt: '2026-09-28T14:20:00Z',
+        status: 'evaluated',
+        marksObtained: 10,
+        feedback: 'Flawless derivations and step-by-step calculus working.'
+      },
+      {
+        studentId: 'stu-102',
+        studentName: 'R. Lalrinawmi',
+        rollNo: '02',
+        submittedAt: '2026-09-29T18:10:00Z',
+        status: 'evaluated',
+        marksObtained: 9,
+        feedback: 'Neat graph plots, minor sign convention error in Q.7.'
+      },
+      {
+        studentId: 'stu-103',
+        studentName: 'Lalduhawma Colney',
+        rollNo: '03',
+        submittedAt: null,
+        status: 'pending',
+        marksObtained: null,
+        feedback: ''
+      },
+      {
+        studentId: 'stu-104',
+        studentName: 'Zodinpuii Khiangte',
+        rollNo: '04',
+        submittedAt: '2026-09-30T09:15:00Z',
+        status: 'submitted',
+        marksObtained: null,
+        feedback: ''
+      }
+    ]
+  },
+  {
+    id: 'asg-2026-02',
+    title: 'Mizo Essay: \'Mizo Hnam Nunphung leh Changkanna (Modernity vs Culture)\'',
+    subject: 'Mizo',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    teacherId: 'stf-003',
+    teacherName: 'Pi Zothanpuii',
+    assignedDate: '2026-09-26',
+    dueDate: '2026-10-05',
+    maxMarks: 20,
+    weightage: 'MBSE Internal Assessment (10%)',
+    description: 'Hawrawp felfai takin thumal 500 aia tlem lo essay ziah tur. Mizo hnam nunhlun leh tunlai changkanna kal chhoh dan khaikhinna telh tur.',
+    attachments: [],
+    status: 'active',
+    submissions: [
+      {
+        studentId: 'stu-101',
+        studentName: 'Lalmuanpuia Sailo',
+        rollNo: '01',
+        submittedAt: '2026-09-29T10:00:00Z',
+        status: 'evaluated',
+        marksObtained: 19,
+        feedback: 'Ṭawngkam thluk mawi tak leh ngaihtuahna ril tak a ni.'
+      }
+    ]
+  }
+];
+
+export const INITIAL_FINE_RECORDS = [
+  {
+    id: 'fine-001',
+    studentId: 'stu-103',
+    studentName: 'Lalduhawma Colney',
+    admissionNo: 'MZ-2026-0103',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    fineType: 'late_arrival',
+    fineTitle: 'Repeated Morning Assembly Late Arrival Fine',
+    amount: 50,
+    imposedDate: '2026-09-25',
+    imposedBy: 'Pi C. Laldinpuii (Discipline Mistress)',
+    dueDate: '2026-10-05',
+    status: 'pending',
+    paidDate: null,
+    receiptNo: null,
+    paymentMode: null,
+    notes: 'Late for 3 consecutive days without parent excuse slip.'
+  },
+  {
+    id: 'fine-002',
+    studentId: 'stu-105',
+    studentName: 'Lalruatfela Varte',
+    admissionNo: 'MZ-2026-0105',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    fineType: 'library_overdue',
+    fineTitle: 'Library Overdue Book Fine (HC Verma Concepts of Physics Vol 2)',
+    amount: 60,
+    imposedDate: '2026-09-20',
+    imposedBy: 'Lalbiakvela (Chief Librarian)',
+    dueDate: '2026-09-30',
+    status: 'pending',
+    paidDate: null,
+    receiptNo: null,
+    paymentMode: null,
+    notes: '6 days overdue @ ₹10 per day.'
+  },
+  {
+    id: 'fine-003',
+    studentId: 'stu-102',
+    studentName: 'R. Lalrinawmi',
+    admissionNo: 'MZ-2026-0102',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    fineType: 'id_card_replacement',
+    fineTitle: 'Smart RFID Dual-PVC Replacement Card Fee',
+    amount: 150,
+    imposedDate: '2026-09-15',
+    imposedBy: 'Office Admin Desk',
+    dueDate: '2026-09-25',
+    status: 'paid',
+    paidDate: '2026-09-16',
+    receiptNo: 'MSS-UPI-2026-9481',
+    paymentMode: 'upi',
+    notes: 'Paid via GPay QR at Front Page Portal.'
+  }
+];
+
 
 

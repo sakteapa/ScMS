@@ -27,7 +27,11 @@ import {
   Share2,
   ExternalLink,
   ShieldCheck,
-  Check
+  Check,
+  Edit3,
+  Sliders,
+  X,
+  Filter
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
@@ -63,6 +67,20 @@ export default function CalendarView() {
   const [holidaySearchQuery, setHolidaySearchQuery] = useState('');
   const [holidayCategoryFilter, setHolidayCategoryFilter] = useState('all');
   const [copiedCircular, setCopiedCircular] = useState(false);
+
+  // Manual Dah Luh & Paih Manager State
+  const [managerFilter, setManagerFilter] = useState('all');
+  const [managerSearch, setManagerSearch] = useState('');
+  const [managerToast, setManagerToast] = useState(null);
+  const [quickEventForm, setQuickEventForm] = useState({
+    title: '',
+    category: 'event',
+    date: new Date().toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+    badge: 'Institutional Event',
+    description: '',
+    color: 'cyan'
+  });
 
   // New Event Form State
   const [newEvent, setNewEvent] = useState({
@@ -261,19 +279,80 @@ export default function CalendarView() {
     alert('Holiday homework packet successfully attached to vacation!');
   };
 
-  const handleDeleteEvent = (id) => {
-    if (window.confirm('A calendar event hi i paih (delete) duh tak tak em?')) {
+  const handleDeleteEvent = (id, eventTitle = 'Event') => {
+    if (window.confirm(`"${eventTitle}" calendar event hi i paih (delete) duh tak tak em?`)) {
       deleteAcademicEvent(id);
       if (selectedEventForModal?.id === id) {
         setSelectedEventForModal(null);
       }
+      setManagerToast(`"${eventTitle}" hlawhtling taka paih (deleted) a ni!`);
+      setTimeout(() => setManagerToast(null), 3500);
     }
   };
 
   const handleDeleteVacationClick = (id, title) => {
     if (window.confirm(`Vacation "${title}" hi paih (delete) i duh tak tak em? Calendar atang pawhin a in-remove nghal ang.`)) {
       deleteVacation(id);
+      setManagerToast(`Vacation "${title}" hlawhtling taka paih (deleted) a ni!`);
+      setTimeout(() => setManagerToast(null), 3500);
     }
+  };
+
+  // Unified list of all events and vacations for the management table
+  const allManagedItems = useMemo(() => {
+    const eventItems = academicEvents.map(evt => ({
+      ...evt,
+      itemType: 'academic_event',
+      displayCategory: evt.category === 'exam' ? 'Examination' : evt.category === 'holiday' ? 'State Holiday' : evt.category === 'sports' ? 'Sports & Games' : 'School Event'
+    }));
+    const vacationItems = vacations.map(vac => ({
+      ...vac,
+      itemType: 'vacation',
+      date: vac.startDate,
+      endDate: vac.endDate,
+      displayCategory: 'Institutional Vacation',
+      color: 'emerald'
+    }));
+    return [...eventItems, ...vacationItems].sort((a, b) => new Date(a.date) - new Date(b.date));
+  }, [academicEvents, vacations]);
+
+  const filteredManagedItems = useMemo(() => {
+    return allManagedItems.filter(item => {
+      const matchesFilter = managerFilter === 'all' ||
+        (managerFilter === 'event' && item.itemType === 'academic_event' && item.category !== 'exam') ||
+        (managerFilter === 'vacation' && item.itemType === 'vacation') ||
+        (managerFilter === 'exam' && item.category === 'exam') ||
+        (managerFilter === 'holiday' && (item.category === 'holiday' || item.itemType === 'vacation'));
+
+      const matchesSearch = !managerSearch ||
+        item.title?.toLowerCase().includes(managerSearch.toLowerCase()) ||
+        item.titleMizo?.toLowerCase().includes(managerSearch.toLowerCase()) ||
+        item.description?.toLowerCase().includes(managerSearch.toLowerCase()) ||
+        item.officialCircularNo?.toLowerCase().includes(managerSearch.toLowerCase()) ||
+        item.date?.includes(managerSearch);
+
+      return matchesFilter && matchesSearch;
+    });
+  }, [allManagedItems, managerFilter, managerSearch]);
+
+  const handleQuickAddEvent = (e) => {
+    e.preventDefault();
+    if (!quickEventForm.title || !quickEventForm.date) return;
+    addAcademicEvent({
+      ...quickEventForm,
+      id: `evt-${Date.now()}`
+    });
+    setManagerToast(`"${quickEventForm.title}" event thar hlawhtling taka dah luh (added) a ni!`);
+    setTimeout(() => setManagerToast(null), 3500);
+    setQuickEventForm({
+      title: '',
+      category: 'event',
+      date: new Date().toISOString().split('T')[0],
+      endDate: new Date().toISOString().split('T')[0],
+      badge: 'Institutional Event',
+      description: '',
+      color: 'cyan'
+    });
   };
 
   const handlePrintCircular = () => {
@@ -429,6 +508,21 @@ Approved By: ${activeCircularVacation.approvedBy || 'Rev. Dr. L. H. Rohmingliana
         >
           <Printer className="w-4 h-4 text-purple-400" />
           <span>Official Circular &amp; Letterhead</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('manual_manager')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+            activeTab === 'manual_manager'
+              ? 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-md'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+          }`}
+        >
+          <Trash2 className="w-4 h-4 text-rose-400" />
+          <span>Manual Dah Luh &amp; Paih Hub</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+            {academicEvents.length + vacations.length}
+          </span>
         </button>
       </div>
 
@@ -1313,6 +1407,382 @@ Approved By: ${activeCircularVacation.approvedBy || 'Rev. Dr. L. H. Rohmingliana
                 <p className="text-[11px] text-slate-400 print:text-slate-600">
                   {systemConfig?.schoolName || 'OHA (One Heart Academy)'}, {systemConfig?.address?.split(',')[0] || 'Lunglawn'}, Lunglei
                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 5: MANUAL EVENT & VACATION MANAGER (DAH LUH & PAIH HUB)
+      ========================================================================= */}
+      {activeTab === 'manual_manager' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Toast Notification */}
+          {managerToast && (
+            <div className="p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center justify-between shadow-lg animate-fadeIn">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span className="text-xs font-semibold">{managerToast}</span>
+              </div>
+              <button onClick={() => setManagerToast(null)} className="text-slate-400 hover:text-white p-1 cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Manager Header & Actions */}
+          <div className="p-6 rounded-3xl bg-gradient-to-r from-rose-950/40 via-slate-900 to-slate-900 border border-rose-500/30 flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-xl">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30 shrink-0">
+                <Trash2 className="w-7 h-7" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold uppercase tracking-wider">
+                    Manual Management Suite
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    Live System Sync Enabled
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-white font-['Outfit'] mt-1">
+                  Academic Event &amp; Vacation Dah Luh leh Paih Hub
+                </h3>
+                <p className="text-xs text-slate-400 max-w-2xl">
+                  Calendar chhunga event, chawlh (vacation), board exam milestone leh holidays te manual a dah luh thar leh paih (delete) felna hmunpui.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs transition shadow-lg shadow-cyan-500/20 flex items-center gap-2 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Event Dah Luh</span>
+              </button>
+
+              <button
+                onClick={() => setShowDeclareVacationModal(true)}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold text-xs transition shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer"
+              >
+                <Sun className="w-4 h-4" />
+                <span>+ Vacation / Chawlh Dah Luh</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+              <span className="text-[10px] uppercase font-bold text-slate-400">Total Calendar Events</span>
+              <p className="text-xl font-bold text-white mt-1">{academicEvents.length}</p>
+              <span className="text-[10px] text-cyan-400">School activities &amp; tests</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+              <span className="text-[10px] uppercase font-bold text-slate-400">Institutional Vacations</span>
+              <p className="text-xl font-bold text-emerald-400 mt-1">{vacations.length}</p>
+              <span className="text-[10px] text-emerald-400 font-mono">{totalVacationDays} days aggregate</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+              <span className="text-[10px] uppercase font-bold text-slate-400">State Gazetted Holidays</span>
+              <p className="text-xl font-bold text-purple-400 mt-1">{mizoramGazettedHolidays.length}</p>
+              <span className="text-[10px] text-purple-400">Official Mizoram list</span>
+            </div>
+            <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+              <span className="text-[10px] uppercase font-bold text-slate-400">Active School Year</span>
+              <p className="text-xl font-bold text-amber-400 mt-1">2026-2027</p>
+              <span className="text-[10px] text-amber-400">MBSE Affiliated</span>
+            </div>
+          </div>
+
+          {/* Inline Quick Event Dah Luh Form */}
+          <div className="p-5 rounded-3xl bg-slate-900/90 border border-slate-800 space-y-4 shadow-md">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                  <Plus className="w-4 h-4" />
+                </div>
+                <h4 className="text-sm font-bold text-white">Manual Event Dah Luh Thar (Quick Add)</h4>
+              </div>
+              <span className="text-[11px] text-slate-400">Fill details below and click Dah Luh</span>
+            </div>
+
+            <form onSubmit={handleQuickAddEvent} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+              <div className="lg:col-span-2">
+                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Event Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Science Exhibition / Annual Sports Meet"
+                  value={quickEventForm.title}
+                  onChange={(e) => setQuickEventForm(f => ({ ...f, title: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Category</label>
+                <select
+                  value={quickEventForm.category}
+                  onChange={(e) => {
+                    const cat = e.target.value;
+                    let badge = 'Institutional Event';
+                    let color = 'cyan';
+                    if (cat === 'exam') { badge = 'MBSE Assessment'; color = 'amber'; }
+                    else if (cat === 'sports') { badge = 'Sports & Games'; color = 'purple'; }
+                    else if (cat === 'holiday') { badge = 'Local Holiday'; color = 'emerald'; }
+                    setQuickEventForm(f => ({ ...f, category: cat, badge, color }));
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:border-cyan-400 focus:outline-none cursor-pointer"
+                >
+                  <option value="event">School Event</option>
+                  <option value="exam">Examination / Test</option>
+                  <option value="sports">Sports &amp; Athletics</option>
+                  <option value="holiday">Holiday / Chawlh</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">Start Date *</label>
+                <input
+                  type="date"
+                  required
+                  value={quickEventForm.date}
+                  onChange={(e) => setQuickEventForm(f => ({ ...f, date: e.target.value, endDate: e.target.value >= f.endDate ? e.target.value : f.endDate }))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-slate-400 mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={quickEventForm.endDate}
+                  onChange={(e) => setQuickEventForm(f => ({ ...f, endDate: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  type="submit"
+                  className="w-full py-2 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Dah Luh</span>
+                </button>
+              </div>
+            </form>
+
+            {/* Quick Suggestions / Presets */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-800/60">
+              <span className="text-[10px] text-slate-400 font-semibold">Presets:</span>
+              {[
+                { label: 'PTM Conference', category: 'event', badge: 'Parent Consultation', color: 'cyan' },
+                { label: 'Unit Test 3', category: 'exam', badge: 'Periodic Test', color: 'amber' },
+                { label: 'Sports Meet 2026', category: 'sports', badge: 'Athletics & Games', color: 'purple' },
+                { label: 'Cleanliness Drive', category: 'event', badge: 'Social Work', color: 'cyan' },
+                { label: 'Local Festival Chawlh', category: 'holiday', badge: 'Local Holiday', color: 'emerald' },
+              ].map((p, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setQuickEventForm(f => ({
+                    ...f,
+                    title: p.label,
+                    category: p.category,
+                    badge: p.badge,
+                    color: p.color
+                  }))}
+                  className="text-[10px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer"
+                >
+                  + {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Unified Management Table & Audit List */}
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              {/* Filter Tabs */}
+              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800">
+                {[
+                  { id: 'all', label: 'All Records', count: allManagedItems.length },
+                  { id: 'event', label: 'School Events', count: academicEvents.filter(e => e.category !== 'exam').length },
+                  { id: 'vacation', label: 'Vacations & Breaks', count: vacations.length },
+                  { id: 'exam', label: 'Examinations', count: academicEvents.filter(e => e.category === 'exam').length },
+                  { id: 'holiday', label: 'Holidays', count: academicEvents.filter(e => e.category === 'holiday').length + vacations.length }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setManagerFilter(tab.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                      managerFilter === tab.id
+                        ? 'bg-slate-800 text-white shadow'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span className="ml-1.5 text-[10px] opacity-70">({tab.count})</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Search Box */}
+              <div className="relative w-full sm:w-64">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  value={managerSearch}
+                  onChange={(e) => setManagerSearch(e.target.value)}
+                  placeholder="Search title, date, circular..."
+                  className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-400"
+                />
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden shadow-xl">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-950/80 border-b border-slate-800 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                    <tr>
+                      <th className="py-3 px-4">Event / Vacation Title</th>
+                      <th className="py-3 px-3">Type &amp; Category</th>
+                      <th className="py-3 px-3">Scheduled Dates</th>
+                      <th className="py-3 px-3">Duration</th>
+                      <th className="py-3 px-3">Circular / Reference</th>
+                      <th className="py-3 px-4 text-right">Actions (Paih / Enna)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60">
+                    {filteredManagedItems.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="py-12 text-center text-slate-500">
+                          <CalendarIcon className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                          <p className="font-semibold">A zawnna mil a awm lo (No matching records found)</p>
+                          <p className="text-[11px] text-slate-600 mt-0.5">Dah luh thar nan chunglam button kha hmet rawh le</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredManagedItems.map((item) => {
+                        const isVacation = item.itemType === 'vacation';
+                        const startDate = new Date(item.date || item.startDate);
+                        const endDate = new Date(item.endDate || item.date);
+                        const diffTime = Math.abs(endDate - startDate);
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+                        return (
+                          <tr key={item.id} className="hover:bg-slate-800/40 transition group">
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                                  isVacation ? 'bg-emerald-500/20 text-emerald-400' :
+                                  item.category === 'exam' ? 'bg-amber-500/20 text-amber-400' :
+                                  item.category === 'sports' ? 'bg-purple-500/20 text-purple-400' :
+                                  'bg-cyan-500/20 text-cyan-400'
+                                }`}>
+                                  {isVacation ? <Sun className="w-4 h-4" /> :
+                                   item.category === 'exam' ? <Award className="w-4 h-4" /> :
+                                   item.category === 'sports' ? <Flag className="w-4 h-4" /> :
+                                   <CalendarDays className="w-4 h-4" />}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-white group-hover:text-cyan-300 transition">
+                                    {item.title}
+                                  </p>
+                                  {item.titleMizo && (
+                                    <p className="text-[11px] text-slate-400 font-medium">
+                                      {item.titleMizo}
+                                    </p>
+                                  )}
+                                  {item.description && (
+                                    <p className="text-[10px] text-slate-500 line-clamp-1 max-w-xs mt-0.5">
+                                      {item.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="py-3 px-3">
+                              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border inline-block ${
+                                isVacation
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                  : item.category === 'exam'
+                                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                  : item.category === 'sports'
+                                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                                  : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                              }`}>
+                                {item.badge || item.displayCategory}
+                              </span>
+                            </td>
+
+                            <td className="py-3 px-3 font-mono text-[11px] text-slate-300 whitespace-nowrap">
+                              <div>{item.date || item.startDate}</div>
+                              {item.endDate && item.endDate !== (item.date || item.startDate) && (
+                                <div className="text-[10px] text-slate-500">to {item.endDate}</div>
+                              )}
+                            </td>
+
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              <span className="px-2 py-0.5 rounded-lg bg-slate-800 text-slate-300 font-mono text-[10px] font-bold">
+                                {item.totalDays ? `${item.totalDays} Days` : `${diffDays} Day${diffDays > 1 ? 's' : ''}`}
+                              </span>
+                            </td>
+
+                            <td className="py-3 px-3">
+                              {item.officialCircularNo ? (
+                                <span className="font-mono text-[10px] text-slate-400">
+                                  {item.officialCircularNo}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-slate-600 italic">Standard Calendar</span>
+                              )}
+                            </td>
+
+                            <td className="py-3 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => setSelectedEventForModal(item)}
+                                  className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition text-[11px] font-semibold cursor-pointer"
+                                  title="View Details"
+                                >
+                                  Enna
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    if (isVacation) {
+                                      handleDeleteVacationClick(item.id, item.title);
+                                    } else {
+                                      handleDeleteEvent(item.id, item.title);
+                                    }
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 transition text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                                  title="Delete (Paih)"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Paih</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="p-3 bg-slate-950/60 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+                <span>Showing <strong>{filteredManagedItems.length}</strong> of <strong>{allManagedItems.length}</strong> entries</span>
+                <span className="italic text-slate-500">Paih (Delete) hian central calendar leh vacations file atangin a tibo nghal vek ang</span>
               </div>
             </div>
           </div>
