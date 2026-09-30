@@ -26,7 +26,9 @@ import {
   CalendarCheck,
   Users,
   Search,
-  ChevronDown
+  ChevronDown,
+  Shirt,
+  BookOpen
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../context/AuthContext';
@@ -73,7 +75,11 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
     canteenWallets = {},
     topupCanteenWallet,
     liveSessionRequests = [],
-    systemConfig
+    systemConfig,
+    storeDistributions = [],
+    storeUniforms = [],
+    storeBooks = [],
+    storeConfig = {}
   } = useSchool();
   const [isOnlineCheckoutOpen, setIsOnlineCheckoutOpen] = useState(false);
   const [isLiveClassOpen, setIsLiveClassOpen] = useState(false);
@@ -949,6 +955,146 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
           </div>
         </div>
       )}
+
+      {/* School Uniform & Textbook Depot Kit Status */}
+      {(() => {
+        const myDistribution = storeDistributions.find(d => 
+          d.studentId === student?.id || 
+          d.admissionNo === student?.admissionNo ||
+          d.studentName?.toLowerCase() === `${student?.firstName} ${student?.lastName}`.toLowerCase()
+        );
+        const myClassBooks = storeBooks.filter(b => b.classId === student?.classId || b.classId === 'all');
+
+        return (
+          <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 space-y-5 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 shrink-0">
+                  <Shirt className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-bold uppercase">
+                      Uniform &amp; Textbooks Depot
+                    </span>
+                    <span className="text-xs text-slate-400 font-mono">
+                      {storeConfig.storeName || 'Campus Bookstore'}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-white font-['Outfit'] mt-0.5">
+                    Kit Issuance &amp; Prescribed Syllabus (Zirlaibu &amp; Hak Dan)
+                  </h4>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {myDistribution ? (
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                    myDistribution.status === 'completed' 
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
+                      : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                  }`}>
+                    {myDistribution.status === 'completed' ? '✓ Kit Fully Issued' : '⚠ Partial (A la kim lo)'}
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                    Awaiting Depot Collection
+                  </span>
+                )}
+                {canSwitchStudent && (
+                  <button
+                    onClick={() => setCurrentTab('school_store')}
+                    className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition cursor-pointer"
+                  >
+                    Manage Store
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Issued Kit Breakdown */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Left: Uniform Items Received */}
+              <div className="bg-slate-950/60 rounded-xl p-4 border border-slate-800/80 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                    <Shirt className="w-3.5 h-3.5" />
+                    <span>Issued Uniform Items:</span>
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    {myDistribution?.uniformItems?.length || 0} items
+                  </span>
+                </div>
+
+                {myDistribution?.uniformItems && myDistribution.uniformItems.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {myDistribution.uniformItems.map((u, i) => (
+                      <span key={i} className="px-2 py-1 rounded-md bg-slate-800 text-slate-200 text-xs border border-slate-700 font-medium">
+                        {u.name} <strong className="text-indigo-400">(Size: {u.size})</strong>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500">
+                    Uniform items haven't been picked up from the store depot yet.
+                  </p>
+                )}
+
+                {myDistribution?.pendingItems && myDistribution.pendingItems.length > 0 && (
+                  <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center gap-2 mt-2">
+                    <Clock className="w-3.5 h-3.5 shrink-0" />
+                    <span>Pending to collect: <strong>{myDistribution.pendingItems.join(', ')}</strong></span>
+                  </div>
+                )}
+              </div>
+
+              {/* Right: Prescribed Textbooks for this Class */}
+              <div className="bg-slate-950/60 rounded-xl p-4 border border-slate-800/80 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Prescribed Class Textbooks ({studentClass?.name || 'Class Syllabus'}):</span>
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    {myClassBooks.length} books
+                  </span>
+                </div>
+
+                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                  {myClassBooks.map(bk => (
+                    <div key={bk.id} className="p-1.5 bg-slate-900 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
+                      <div className="min-w-0 flex items-center gap-2">
+                        <img src={bk.photoUrl} alt="" className="w-6 h-8 rounded object-cover shrink-0 bg-slate-950" />
+                        <div className="truncate">
+                          <p className="font-semibold text-white truncate">{bk.title}</p>
+                          <p className="text-[10px] text-slate-400">{bk.publisher} • {bk.subject}</p>
+                        </div>
+                      </div>
+                      <span className="text-emerald-400 font-bold text-xs shrink-0">₹{bk.price}</span>
+                    </div>
+                  ))}
+                  {myClassBooks.length === 0 && (
+                    <p className="text-xs text-slate-500">
+                      Standard syllabus books available at the Depot room.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Dress Code Reminder Strip */}
+            <div className="p-3 bg-indigo-950/30 rounded-xl border border-indigo-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-indigo-200">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white">Daily Dress Code:</span>
+                <span>Mon, Tue, Thu, Fri: Regular Uniform | Wed &amp; Sat: House Sports Tee</span>
+              </div>
+              <span className="text-[11px] text-slate-400 font-mono">
+                Store In-Charge: {storeConfig.inChargeName} ({storeConfig.contactPhone})
+              </span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Two Columns: Recent Grades Split & Fee Receipts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

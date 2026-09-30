@@ -29,6 +29,7 @@ import {
   ChevronDown,
   Laptop,
   AlertTriangle,
+  Shirt,
   Printer
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
@@ -44,7 +45,9 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
     activeSchoolInfo, 
     registeredSchools = [], 
     activeSchoolId, 
-    switchSchool 
+    switchSchool,
+    storeUniforms = [],
+    storeConfig = {} 
   } = useSchool();
   const { currentUser, isPrincipal, isSuperAdmin } = useAuth();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -125,6 +128,7 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
             <a href="#academics" className="hover:text-purple-400 transition">Academics &amp; Streams</a>
             <a href="#facilities" className="hover:text-purple-400 transition">Campus Facilities</a>
             <a href="#rules" className="hover:text-purple-400 transition">Rules &amp; Code of Conduct</a>
+            <a href="#uniform" className="hover:text-purple-400 transition">Uniform &amp; Dress Code</a>
             <a href="#notices" className="hover:text-purple-400 transition">Public Notices</a>
             <a href="#contact" className="hover:text-purple-400 transition">Contact</a>
           </nav>
@@ -288,6 +292,7 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
             <a href="#academics" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Academics &amp; Streams</a>
             <a href="#facilities" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Campus Facilities</a>
             <a href="#rules" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Rules &amp; Code of Conduct</a>
+            <a href="#uniform" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Uniform &amp; Dress Code</a>
             <a href="#notices" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Public Notices</a>
             <a href="#contact" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Contact &amp; Location</a>
           </div>
@@ -706,7 +711,133 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
         </div>
       </section>
 
-      {/* 7. LATEST PUBLIC NOTICES */}
+      {/* 7. OFFICIAL UNIFORM & DRESS CODE SHOWCASE */}
+      <section id="uniform" className="py-12 sm:py-20 border-b border-slate-800/80 bg-slate-900/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-12">
+          <div className="text-center max-w-3xl mx-auto space-y-2 sm:space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-semibold border border-indigo-500/20">
+              <Shirt className="w-3.5 h-3.5" />
+              <span>Identity &amp; Discipline</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
+              Prescribed Uniform &amp; Dress Code
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
+              Cleanliness and adherence to the official school uniform is mandatory for all students from Monday to Saturday.
+            </p>
+          </div>
+
+          {/* Daily Schedule Reminder Card */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-5 rounded-2xl bg-slate-950/80 border border-indigo-500/30 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 font-bold text-xs">
+                M-F
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-white">Regular Uniform Days</h4>
+                <p className="text-xs text-slate-400">
+                  Mon, Tue, Thu &amp; Friday: Sky blue formal shirt, navy trousers/skirt, tie, belt, and polished black shoes.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-slate-950/80 border border-emerald-500/30 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 font-bold text-xs">
+                W-S
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-white">Sports &amp; House Activity</h4>
+                <p className="text-xs text-slate-400">
+                  Wednesday &amp; Saturday: Assigned House Sports Tee (Red, Blue, Green, Yellow), white track trousers, and white sports shoes.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-slate-950/80 border border-cyan-500/30 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 font-bold text-xs">
+                WIN
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-white">Winter Protocol (Nov - Feb)</h4>
+                <p className="text-xs text-slate-400">
+                  School crest navy blazer or V-neck woolen sweater with school monogram is mandatory during morning assemblies.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Curated Uniform Items Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {storeUniforms.slice(0, 8).map((item) => (
+              <div 
+                key={item.id} 
+                className="rounded-2xl bg-slate-950 border border-slate-800/90 overflow-hidden flex flex-col justify-between group hover:border-indigo-500/50 transition duration-300 shadow-lg"
+              >
+                <div className="relative aspect-[4/3] bg-slate-900 overflow-hidden">
+                  <img
+                    src={item.photoUrl}
+                    alt={item.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                    loading="lazy"
+                  />
+                  <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-slate-950/80 backdrop-blur-md text-indigo-300 text-[10px] font-bold uppercase border border-indigo-500/30">
+                    {item.category}
+                  </span>
+                  <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-bold">
+                    ₹{item.price}
+                  </span>
+                </div>
+
+                <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                      <span className="capitalize">{item.gender}</span>
+                      <span className="font-mono text-[10px]">Code: {item.code}</span>
+                    </div>
+                    <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-indigo-300 transition">
+                      {item.name}
+                    </h4>
+                    <p className="text-xs text-slate-400 line-clamp-2 mt-1">
+                      {item.description}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-900 flex items-center justify-between text-[11px] text-slate-400">
+                    <span>Sizes: {item.sizes?.map(s => s.size).join(', ') || 'All standard'}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Depot Location Callout Banner */}
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-indigo-950/40 via-purple-950/30 to-slate-950 border border-indigo-500/30 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center shrink-0">
+                <Shirt className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5 text-xs text-slate-300">
+                <p className="font-bold text-white">
+                  Official Campus Store Depot &bull; {storeConfig.storeName || 'School Uniform Counter'}
+                </p>
+                <p className="text-slate-400">
+                  Location: {storeConfig.locationRoom || 'Administrative Block, Ground Floor'} &bull; Contact: {storeConfig.contactPhone || '+91 94361 55000'} &bull; In-charge: {storeConfig.inChargeName || 'Store In-Charge'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={onEnterPortal}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/20 transition flex items-center gap-1.5 shrink-0 cursor-pointer"
+            >
+              <span>Login to Check Kit Status</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 8. LATEST PUBLIC NOTICES */}
       <section id="notices" className="py-12 sm:py-20 border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-10">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
