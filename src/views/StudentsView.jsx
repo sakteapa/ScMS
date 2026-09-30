@@ -28,7 +28,11 @@ import {
   GraduationCap,
   Layers,
   UploadCloud,
-  Camera
+  Camera,
+  Plus,
+  Edit,
+  MessageCircle,
+  Briefcase
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSchool } from '../context/SchoolContext';
@@ -39,6 +43,7 @@ import StudentIdCardModal from '../components/StudentIdCardModal';
 import StudentSuspensionModal from '../components/StudentSuspensionModal';
 import AcademicSessionPromotionModal from '../components/AcademicSessionPromotionModal';
 import CloudPhotoStorageModal from '../components/CloudPhotoStorageModal';
+import StudentFormModal from '../components/StudentFormModal';
 
 export default function StudentsView({ setCurrentTab, setSelectedStudentForReport }) {
   const { students, classes, staff, transportRoutes, hostelRooms, startPrivateCall, systemConfig } = useSchool();
@@ -59,6 +64,36 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
   const [isPromotionModalOpen, setIsPromotionModalOpen] = useState(false);
   const [promotionTargetStudent, setPromotionTargetStudent] = useState(null);
   const [cloudPhotoTarget, setCloudPhotoTarget] = useState(null);
+  const [activeViewTab, setActiveViewTab] = useState('students'); // 'students' | 'parents'
+  const [isStudentFormOpen, setIsStudentFormOpen] = useState(false);
+  const [studentFormTarget, setStudentFormTarget] = useState(null);
+
+  // Group and aggregate unique parents across all enrolled students
+  const parentsList = React.useMemo(() => {
+    const map = new Map();
+    students.forEach(s => {
+      const rawKey = (s.guardianPhone || s.guardianName || s.id).trim().toLowerCase();
+      if (!rawKey) return;
+      if (!map.has(rawKey)) {
+        map.set(rawKey, {
+          id: rawKey,
+          name: s.guardianName || 'Parent / Guardian',
+          phone: s.guardianPhone || '',
+          email: s.guardianEmail || '',
+          relation: s.guardianRelation || 'Guardian',
+          occupation: s.guardianOccupation || '',
+          address: s.address || '',
+          wards: [s]
+        });
+      } else {
+        const existing = map.get(rawKey);
+        if (!existing.wards.some(w => w.id === s.id)) {
+          existing.wards.push(s);
+        }
+      }
+    });
+    return Array.from(map.values());
+  }, [students]);
 
   // Identify if logged-in teacher has a class they are Class Master of
   const teacherClass = isTeacher 
@@ -91,6 +126,21 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
     return matchesClass && matchesFee && matchesStatus && matchesSession && matchesSearch;
   });
 
+  const filteredParents = parentsList.filter(p => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const matchesParent = p.name.toLowerCase().includes(q) || 
+      p.phone.toLowerCase().includes(q) || 
+      p.email.toLowerCase().includes(q) || 
+      p.address.toLowerCase().includes(q) ||
+      (p.occupation && p.occupation.toLowerCase().includes(q));
+    const matchesWard = p.wards.some(w => 
+      `${w.firstName} ${w.lastName}`.toLowerCase().includes(q) || 
+      w.admissionNo.toLowerCase().includes(q)
+    );
+    return matchesParent || matchesWard;
+  });
+
   return (
     <div className="space-y-6 pb-16">
       {/* Header */}
@@ -98,21 +148,38 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
         <div>
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-lg sm:text-xl font-bold text-white font-['Outfit']">
-              Student Master Directory
+              {activeViewTab === 'students' ? 'Student Master Directory' : 'Parents & Guardians Directory'}
             </h2>
             <span className="text-[11px] sm:text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold">
-              {students.length} Total
+              {activeViewTab === 'students' ? `${students.length} Students` : `${parentsList.length} Families`}
             </span>
             <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono font-bold">
               {activeSessionName}
             </span>
           </div>
           <p className="text-[11px] sm:text-xs text-slate-400 mt-1">
-            Nursery through Class 12 with Higher Secondary Arts, Science, and Commerce streams.
+            {activeViewTab === 'students'
+              ? 'Nursery through Class 12 with Higher Secondary Arts, Science, and Commerce streams.'
+              : 'Direct communication, contact records, and wards overview for all parents and legal guardians.'}
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Enroll Student (Direct Admission) */}
+          {(isPrincipal || isVicePrincipal || isSuperAdmin || isTeacher) && (
+            <button
+              onClick={() => {
+                setStudentFormTarget(null);
+                setIsStudentFormOpen(true);
+              }}
+              className="px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 text-xs font-bold shadow-lg shadow-cyan-500/25 flex items-center gap-1.5 transition shrink-0 cursor-pointer"
+              title="Office Walk-in / Direct Student Admission"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[3]" />
+              <span>Enroll Student</span>
+            </button>
+          )}
+
           {(isPrincipal || isVicePrincipal || isSuperAdmin) && (
             <button
               onClick={() => {
@@ -148,8 +215,46 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="p-3 sm:p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
+      {/* View Mode Tabs: Students vs Parents */}
+      <div className="flex border-b border-slate-800 gap-2 overflow-x-auto scrollbar-none">
+        <button
+          type="button"
+          onClick={() => setActiveViewTab('students')}
+          className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition flex items-center gap-2 cursor-pointer ${
+            activeViewTab === 'students'
+              ? 'border-cyan-400 text-cyan-300'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Students Directory</span>
+          <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[10px] font-mono font-bold">
+            {students.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveViewTab('parents')}
+          className={`pb-3 px-3 text-xs sm:text-sm font-bold border-b-2 transition flex items-center gap-2 cursor-pointer ${
+            activeViewTab === 'parents'
+              ? 'border-cyan-400 text-cyan-300'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <HeartHandshake className="w-4 h-4" />
+          <span>Parents &amp; Guardians</span>
+          <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-mono font-bold">
+            {parentsList.length}
+          </span>
+        </button>
+      </div>
+
+      {/* TAB 1: STUDENTS DIRECTORY */}
+      {activeViewTab === 'students' && (
+        <>
+          {/* Filter and Search Bar */}
+          <div className="p-3 sm:p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
         <div className="grid grid-cols-2 lg:flex lg:flex-wrap items-end gap-2 sm:gap-3">
           {/* Class Filter */}
           <div>
@@ -621,12 +726,241 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
                   >
                     <CreditCard className="w-4 h-4 text-indigo-400" />
                   </button>
+                  <button
+                    onClick={() => {
+                      setStudentFormTarget(st);
+                      setIsStudentFormOpen(true);
+                    }}
+                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+                    title="Edit Student & Guardian Details"
+                  >
+                    <Edit className="w-4 h-4 text-amber-400" />
+                  </button>
                 </div>
               </div>
             </div>
           );
         })}
       </div>
+      </>
+      )}
+
+      {/* TAB 2: PARENTS & GUARDIANS DIRECTORY */}
+      {activeViewTab === 'parents' && (
+        <div className="space-y-4">
+          {/* Parents Filter and Search Bar */}
+          <div className="p-3 sm:p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="relative w-full sm:max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Search guardian name, phone, ward's name or admission #..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 self-start sm:self-auto text-xs text-slate-400 font-medium">
+              <span>Showing <strong className="text-white font-bold">{filteredParents.length}</strong> of {parentsList.length} Families</span>
+            </div>
+          </div>
+
+          {/* Parents Cards Grid */}
+          {filteredParents.length === 0 ? (
+            <div className="p-12 text-center rounded-2xl bg-slate-900/40 border border-slate-800 text-slate-400 space-y-2">
+              <Users className="w-10 h-10 mx-auto text-slate-600 mb-2" />
+              <p className="text-sm font-semibold text-slate-300">No parent or guardian records matched your search</p>
+              <p className="text-xs text-slate-500">Try adjusting your search terms or verify student guardian information.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredParents.map((parent) => {
+                const cleanPhone = (parent.phone || '').replace(/[^0-9]/g, '');
+                const waUrl = cleanPhone ? `https://wa.me/${cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone}?text=${encodeURIComponent(`Chibai Pu/Pi ${parent.name},\n${systemConfig?.schoolName || 'School'} atangin kan lo bia a che.`)}` : null;
+
+                return (
+                  <div
+                    key={parent.id}
+                    className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition flex flex-col justify-between space-y-4 shadow-sm group hover:shadow-cyan-500/5"
+                  >
+                    <div className="space-y-3">
+                      {/* Parent Header */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 flex items-center justify-center font-bold text-indigo-300 text-sm shrink-0">
+                            {parent.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-white group-hover:text-cyan-300 transition">
+                              {parent.name}
+                            </h4>
+                            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/20">
+                                {parent.relation}
+                              </span>
+                              {parent.occupation && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                                  {parent.occupation}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Quick Edit Guardian Profile */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStudentFormTarget(parent.wards[0]);
+                            setIsStudentFormOpen(true);
+                          }}
+                          className="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-amber-300 border border-slate-700/60 transition cursor-pointer"
+                          title="Edit Parent / Guardian Details"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Contact Details */}
+                      <div className="space-y-1.5 text-xs text-slate-300 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/60">
+                        {parent.phone ? (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="flex items-center gap-1.5 font-mono text-cyan-300 text-xs">
+                              <Phone className="w-3.5 h-3.5 text-slate-400" />
+                              {parent.phone}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <a
+                                href={`tel:${parent.phone}`}
+                                className="px-2 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1 transition"
+                                title="Call Guardian directly"
+                              >
+                                <Phone className="w-3 h-3" />
+                                <span>Call</span>
+                              </a>
+                              {waUrl && (
+                                <a
+                                  href={waUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold flex items-center gap-1 transition shadow-sm"
+                                  title="Send WhatsApp message"
+                                >
+                                  <MessageCircle className="w-3 h-3" />
+                                  <span>WhatsApp</span>
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-slate-500 italic text-[11px] flex items-center gap-1">
+                            <Phone className="w-3.5 h-3.5" /> No phone recorded
+                          </div>
+                        )}
+
+                        {parent.email && (
+                          <div className="flex items-center gap-1.5 text-slate-400 truncate pt-0.5">
+                            <Mail className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                            <a href={`mailto:${parent.email}`} className="truncate hover:text-white transition">
+                              {parent.email}
+                            </a>
+                          </div>
+                        )}
+
+                        {parent.address && (
+                          <div className="flex items-start gap-1.5 text-slate-400 pt-0.5">
+                            <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-500 mt-0.5" />
+                            <span className="line-clamp-2 text-[11px] leading-tight text-slate-400">
+                              {parent.address}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Enrolled Wards (Fate) */}
+                      <div className="space-y-1.5 pt-1">
+                        <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 flex items-center justify-between">
+                          <span>Enrolled Wards ({parent.wards.length})</span>
+                          <span className="text-[9px] text-slate-500 font-normal">Click to view profile</span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {parent.wards.map(ward => {
+                            const wardClass = classes.find(c => c.id === ward.classId);
+                            const feeColor = ward.feeStatus === 'cleared'
+                              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                              : ward.feeStatus === 'partial'
+                              ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                              : 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+
+                            return (
+                              <div
+                                key={ward.id}
+                                onClick={() => setActiveModalStudent(ward)}
+                                className="p-2 rounded-xl bg-slate-950/80 hover:bg-slate-800/80 border border-slate-800 hover:border-cyan-500/50 transition cursor-pointer flex items-center justify-between gap-2 group/ward"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <img
+                                    src={ward.photoUrl}
+                                    alt=""
+                                    className="w-7 h-8 rounded-lg object-cover ring-1 ring-slate-700 shrink-0"
+                                  />
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-bold text-white group-hover/ward:text-cyan-300 truncate">
+                                      {ward.firstName} {ward.lastName}
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 font-mono">
+                                      {wardClass?.name || 'Class'} • Roll #{ward.rollNo}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border capitalize ${feeColor}`}>
+                                    {ward.feeStatus}
+                                  </span>
+                                  <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover/ward:text-cyan-400 group-hover/ward:translate-x-0.5 transition" />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card Footer Quick Action */}
+                    <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStudentFormTarget(parent.wards[0]);
+                          setIsStudentFormOpen(true);
+                        }}
+                        className="text-amber-400/90 hover:text-amber-300 font-semibold flex items-center gap-1 transition cursor-pointer"
+                      >
+                        <Edit className="w-3 h-3" />
+                        <span>Edit Parent Info</span>
+                      </button>
+
+                      <span className="text-[10px] text-slate-500 font-mono">
+                        {parent.wards[0]?.admissionNo}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* STUDENT FULL PROFILE & QR MODAL */}
       {activeModalStudent && (
@@ -765,14 +1099,28 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
               </button>
             </div>
 
-            <div className="pt-2 flex justify-end gap-2">
+            <div className="pt-2 flex items-center justify-between gap-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  const target = activeModalStudent;
+                  setActiveModalStudent(null);
+                  setStudentFormTarget(target);
+                  setIsStudentFormOpen(true);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <Edit className="w-3.5 h-3.5" />
+                <span>Edit Record</span>
+              </button>
+
               <button
                 onClick={() => {
                   if (setSelectedStudentForReport) setSelectedStudentForReport(activeModalStudent);
                   setActiveModalStudent(null);
                   setCurrentTab('report_cards');
                 }}
-                className="px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs shadow-md shadow-cyan-500/20"
+                className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs shadow-md shadow-cyan-500/20 cursor-pointer"
               >
                 Generate Report Card
               </button>
@@ -830,6 +1178,23 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
           onSuccess={(newUrl) => {
             if (activeModalStudent && activeModalStudent.id === cloudPhotoTarget.id) {
               setActiveModalStudent(prev => prev ? { ...prev, photoUrl: newUrl } : null);
+            }
+          }}
+        />
+      )}
+
+      {/* Student Enrollment & Profile Editor Modal */}
+      {isStudentFormOpen && (
+        <StudentFormModal
+          isOpen={isStudentFormOpen}
+          onClose={() => {
+            setIsStudentFormOpen(false);
+            setStudentFormTarget(null);
+          }}
+          studentToEdit={studentFormTarget}
+          onSuccess={(saved) => {
+            if (saved && activeModalStudent && activeModalStudent.id === saved.id) {
+              setActiveModalStudent(saved);
             }
           }}
         />

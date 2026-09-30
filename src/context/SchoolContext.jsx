@@ -4517,6 +4517,85 @@ export function SchoolProvider({ children }) {
   };
 
   // ==========================================
+  // STUDENT MASTER CRUD METHODS (Add / Update / Delete)
+  // ==========================================
+  const addStudent = (studentData) => {
+    const timestamp = Date.now();
+    const newStudent = {
+      id: studentData.id || `stu-${timestamp}`,
+      admissionNo: studentData.admissionNo || `MZ-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+      rollNo: studentData.rollNo ? String(studentData.rollNo).padStart(2, '0') : '01',
+      firstName: studentData.firstName || 'Student',
+      lastName: studentData.lastName || '',
+      gender: studentData.gender || 'Male',
+      dob: studentData.dob || '2010-01-01',
+      bloodGroup: studentData.bloodGroup || 'O+',
+      classId: studentData.classId || (classes[0]?.id || 'cls-1'),
+      stream: studentData.stream || null,
+      guardianName: studentData.guardianName || 'Parent / Guardian',
+      guardianPhone: studentData.guardianPhone || '+91 98620 00000',
+      guardianEmail: studentData.guardianEmail || '',
+      guardianRelation: studentData.guardianRelation || 'Father',
+      guardianOccupation: studentData.guardianOccupation || '',
+      address: studentData.address || 'Aizawl, Mizoram',
+      photoUrl: studentData.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      feeStatus: studentData.feeStatus || 'pending',
+      totalFees: Number(studentData.totalFees) || 30000,
+      paidFees: Number(studentData.paidFees) || 0,
+      transportRouteId: studentData.transportRouteId || null,
+      hostelRoomId: studentData.hostelRoomId || null,
+      attendanceRate: 100.0,
+      academicSession: studentData.academicSession || systemConfig?.academicSession || '2026 - 2027',
+      enrolledSessions: [studentData.academicSession || systemConfig?.academicSession || '2026 - 2027'],
+      enrollmentStatus: 'enrolled',
+      admissionDate: studentData.admissionDate || new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString(),
+      ...studentData
+    };
+
+    setStudents(prev => {
+      const next = [newStudent, ...prev];
+      try {
+        localStorage.setItem('zoxs_students', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+
+    return { success: true, student: newStudent };
+  };
+
+  const updateStudent = (studentId, updatedData) => {
+    setStudents(prev => {
+      const next = prev.map(s => {
+        if (s.id === studentId) {
+          return {
+            ...s,
+            ...updatedData,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return s;
+      });
+      try {
+        localStorage.setItem('zoxs_students', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    return { success: true };
+  };
+
+  const deleteStudent = (studentId) => {
+    setStudents(prev => {
+      const next = prev.filter(s => s.id !== studentId);
+      try {
+        localStorage.setItem('zoxs_students', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    return { success: true };
+  };
+
+  // ==========================================
   // IN-APP MASTER ARCHITECTURE CRUD METHODS (Zero External Software Needed)
   // ==========================================
 
@@ -5134,6 +5213,9 @@ export function SchoolProvider({ children }) {
       addDisciplinaryWarning,
       updateStudentPhoto,
       updateStaffPhoto,
+      addStudent,
+      updateStudent,
+      deleteStudent,
       // 11. In-App Master Architecture Suite (Zero External Software Needed)
       addClass,
       updateClass,
