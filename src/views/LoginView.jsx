@@ -228,15 +228,15 @@ export default function LoginView({ onLoginSuccess, onViewWebsite }) {
           
           <div className="space-y-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-semibold">
-              <span>{systemConfig?.schoolName || activeSchoolInfo?.name || 'One Heart Academy (OHA)'}</span>
+              <span>{activeSchoolInfo?.affiliationBadge || 'MBSE Affiliated'}</span>
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-              <span>MBSE Affiliated</span>
+              <span>{activeSchoolInfo?.code || 'MZ-ED'}</span>
             </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight font-['Outfit']">
-              Mizoram School ERP Portal
+              {activeSchoolInfo?.name || systemConfig?.schoolName || 'Mizoram School ERP Portal'}
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
-              Principal, Faculty, Student leh Guardian te tan a bika buatsaih School Management System
+              {activeSchoolInfo?.motto || 'Principal, Faculty, Student leh Guardian te tan a bika buatsaih School Management System'}
             </p>
           </div>
         </div>

@@ -262,7 +262,7 @@ export function updateDynamicPwaBranding(school) {
   if (typeof document === 'undefined' || !school) return;
 
   // 1. Update Browser Page Title
-  document.title = `${school.name} | Portal`;
+  document.title = `${school.name} | Official Portal`;
 
   // 2. Update Theme Color Meta Tag
   const metaThemeColor = document.querySelector('meta[name="theme-color"]');
@@ -273,27 +273,38 @@ export function updateDynamicPwaBranding(school) {
   // 3. Update Meta Description
   const metaDesc = document.querySelector('meta[name="description"]');
   if (metaDesc) {
-    metaDesc.setAttribute('content', `${school.name} - Institutional Management Portal (${school.affiliationBadge})`);
+    metaDesc.setAttribute('content', `${school.name} - Institutional Management Portal & App (${school.affiliationBadge})`);
   }
 
   // 4. Inject Dynamic School-Specific PWA Manifest for Android, iOS & Windows Desktop App
   try {
-    const currentHref = typeof window !== 'undefined' ? window.location.href : '/';
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const schoolStartUrl = `${origin}/${school.id}`;
+    
+    // Check for custom uploaded school logo
+    let customLogo = '';
+    try {
+      customLogo = localStorage.getItem(`zoxs_${school.id}_custom_logo`) || '';
+    } catch {}
+
+    const iconSrc = customLogo || `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="24" fill="${encodeURIComponent(school.primaryColor || '#6366f1')}"/><text x="50" y="68" font-size="52" text-anchor="middle" fill="white">🏫</text></svg>`;
+
     const dynamicManifest = {
       name: school.name,
-      short_name: school.shortName || school.name.slice(0, 12),
+      short_name: school.shortName || school.name.slice(0, 16),
       description: `${school.name} - Official School & Student Mobile Portal (${school.affiliationBadge})`,
-      start_url: currentHref,
-      id: currentHref,
+      start_url: schoolStartUrl,
+      id: schoolStartUrl,
+      scope: `/${school.id}/`,
       display: "standalone",
       background_color: "#090d16",
       theme_color: school.primaryColor || "#090d16",
       orientation: "portrait-primary",
       icons: [
         {
-          src: `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="24" fill="${encodeURIComponent(school.primaryColor || '#6366f1')}"/><text x="50" y="68" font-size="52" text-anchor="middle" fill="white">🏫</text></svg>`,
+          src: iconSrc,
           sizes: "192x192 512x512",
-          type: "image/svg+xml",
+          type: customLogo.startsWith('data:image/png') ? "image/png" : customLogo.startsWith('data:image/jpeg') ? "image/jpeg" : "image/svg+xml",
           purpose: "any maskable"
         }
       ],

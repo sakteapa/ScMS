@@ -221,6 +221,7 @@ function SchoolAppContent() {
           <DashboardView 
             setCurrentTab={setCurrentTab} 
             openRoleSwitcher={() => setIsRoleModalOpen(true)} 
+            onOpenMobileApp={() => setIsMobileAppModalOpen(true)}
           />
         );
       case 'class_admin_live':
@@ -315,6 +316,7 @@ function SchoolAppContent() {
           <DashboardView 
             setCurrentTab={setCurrentTab} 
             openRoleSwitcher={() => setIsRoleModalOpen(true)} 
+            onOpenMobileApp={() => setIsMobileAppModalOpen(true)}
           />
         );
     }

@@ -16,12 +16,14 @@ import {
   Sparkles,
   BookOpen,
   Building2,
-  CalendarDays
+  CalendarDays,
+  Laptop,
+  Smartphone
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
 
-export default function DashboardView({ setCurrentTab, openRoleSwitcher }) {
+export default function DashboardView({ setCurrentTab, openRoleSwitcher, onOpenMobileApp }) {
   const { currentUser, isPrincipal, isTeacher, isWarden, isSuperAdmin, isVicePrincipal } = useAuth();
   const { students, attendance, fees, grades, notices, admissions, classes, systemConfig, activeSchoolId } = useSchool();
 
@@ -93,6 +95,17 @@ export default function DashboardView({ setCurrentTab, openRoleSwitcher }) {
               >
                 <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 <span>Hostel Suite</span>
+              </button>
+            )}
+            {onOpenMobileApp && (
+              <button
+                onClick={onOpenMobileApp}
+                className="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition border border-slate-700 flex items-center gap-1.5 sm:gap-2 shadow-sm"
+                title="Install Standalone PC Software & Mobile App for this School"
+              >
+                <Laptop className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400" />
+                <Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+                <span>PC &amp; Phone App</span>
               </button>
             )}
           </div>

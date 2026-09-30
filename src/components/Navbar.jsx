@@ -17,7 +17,8 @@ import {
   Globe,
   School,
   LogOut,
-  MessageSquare
+  MessageSquare,
+  Laptop
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
@@ -224,13 +225,13 @@ export default function Navbar({
           </span>
         </div>
 
-        {/* Multi-Tenant School Selector Dropdown (Principal / SuperAdmin only if multiple schools) */}
-        {(isPrincipal || isSuperAdmin) && registeredSchools.length > 1 && (
+        {/* Multi-Tenant School Selector: SuperAdmin only can switch; everyone else sees dedicated School Badge */}
+        {isSuperAdmin && registeredSchools.length > 1 ? (
           <div className="relative hidden sm:block">
             <button
               onClick={() => setIsSchoolMenuOpen(!isSchoolMenuOpen)}
               className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-gradient-to-r from-slate-900 to-indigo-950/60 border border-indigo-500/40 hover:border-indigo-400 text-white transition flex items-center gap-2 text-xs font-bold shadow-md shadow-indigo-950/30"
-              title="Switch Active School Tenant (Subdomain)"
+              title="Switch Active School Tenant (Platform Master Admin Only)"
             >
               <School className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
               <span className="hidden md:inline max-w-[150px] truncate text-slate-200">
@@ -242,7 +243,7 @@ export default function Navbar({
             {isSchoolMenuOpen && (
               <div className="absolute right-0 mt-2 w-72 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95">
                 <div className="px-3 py-2 border-b border-slate-800/80 mb-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active School Tenant</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Platform Multi-Tenant Switcher</span>
                   <span className="text-xs text-indigo-300 font-semibold">{activeSchoolInfo?.name}</span>
                 </div>
                 <div className="space-y-1">
@@ -274,6 +275,16 @@ export default function Navbar({
               </div>
             )}
           </div>
+        ) : (
+          <div 
+            className="hidden sm:flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-900/80 border border-indigo-500/30 text-white text-xs font-bold shadow-sm"
+            title={`${activeSchoolInfo?.name} (Locked School Session)`}
+          >
+            <School className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+            <span className="hidden md:inline max-w-[160px] truncate text-slate-200">
+              {activeSchoolInfo?.shortName || activeSchoolInfo?.name || 'School'}
+            </span>
+          </div>
         )}
 
         {/* Global Language Localization Switcher Toggle */}
@@ -298,15 +309,17 @@ export default function Navbar({
           <span className="hidden xl:inline">Public Web</span>
         </button>
 
-        {/* Mobile Application Download & PWA Install Trigger (hidden if already installed) */}
+        {/* Mobile Application & PC Standalone Software Download Trigger */}
         {!isAlreadyInstalled && (
           <button
             onClick={openMobileAppModal}
-            className="hidden md:flex px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-950/80 to-purple-950/80 border border-indigo-700/40 hover:border-indigo-500 text-slate-200 hover:text-white transition items-center gap-1.5 text-xs font-semibold shadow-md shadow-indigo-950/40"
-            title="Download & Install Mobile Application (Android, iOS & Standalone APK)"
+            className="hidden md:flex px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-950/80 to-purple-950/80 border border-indigo-700/40 hover:border-indigo-500 text-slate-200 hover:text-white transition items-center gap-2 text-xs font-semibold shadow-md shadow-indigo-950/40"
+            title="Download & Install PC Desktop Software & Mobile App for this School"
           >
+            <Laptop className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
             <Smartphone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-            <span className="hidden sm:inline">Mobile App</span>
+            <span className="hidden lg:inline">PC & Phone App</span>
+            <span className="lg:hidden">App</span>
             {isInstallable && (
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
             )}

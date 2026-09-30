@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Sparkles,
@@ -46,6 +46,22 @@ export default function PlatformLandingView() {
   const [partnerSubmitted, setPartnerSubmitted] = useState(false);
 
   const registeredSchools = DEFAULT_REGISTERED_SCHOOLS;
+
+  // Auto-redirect to user's saved school so they never have to choose a school twice
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const querySchool = urlParams.get('school') || urlParams.get('tenant');
+      const savedSchool = localStorage.getItem('zoxs_active_school_id');
+      const target = querySchool || savedSchool;
+      if (target && target !== 'platform' && target !== 'home' && target !== 'default') {
+        const schoolExists = registeredSchools.some(s => s.id === target || s.subdomain === target);
+        if (schoolExists) {
+          navigate(`/${target}`, { replace: true });
+        }
+      }
+    } catch {}
+  }, [navigate, registeredSchools]);
 
   const filteredSchools = registeredSchools.filter(s => 
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
