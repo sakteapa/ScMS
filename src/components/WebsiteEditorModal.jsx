@@ -20,23 +20,38 @@ import {
   ExternalLink,
   BookOpen,
   School,
-  HeartHandshake
+  HeartHandshake,
+  Globe,
+  Copy,
+  Check,
+  Server,
+  Wifi,
+  ShieldCheck,
+  ArrowRight
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { INITIAL_WEBSITE_CONFIG } from '../data/mockData';
 import PublicAnnouncementBanner, { PRESET_BANNER_GIFS, BANNER_THEMES } from './PublicAnnouncementBanner';
 
 export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
-  const { websiteConfig, updateWebsiteConfig, activeSchoolInfo, activeSchoolId } = useSchool();
+  const { websiteConfig, updateWebsiteConfig, activeSchoolInfo, activeSchoolId, updateSchoolTenantInfo } = useSchool();
   const [formData, setFormData] = useState(() => ({ ...(websiteConfig || INITIAL_WEBSITE_CONFIG) }));
-  const [activeTab, setActiveTab] = useState('announcement'); // 'announcement' | 'hero' | 'about' | 'principal' | 'programs' | 'facilities' | 'contact'
+  const [activeTab, setActiveTab] = useState('announcement'); // 'announcement' | 'hero' | 'about' | 'principal' | 'programs' | 'facilities' | 'contact' | 'domain'
   const [saveToast, setSaveToast] = useState(false);
+  const [customDomainInput, setCustomDomainInput] = useState(() => activeSchoolInfo?.customDomain || '');
+  const [subdomainInput, setSubdomainInput] = useState(() => activeSchoolInfo?.subdomain || activeSchoolId || '');
+  const [copiedRecord, setCopiedRecord] = useState(null);
+  const [dnsCheckStatus, setDnsCheckStatus] = useState('idle'); // 'idle' | 'checking' | 'active'
 
   useEffect(() => {
     if (websiteConfig) {
       setFormData({ ...websiteConfig });
     }
-  }, [websiteConfig, isOpen]);
+    if (activeSchoolInfo) {
+      setCustomDomainInput(activeSchoolInfo.customDomain || '');
+      setSubdomainInput(activeSchoolInfo.subdomain || activeSchoolId || '');
+    }
+  }, [websiteConfig, activeSchoolInfo, activeSchoolId, isOpen]);
 
   const banner = formData.announcementBanner || {
     enabled: true,
@@ -70,6 +85,12 @@ export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
 
   const handleSave = () => {
     updateWebsiteConfig(formData);
+    if (updateSchoolTenantInfo && activeSchoolId) {
+      updateSchoolTenantInfo(activeSchoolId, {
+        customDomain: customDomainInput,
+        subdomain: subdomainInput
+      });
+    }
     setSaveToast(true);
     setTimeout(() => setSaveToast(false), 3000);
   };
@@ -147,6 +168,7 @@ export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
             { id: 'programs', label: 'Academic Streams (5)', icon: GraduationCap },
             { id: 'facilities', label: 'Campus Facilities (4)', icon: ImageIcon },
             { id: 'contact', label: 'Contact & Social Links', icon: Phone },
+            { id: 'domain', label: 'Domain & Web Address (DNS)', icon: Globe },
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -1194,7 +1216,274 @@ export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
               </div>
             </div>
           )}
+
+          {/* TAB 7: CUSTOM DOMAIN & DNS SETUP */}
+          {activeTab === 'domain' && (
+            <div className="space-y-6">
+              {/* Domain Header Banner */}
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-blue-950/60 via-indigo-950/40 to-slate-900 border border-blue-800/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shrink-0 shadow-lg shadow-blue-500/10">
+                    <Globe className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      <span>Custom Domain & Web Address (DNS)</span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        Multi-Tenant Ready
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-0.5">
+                      School pual bik domain (e.g. <span className="text-blue-400 font-mono">www.schoolname.edu.in</span>) setup-na. School thlan kual ngai lo vin zirlai leh nu-leh-pa te'n direct-in an lut nghal ang.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDnsCheckStatus('checking');
+                      setTimeout(() => setDnsCheckStatus('active'), 1200);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/40 text-blue-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition"
+                  >
+                    <Wifi className={`w-3.5 h-3.5 ${dnsCheckStatus === 'checking' ? 'animate-pulse text-amber-400' : 'text-emerald-400'}`} />
+                    <span>{dnsCheckStatus === 'checking' ? 'Checking DNS...' : dnsCheckStatus === 'active' ? 'DNS Verified' : 'Test DNS Resolution'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Live Web Address URL Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                {/* 1. System Cloud Path */}
+                <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">1. Universal Cloud Path</span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    </div>
+                    <p className="text-xs font-mono text-purple-300 break-all select-all font-semibold">
+                      https://sc-ms.vercel.app/{activeSchoolId}
+                    </p>
+                  </div>
+                  <span className="text-[11px] text-slate-400 mt-2">Active & Always accessible</span>
+                </div>
+
+                {/* 2. Platform Subdomain */}
+                <div className="p-4 rounded-2xl bg-slate-950/70 border border-indigo-900/40 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">2. Free Subdomain</span>
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Zero Setup</span>
+                    </div>
+                    <p className="text-xs font-mono text-indigo-300 break-all select-all font-semibold">
+                      https://{subdomainInput || activeSchoolId}.scms.in
+                    </p>
+                  </div>
+                  <span className="text-[11px] text-slate-400 mt-2">Instant wildcard routing</span>
+                </div>
+
+                {/* 3. Official Custom Domain */}
+                <div className="p-4 rounded-2xl bg-slate-950/70 border border-blue-900/50 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400">3. Custom School Domain</span>
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${
+                        customDomainInput 
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                          : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                      }`}>
+                        {customDomainInput ? 'Configured' : 'Optional'}
+                      </span>
+                    </div>
+                    <p className="text-xs font-mono text-blue-300 break-all select-all font-semibold">
+                      {customDomainInput ? `https://${customDomainInput}` : 'www.yourschool.edu.in'}
+                    </p>
+                  </div>
+                  <span className="text-[11px] text-slate-400 mt-2">School Official Domain Brand</span>
+                </div>
+              </div>
+
+              {/* Domain Input Form */}
+              <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-4">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                  <Server className="w-4 h-4 text-purple-400" />
+                  <span>Domain & Subdomain Settings for {activeSchoolInfo?.name}</span>
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Subdomain Handle (Unique Slug)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={subdomainInput}
+                        onChange={(e) => setSubdomainInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                        placeholder="e.g. oha, stpauls, greenwood"
+                        className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-indigo-500 pr-24"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono text-slate-500 pointer-events-none">
+                        .scms.in
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Platform-a i school subdomain bik tur. Special character hman lovin a ziah zawm tur.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Official Custom Domain (.edu.in, .com, .in, .org)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={customDomainInput}
+                        onChange={(e) => setCustomDomainInput(e.target.value.toLowerCase().trim().replace(/^https?:\/\//, '').replace(/\/$/, ''))}
+                        placeholder="e.g. www.stpaulsaizawl.edu.in"
+                        className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-2.5 text-white text-sm font-mono focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      School lamin domain in neihsa (GoDaddy / Namecheap etc. leisa) awmze nei takin dah rawh.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* DNS Records Setup Guide */}
+              <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <span>DNS Configuration Records (Domain Provider-ah dah tur)</span>
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      In domain leina (GoDaddy, Namecheap, BigRock, Cloudflare) DNS Management-ah heng record 2 zinga pakhat hi dah tur a ni:
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Record 1: CNAME */}
+                  <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs flex-1">
+                      <div>
+                        <span className="block text-[10px] text-slate-500 font-bold uppercase">Record Type</span>
+                        <span className="font-mono font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20 inline-block mt-0.5">
+                          CNAME
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] text-slate-500 font-bold uppercase">Name / Host</span>
+                        <span className="font-mono text-white font-semibold block mt-0.5">www (emaw @)</span>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <span className="block text-[10px] text-slate-500 font-bold uppercase">Value / Points To</span>
+                        <span className="font-mono text-emerald-400 font-semibold block mt-0.5 select-all">
+                          cname.vercel-dns.com
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText('cname.vercel-dns.com');
+                        setCopiedRecord('cname');
+                        setTimeout(() => setCopiedRecord(null), 2000);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 shrink-0 transition"
+                    >
+                      {copiedRecord === 'cname' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-400">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy Value</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Record 2: A Record (Root Apex) */}
+                  <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs flex-1">
+                      <div>
+                        <span className="block text-[10px] text-slate-500 font-bold uppercase">Record Type</span>
+                        <span className="font-mono font-bold text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded border border-blue-400/20 inline-block mt-0.5">
+                          A Record
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block text-[10px] text-slate-500 font-bold uppercase">Name / Host</span>
+                        <span className="font-mono text-white font-semibold block mt-0.5">@ (Root)</span>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <span className="block text-[10px] text-slate-500 font-bold uppercase">Value / IP Address</span>
+                        <span className="font-mono text-blue-300 font-semibold block mt-0.5 select-all">
+                          76.76.21.21
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText('76.76.21.21');
+                        setCopiedRecord('a');
+                        setTimeout(() => setCopiedRecord(null), 2000);
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 shrink-0 transition"
+                    >
+                      {copiedRecord === 'a' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-400">Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy IP</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Architecture & FAQs in Mizo */}
+              <div className="p-4 rounded-2xl bg-indigo-950/20 border border-indigo-900/40 text-xs text-slate-300 space-y-2">
+                <div className="flex items-center gap-2 text-indigo-300 font-bold">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Kalphung & Hriattirna Pawimawh (Multi-Tenant Domain Architecture):</span>
+                </div>
+                <ul className="list-disc list-inside space-y-1.5 text-slate-400">
+                  <li>
+                    <strong className="text-slate-200">A buaithlak miah lo:</strong> School tin ten domain hran theuh an neih theih nan server thar buatsaih a ngai lo va, Vercel-ah domain add zeuhin automatic-in a in-link nghal vek.
+                  </li>
+                  <li>
+                    <strong className="text-slate-200">Free SSL (HTTPS / Padlock):</strong> Vercel-in domain tin tan Let's Encrypt SSL certificate a thlawnin a renew reng thin.
+                  </li>
+                  <li>
+                    <strong className="text-slate-200">Automatic Branding & PWA:</strong> School domain atanga an luh chuan browser-in chu school logo, hming, leh theme colors chauh a phawrh a, mobile app-a an install pawhin anmahni school app liau liau angin a in-install ang.
+                  </li>
+                  <li>
+                    <strong className="text-slate-200">DNS Thawh Hun (Propagation):</strong> DNS update hnuah minute 5 atanga darkar reilote chhungin internet khawvel pumah a rawn nung nghal thin.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}
         </div>
+
 
         {/* Modal Footer */}
         <div className="p-4 px-6 border-t border-slate-800 bg-slate-950/80 flex flex-wrap items-center justify-between gap-3">

@@ -104,6 +104,7 @@ import {
   getActiveSchoolInfo,
   getRegisteredSchools,
   registerNewSchool,
+  updateSchoolTenant,
   switchActiveSchool,
   updateDynamicPwaBranding
 } from '../services/tenantService';
@@ -4696,6 +4697,15 @@ export function SchoolProvider({ children }) {
     return created;
   };
 
+  const updateSchoolTenantInfo = (schoolId, updates) => {
+    const updated = updateSchoolTenant(schoolId, updates);
+    setRegisteredSchools(getRegisteredSchools());
+    if (schoolId === activeSchoolId) {
+      setActiveSchoolInfo(getActiveSchoolInfo());
+    }
+    return updated;
+  };
+
   const generateCleanClasses = (levelsOffered = {}, streamsOffered = {}, academicSession = '2026 - 2027') => {
     const generated = [];
     if (levelsOffered?.prePrimary) {
@@ -5137,6 +5147,7 @@ export function SchoolProvider({ children }) {
       registeredSchools,
       switchSchool,
       registerSchoolTenant,
+      updateSchoolTenantInfo,
       initializeCleanSlateSchool,
       isSyncing,
       lastSyncTime,

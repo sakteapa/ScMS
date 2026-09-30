@@ -146,6 +146,38 @@ export function registerNewSchool(schoolData = {}) {
 }
 
 /**
+ * Update existing registered school tenant (e.g. custom domain, subdomain, colors, contact)
+ */
+export function updateSchoolTenant(schoolId, updates = {}) {
+  const currentSchools = getRegisteredSchools();
+  const cleanId = (schoolId || '').toLowerCase().trim();
+  
+  const updated = currentSchools.map(s => {
+    if (s.id === cleanId) {
+      return {
+        ...s,
+        ...updates,
+        customDomain: updates.customDomain !== undefined 
+          ? updates.customDomain.toLowerCase().trim().replace(/^https?:\/\//, '').replace(/\/$/, '')
+          : (s.customDomain || ''),
+        subdomain: updates.subdomain !== undefined
+          ? updates.subdomain.toLowerCase().trim().replace(/[^a-z0-9-]/g, '')
+          : (s.subdomain || s.id)
+      };
+    }
+    return s;
+  });
+
+  try {
+    localStorage.setItem('zoxs_registered_schools', JSON.stringify(updated));
+  } catch (e) {
+    console.warn('[TenantService] Failed to update registered school:', e);
+  }
+
+  return updated.find(s => s.id === cleanId);
+}
+
+/**
  * Resolves the active school ID from URL parameter, Subdomain, or LocalStorage
  */
 export function getActiveSchoolId() {
