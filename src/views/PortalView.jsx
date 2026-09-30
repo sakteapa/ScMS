@@ -647,6 +647,39 @@ export default function PortalView({ setCurrentTab, setSelectedStudentForReport 
         </div>
       )}
 
+      {/* School Rules & Regulations (Dan & Hrai) Quick Action Card */}
+      <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-950/30 via-slate-900 to-indigo-950/30 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 shrink-0 shadow-lg shadow-amber-500/10">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold uppercase tracking-wide">
+                Institutional Regulations
+              </span>
+              <span className="text-xs text-slate-400">
+                School Dan &amp; Hrai
+              </span>
+            </div>
+            <h4 className="text-sm font-bold text-white font-['Outfit'] mt-0.5">
+              Code of Conduct &amp; Student Handbook
+            </h4>
+            <p className="text-xs text-slate-400">
+              Review campus discipline, 75% attendance rule, uniform guidelines, anti-ragging policies, and mobile phone ban.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setCurrentTab('school_rules')}
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition flex items-center gap-2 w-fit whitespace-nowrap cursor-pointer"
+        >
+          <span>View Student Handbook</span>
+          <ArrowUpRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
       {/* 1. Smart Canteen Lunch Card Balance & Quick Recharge */}
       <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-950/40 via-slate-900 to-slate-900 border border-amber-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
         <div className="flex items-center gap-3.5">

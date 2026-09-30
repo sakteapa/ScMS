@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Save, 
@@ -17,17 +17,26 @@ import {
   Bell,
   Link as LinkIcon,
   Palette,
-  ExternalLink
+  ExternalLink,
+  BookOpen,
+  School,
+  HeartHandshake
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { INITIAL_WEBSITE_CONFIG } from '../data/mockData';
 import PublicAnnouncementBanner, { PRESET_BANNER_GIFS, BANNER_THEMES } from './PublicAnnouncementBanner';
 
 export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
-  const { websiteConfig, updateWebsiteConfig } = useSchool();
+  const { websiteConfig, updateWebsiteConfig, activeSchoolInfo, activeSchoolId } = useSchool();
   const [formData, setFormData] = useState(() => ({ ...(websiteConfig || INITIAL_WEBSITE_CONFIG) }));
-  const [activeTab, setActiveTab] = useState('announcement'); // 'announcement' | 'hero' | 'principal' | 'programs' | 'facilities' | 'contact'
+  const [activeTab, setActiveTab] = useState('announcement'); // 'announcement' | 'hero' | 'about' | 'principal' | 'programs' | 'facilities' | 'contact'
   const [saveToast, setSaveToast] = useState(false);
+
+  useEffect(() => {
+    if (websiteConfig) {
+      setFormData({ ...websiteConfig });
+    }
+  }, [websiteConfig, isOpen]);
 
   const banner = formData.announcementBanner || {
     enabled: true,
@@ -87,10 +96,13 @@ export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
               <Edit3 className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg sm:text-xl font-bold text-white">Public Website CMS & Live Editor</h2>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20 uppercase">
                   Admin & Super Admin
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  {activeSchoolInfo?.name || formData.schoolName}
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -130,6 +142,7 @@ export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
           {[
             { id: 'announcement', label: 'Announcement & Scrolling Banner', icon: Bell },
             { id: 'hero', label: 'Hero & Identity', icon: Sparkles },
+            { id: 'about', label: 'About School, Vision & Heritage', icon: BookOpen },
             { id: 'principal', label: "Principal's Welcome", icon: Building2 },
             { id: 'programs', label: 'Academic Streams (5)', icon: GraduationCap },
             { id: 'facilities', label: 'Campus Facilities (4)', icon: ImageIcon },
@@ -632,6 +645,238 @@ export default function WebsiteEditorModal({ isOpen, onClose, onViewWebsite }) {
                         }}
                         className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-slate-300 text-xs focus:outline-none focus:border-purple-500"
                       />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: ABOUT SCHOOL, VISION & HERITAGE */}
+          {activeTab === 'about' && (
+            <div className="space-y-6">
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-slate-900 border border-purple-800/40 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">School Heritage, Vision & Core Values</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    He section hian school chanchin (History), thlirna (Vision), hmachhawp (Mission), leh Core Values zirlaite leh khawtlang hnenah a tarlang dawn a ni. School tin te hian anmahni duh dan theuhin an her rem thei.
+                  </p>
+                </div>
+              </div>
+
+              {/* History & Background */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5 flex items-center gap-1.5">
+                  <span>School Chanchin & History (Background Story)</span>
+                  <span className="text-[10px] text-slate-500 font-normal lowercase">(public website #about section-ah a lang ang)</span>
+                </label>
+                <textarea
+                  rows={4}
+                  value={formData.about?.history || ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    about: {
+                      ...(formData.about || {}),
+                      history: e.target.value
+                    }
+                  })}
+                  placeholder="Eng kumah nge din anih, a din chhan leh hmasawnna tlangpui ziah lanna..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-white text-xs leading-relaxed focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              {/* Vision and Mission Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-xs font-semibold text-purple-400 uppercase mb-1.5 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Vision (Thlirna & Tum Ram)</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={formData.about?.vision || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      about: {
+                        ...(formData.about || {}),
+                        vision: e.target.value
+                      }
+                    })}
+                    placeholder="School thlirna sang ber leh nih tum..."
+                    className="w-full bg-slate-950 border border-purple-900/40 rounded-xl p-3.5 text-white text-xs leading-relaxed focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-indigo-400 uppercase mb-1.5 flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5" />
+                    <span>Mission (Hmachhawp & Hnathawh Tur)</span>
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={formData.about?.mission || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      about: {
+                        ...(formData.about || {}),
+                        mission: e.target.value
+                      }
+                    })}
+                    placeholder="Zirlaite hnen a hlawhtlinna thlen tura hmalakna..."
+                    className="w-full bg-slate-950 border border-indigo-900/40 rounded-xl p-3.5 text-white text-xs leading-relaxed focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* Quick Campus Stats Highlights */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-2">
+                  Campus Quick Stats Highlights
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="block text-[11px] text-slate-400 font-semibold mb-1">Campus Land Area</span>
+                    <input
+                      type="text"
+                      value={formData.about?.campusArea || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        about: {
+                          ...(formData.about || {}),
+                          campusArea: e.target.value
+                        }
+                      })}
+                      placeholder="e.g. 5.2 Acres Lush Green"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="block text-[11px] text-slate-400 font-semibold mb-1">Student Strength</span>
+                    <input
+                      type="text"
+                      value={formData.about?.studentStrength || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        about: {
+                          ...(formData.about || {}),
+                          studentStrength: e.target.value
+                        }
+                      })}
+                      placeholder="e.g. 1,250+ Enrolled Students"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="block text-[11px] text-slate-400 font-semibold mb-1">Faculty & Staff Count</span>
+                    <input
+                      type="text"
+                      value={formData.about?.facultyCount || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        about: {
+                          ...(formData.about || {}),
+                          facultyCount: e.target.value
+                        }
+                      })}
+                      placeholder="e.g. 48+ Dedicated Educators"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Core Values Repeater */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-300 uppercase">Core Institutional Values</label>
+                    <p className="text-[11px] text-slate-500">School thuvawn leh nunpui tlat atana ruahman te</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentVals = formData.about?.coreValues || [];
+                      const newVal = {
+                        id: `cv-${Date.now()}`,
+                        title: 'New Value',
+                        desc: 'Value description...'
+                      };
+                      setFormData({
+                        ...formData,
+                        about: {
+                          ...(formData.about || {}),
+                          coreValues: [...currentVals, newVal]
+                        }
+                      });
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-semibold flex items-center gap-1 transition"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Value</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {(formData.about?.coreValues || []).map((val, idx) => (
+                    <div key={val.id || idx} className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex items-start gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center text-xs font-bold shrink-0 mt-1">
+                        {idx + 1}
+                      </div>
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[10px] text-slate-400 font-semibold mb-1">Value Title</label>
+                          <input
+                            type="text"
+                            value={val.title || ''}
+                            onChange={(e) => {
+                              const updatedVals = [...(formData.about?.coreValues || [])];
+                              updatedVals[idx] = { ...updatedVals[idx], title: e.target.value };
+                              setFormData({
+                                ...formData,
+                                about: { ...(formData.about || {}), coreValues: updatedVals }
+                              });
+                            }}
+                            placeholder="e.g. Integrity & Faith"
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-white text-xs font-semibold focus:outline-none focus:border-purple-500"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="block text-[10px] text-slate-400 font-semibold mb-1">Short Description</label>
+                          <input
+                            type="text"
+                            value={val.desc || ''}
+                            onChange={(e) => {
+                              const updatedVals = [...(formData.about?.coreValues || [])];
+                              updatedVals[idx] = { ...updatedVals[idx], desc: e.target.value };
+                              setFormData({
+                                ...formData,
+                                about: { ...(formData.about || {}), coreValues: updatedVals }
+                              });
+                            }}
+                            placeholder="A awmzia tawi fel tak..."
+                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-300 text-xs focus:outline-none focus:border-purple-500"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updatedVals = (formData.about?.coreValues || []).filter((_, i) => i !== idx);
+                          setFormData({
+                            ...formData,
+                            about: { ...(formData.about || {}), coreValues: updatedVals }
+                          });
+                        }}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition mt-1"
+                        title="Delete value"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   ))}
                 </div>

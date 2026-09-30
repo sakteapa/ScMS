@@ -16,6 +16,7 @@ import MobileBottomNav from './components/MobileBottomNav';
 import WebsiteEditorModal from './components/WebsiteEditorModal';
 import { PublicAdmissionPortalModal } from './components/admissions/PublicAdmissionPortalModal';
 import SmsWhatsAppNotificationHubModal from './components/SmsWhatsAppNotificationHubModal';
+import SchoolRulesModal from './components/SchoolRulesModal';
 
 // Code-split / Lazy-loaded Views for on-demand performance and optimal bundle size
 const DashboardView = lazy(() => import('./views/DashboardView'));
@@ -116,6 +117,7 @@ function SchoolAppContent() {
       case 'routine':
       case 'calendar':
       case 'notices':
+      case 'school_rules':
       case 'alumni':
         return true;
       case 'leave_management':
@@ -153,6 +155,7 @@ function SchoolAppContent() {
   const [isWebsiteEditorOpen, setIsWebsiteEditorOpen] = useState(false);
   const [isPublicAdmissionModalOpen, setIsPublicAdmissionModalOpen] = useState(false);
   const [isSmsHubOpen, setIsSmsHubOpen] = useState(false);
+  const [isSchoolRulesModalOpen, setIsSchoolRulesModalOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [selectedStudentForReport, setSelectedStudentForReport] = useState(null);
   
@@ -291,6 +294,13 @@ function SchoolAppContent() {
         return <TransportHostelView />;
       case 'notices':
         return <NoticesView setCurrentTab={setCurrentTab} />;
+      case 'school_rules':
+        return (
+          <SchoolRulesModal 
+            isOpen={true} 
+            onClose={() => setCurrentTab((userRole === 'student' || userRole === 'parent') ? 'portal' : 'dashboard')} 
+          />
+        );
       case 'clinic':
         return <ClinicView />;
       case 'visitors':
@@ -483,6 +493,7 @@ function SchoolAppContent() {
           openMobileAppModal={() => setIsMobileAppModalOpen(true)}
           openWebsiteEditor={() => setIsWebsiteEditorOpen(true)}
           openSmsHubModal={() => setIsSmsHubOpen(true)}
+          openSchoolRulesModal={() => setIsSchoolRulesModalOpen(true)}
           onViewWebsite={() => setCurrentTab('public_website')}
         />
 
@@ -533,6 +544,12 @@ function SchoolAppContent() {
       <SmsWhatsAppNotificationHubModal
         isOpen={isSmsHubOpen}
         onClose={() => setIsSmsHubOpen(false)}
+      />
+
+      {/* Global School Rules & Code of Conduct Modal */}
+      <SchoolRulesModal
+        isOpen={isSchoolRulesModalOpen}
+        onClose={() => setIsSchoolRulesModalOpen(false)}
       />
 
       {/* Global 1-on-1 Private Call Modal */}

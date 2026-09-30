@@ -35,6 +35,7 @@ export default function Navbar({
   openMobileAppModal,
   openWebsiteEditor,
   openSmsHubModal,
+  openSchoolRulesModal,
   onViewWebsite
 }) {
   const { currentUser, logout, isPrincipal, isVicePrincipal, isSuperAdmin } = useAuth();
@@ -360,6 +361,16 @@ export default function Navbar({
             <span className="hidden xl:inline">SMS &amp; WhatsApp</span>
           </button>
         )}
+
+        {/* Institutional Rules & Regulations Quick Trigger */}
+        <button
+          onClick={openSchoolRulesModal}
+          className="hidden sm:flex p-1.5 sm:px-2.5 sm:py-2 rounded-xl bg-amber-950/40 border border-amber-500/30 hover:border-amber-400 text-amber-300 hover:text-white transition items-center gap-1.5 text-xs font-semibold shrink-0 cursor-pointer"
+          title="Institutional Rules & Code of Conduct (Dan & Hrai)"
+        >
+          <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span className="hidden xl:inline">Dan &amp; Hrai</span>
+        </button>
 
         {/* Notifications & Private Alerts Bell Trigger */}
         <button

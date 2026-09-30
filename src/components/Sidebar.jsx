@@ -186,6 +186,14 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       badge: null
     },
     {
+      id: 'school_rules',
+      label: 'Rules & Code of Conduct',
+      icon: ShieldCheck,
+      roles: ['superadmin', 'principal', 'vice_principal', 'warden', 'teacher', 'student', 'parent'],
+      badge: 'Dan & Hrai',
+      badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+    },
+    {
       id: 'sms_notifications',
       label: 'SMS & WhatsApp Broadcast',
       icon: MessageSquare,

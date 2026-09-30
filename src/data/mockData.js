@@ -4840,6 +4840,20 @@ export const INITIAL_WEBSITE_CONFIG = {
     quote: 'Our mission is to nurture not just academic toppers, but compassionate leaders grounded in moral integrity and service to Mizoram and the nation.',
     fullMessage: 'At OHA (One Heart Academy), Lunglawn, Lunglei, we believe that true education enlightens the mind and strengthens character. For nearly three decades, our institution has stood as a beacon of academic rigor and moral discipline in southern Mizoram. We warmly welcome every student and parent to join our OHA family.'
   },
+  about: {
+    history: 'One Heart Academy (OHA) hi kum 1998 khan Lunglawn, Lunglei-ah din tan a ni a. Southern Mizoram-a zirlaiten zirna tha leh zahawm, Kristian nundan nena inrem an neih theih nan din a ni. Kum 25 chuang chhung he institution hian MBSE board exam-ah topper leh distinction tam tak a lo chher chhuak tawh a ni.',
+    vision: 'Mizoram leh ram pum tana mi rintlak, thluak vawrh fing leh nungchang mawi, Pathian tih mi chher chhuah hi kan thlirna sang ber a ni.',
+    mission: 'Zirlaite zirtirna sang leh felfai pek, modern science & digital technology hmanga thuam chak, leh an theihna zawng zawng phawrh chhuah sak hi kan hna ber a ni.',
+    campusArea: '5 Acres Lush Green Campus',
+    studentStrength: '1,250+ Enrolled Students',
+    facultyCount: '48+ Experienced Faculty',
+    coreValues: [
+      { id: 'cv-1', title: 'Faith & Integrity', desc: 'Rinawmna leh Pathian tihna nundan nunpui.' },
+      { id: 'cv-2', title: 'Academic Excellence', desc: 'Zirna-ah duhtui leh taihmak chhuah zel.' },
+      { id: 'cv-3', title: 'Discipline & Respect', desc: 'Inthununna leh mi dangte zah thiamna.' },
+      { id: 'cv-4', title: 'Community Service', desc: 'Khawtlang leh ram tana rawngbawl inpeihna.' }
+    ]
+  },
   programs: [
     {
       id: 'hsslc_science',
@@ -5043,4 +5057,79 @@ export const INITIAL_NOMENCLATURE = {
   dormitoryLabel: 'Boarding Hostel',
   transitLabel: 'School Bus Fleet'
 };
+
+export const INITIAL_SCHOOL_RULES = [
+  {
+    id: 'srule-1',
+    category: 'campus',
+    categoryLabel: 'Campus Discipline & Timings',
+    title: 'Morning Assembly & Campus Timings',
+    description: 'Zing dar 8:45 AM-ah Devotional Assembly tan a ni a, zirlai zawng zawng an tel kim ngei tur a ni. Dar 8:45 AM hnu lama lo thleng chu "Late" anga chhinchhiah an ni ang a, thla khatah vawi 3 aia tam late an awm chuan Principal counseling-ah koh an ni ang.',
+    penalty: 'Parent summons & counseling after 3 occurrences',
+    applicableTo: 'all'
+  },
+  {
+    id: 'srule-2',
+    category: 'uniform',
+    categoryLabel: 'Uniform & Grooming Code',
+    title: 'Official Uniform, Badge & Footwear',
+    description: 'School ni tinah school uniform fel fai tak hak tur a ni. School badge leh ID card awrh ngei tur a ni a, pheikhawk dum (black formal shoes) leh mawza var hman tur a ni. Mipa tan sam tawi fel fai, hmeichhe tan sam tawn felfai tur a ni. Makeup, fancy jewelry, leh sam rawng hnawih phal a ni lo.',
+    penalty: 'Uniform warning slip & non-compliance fine Rs 50',
+    applicableTo: 'students'
+  },
+  {
+    id: 'srule-3',
+    category: 'attendance',
+    categoryLabel: 'Attendance & Leave Policy',
+    title: 'Minimum 75% Attendance Requirement',
+    description: 'MBSE Board Examination leh Annual Exam-a thut theih nan zirlai tinin total working days atangin minimum 75% class attendance an nei ngei tur a ni. Damlohna emaw chhan dang avanga kal theih lohvin, chawlh la hmain emaw chawlh zawh rualin Nu/Pa sign ngei Leave Application thehluh tur a ni.',
+    penalty: 'Exam admit card withholding if below threshold',
+    applicableTo: 'students'
+  },
+  {
+    id: 'srule-4',
+    category: 'behavior',
+    categoryLabel: 'Code of Conduct & Anti-Ragging',
+    title: 'Zero Tolerance: Anti-Ragging & Substance Abuse',
+    description: 'School campus leh hostel chhungah zu, meizial, vaihlo, sahah, e-cigarette, leh ruihtheihthil reng reng ken leh hman khap tlat a ni. Thiante tihduhdah (bullying/ragging), in-hisa, leh zirlaite inhrosak khum chu hremna na tak pek an ni ang.',
+    penalty: 'Immediate suspension or expulsion from school',
+    applicableTo: 'all'
+  },
+  {
+    id: 'srule-5',
+    category: 'gadgets',
+    categoryLabel: 'Mobile Phone & Gadget Policy',
+    title: 'Strict Campus Mobile Phone Ban',
+    description: 'School regular hours (8:45 AM to 3:30 PM) chhungin zirlaite tan mobile phone, smart watch, leh electronic gadgets ken leh hman khap tlat a ni. Emergency-ah chuan School Office phone hman theih a ni ang.',
+    penalty: 'Device confiscation for 14 days & Rs 500 retrieval fine',
+    applicableTo: 'students'
+  },
+  {
+    id: 'srule-6',
+    category: 'academic',
+    categoryLabel: 'Examination & Academic Integrity',
+    title: 'Zero Tolerance for Exam Malpractice',
+    description: 'Unit test, term exam, leh internal assessment-ah copy, chits paih, leh thil dik lo tih khap bur a ni. Daily homework leh project assignments te hunbi dik takah thehluh tur a ni.',
+    penalty: 'Cancellation of examination paper & 0 marks award',
+    applicableTo: 'students'
+  },
+  {
+    id: 'srule-7',
+    category: 'fees',
+    categoryLabel: 'Fee Payment Regulations',
+    title: 'Monthly Tuition Fee Payment Schedule',
+    description: 'Thla tin school fee hi thla tin ni 10 ral hmain online portal (UPI/QR) emaw school counter-ah pek fel vek tur a ni. Ni 10 hnu lamah late fee charge Rs 100 lak a ni ang.',
+    penalty: 'Late payment fine & provisional receipt hold',
+    applicableTo: 'parents'
+  },
+  {
+    id: 'srule-8',
+    category: 'campus',
+    categoryLabel: 'Campus Cleanliness & Property Care',
+    title: 'Clean Campus (Faina) & Property Protection',
+    description: 'School hmunhma, classroom, bang, leh bench-ah ziah leh tihbawlhhlawh khap a ni. Bawlhhlawh reng reng dustbin-ah paih tur a ni a, "Clean & Green Campus" vawnhim hi zirlai tin mawhphurhna a ni.',
+    penalty: 'Restitution of property damage & campus service',
+    applicableTo: 'all'
+  }
+];
 

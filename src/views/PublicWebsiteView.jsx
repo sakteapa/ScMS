@@ -27,15 +27,19 @@ import {
   HeartHandshake,
   School,
   ChevronDown,
-  Laptop
+  Laptop,
+  AlertTriangle,
+  Printer
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
 import PublicAnnouncementBanner from '../components/PublicAnnouncementBanner';
+import SchoolRulesModal from '../components/SchoolRulesModal';
 
-export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onOpenEditor, onOpenMobileApp }) {
+export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onOpenEditor, onOpenMobileApp, onOpenRules }) {
   const { 
     websiteConfig, 
+    schoolRules = [],
     notices = [], 
     activeSchoolInfo, 
     registeredSchools = [], 
@@ -45,6 +49,7 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
   const { currentUser, isPrincipal, isSuperAdmin } = useAuth();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isSchoolMenuOpen, setIsSchoolMenuOpen] = useState(false);
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
 
   const cfg = websiteConfig || {};
   const hero = cfg.hero || {};
@@ -115,10 +120,11 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-7 text-xs font-semibold text-slate-300">
+          <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold text-slate-300">
             <a href="#about" className="hover:text-purple-400 transition">About School</a>
             <a href="#academics" className="hover:text-purple-400 transition">Academics &amp; Streams</a>
             <a href="#facilities" className="hover:text-purple-400 transition">Campus Facilities</a>
+            <a href="#rules" className="hover:text-purple-400 transition">Rules &amp; Code of Conduct</a>
             <a href="#notices" className="hover:text-purple-400 transition">Public Notices</a>
             <a href="#contact" className="hover:text-purple-400 transition">Contact</a>
           </nav>
@@ -281,6 +287,7 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
             <a href="#about" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">About School</a>
             <a href="#academics" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Academics &amp; Streams</a>
             <a href="#facilities" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Campus Facilities</a>
+            <a href="#rules" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Rules &amp; Code of Conduct</a>
             <a href="#notices" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Public Notices</a>
             <a href="#contact" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Contact &amp; Location</a>
           </div>
@@ -361,52 +368,156 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
         </div>
       </section>
 
-      {/* 4. PRINCIPAL'S WELCOME ADDRESS */}
+      {/* 4. ABOUT SCHOOL, HERITAGE, VISION & PRINCIPAL'S DESK */}
       <section id="about" className="py-12 sm:py-20 border-b border-slate-800/80 bg-slate-900/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10 items-center">
-            {/* Principal Photo Card */}
-            <div className="lg:col-span-5 flex justify-center">
-              <div className="relative w-full max-w-[280px] sm:max-w-sm rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-700 shadow-2xl">
-                <img
-                  src={principal.photoUrl || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80'}
-                  alt={principal.name}
-                  className="w-full h-64 sm:h-80 lg:h-96 object-cover"
-                />
-                <div className="absolute bottom-0 inset-x-0 p-4 sm:p-5 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent">
-                  <p className="text-sm sm:text-base font-bold text-white">{principal.name}</p>
-                  <p className="text-[11px] sm:text-xs text-purple-400 font-medium">{principal.designation}</p>
-                </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 sm:space-y-16">
+          {/* Header Title */}
+          <div className="text-center max-w-3xl mx-auto space-y-2 sm:space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-semibold border border-purple-500/20">
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>About {schoolDisplayName}</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
+              Heritage, Vision &amp; Core Institutional Values
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto">
+              {cfg.motto ? `"${cfg.motto}" — ` : ''}Building character, intellectual curiosity, and grounded leadership in Mizoram.
+            </p>
+          </div>
+
+          {/* School History / Background Narrative */}
+          {cfg.about?.history && (
+            <div className="p-6 sm:p-8 rounded-3xl bg-slate-950/80 border border-slate-800/80 shadow-xl space-y-4">
+              <div className="flex items-center gap-2.5 text-purple-400">
+                <School className="w-5 h-5" />
+                <h3 className="text-base sm:text-lg font-bold text-white">Our Story &amp; Heritage</h3>
               </div>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+                {cfg.about.history}
+              </p>
+            </div>
+          )}
+
+          {/* Vision & Mission Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-purple-950/30 via-slate-900/60 to-slate-950 border border-purple-800/40 shadow-xl space-y-3">
+              <div className="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white">Our Vision</h3>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {cfg.about?.vision || 'To emerge as a premier educational institution fostering academic excellence, moral leadership, and community service.'}
+              </p>
             </div>
 
-            {/* Message Content */}
-            <div className="lg:col-span-7 space-y-4 sm:space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-semibold border border-indigo-500/20">
-                <HeartHandshake className="w-3.5 h-3.5" />
-                <span>Leadership &amp; Vision</span>
+            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-indigo-950/30 via-slate-900/60 to-slate-950 border border-indigo-800/40 shadow-xl space-y-3">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white">Our Mission</h3>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {cfg.about?.mission || 'Providing holistic education combining rigorous academics, modern technology, and values that inspire students to excel.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Institutional Highlights Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-1">
+              <span className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider">Campus Area</span>
+              <p className="text-sm sm:text-base font-extrabold text-white">{cfg.about?.campusArea || 'Spacious Campus'}</p>
+            </div>
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-1">
+              <span className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider">Student Body</span>
+              <p className="text-sm sm:text-base font-extrabold text-cyan-400">{cfg.about?.studentStrength || '1,000+ Enrolled'}</p>
+            </div>
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-1">
+              <span className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider">Faculty &amp; Staff</span>
+              <p className="text-sm sm:text-base font-extrabold text-purple-400">{cfg.about?.facultyCount || '45+ Dedicated'}</p>
+            </div>
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-1">
+              <span className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider">Affiliation</span>
+              <p className="text-sm sm:text-base font-extrabold text-emerald-400">{affiliationDisplayName}</p>
+            </div>
+          </div>
+
+          {/* Core Values Section */}
+          {(cfg.about?.coreValues || []).length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-amber-400" />
+                <h3 className="text-sm sm:text-base font-bold text-white uppercase tracking-wider">Core Institutional Values</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {cfg.about.coreValues.map((val, idx) => (
+                  <div key={val.id || idx} className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800/80 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-amber-500/10 text-amber-400 text-xs font-bold flex items-center justify-center">
+                        {idx + 1}
+                      </span>
+                      <h4 className="text-xs sm:text-sm font-bold text-white">{val.title}</h4>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed">{val.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Principal's Welcome Address */}
+          <div className="p-6 sm:p-10 rounded-3xl bg-slate-950/90 border border-slate-800 shadow-2xl">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10 items-center">
+              {/* Principal Photo Card */}
+              <div className="lg:col-span-5 flex justify-center">
+                <div className="relative w-full max-w-[280px] sm:max-w-sm rounded-2xl sm:rounded-3xl overflow-hidden border border-slate-700 shadow-2xl">
+                  <img
+                    src={principal.photoUrl || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop&q=80'}
+                    alt={principal.name}
+                    className="w-full h-64 sm:h-80 lg:h-96 object-cover"
+                  />
+                  <div className="absolute bottom-0 inset-x-0 p-4 sm:p-5 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent">
+                    <p className="text-sm sm:text-base font-bold text-white">{principal.name}</p>
+                    <p className="text-[11px] sm:text-xs text-purple-400 font-medium">{principal.designation}</p>
+                  </div>
+                </div>
               </div>
 
-              <h2 className="text-xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
-                Principal’s Welcome Message
-              </h2>
+              {/* Message Content */}
+              <div className="lg:col-span-7 space-y-4 sm:space-y-6 text-center lg:text-left">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-semibold border border-indigo-500/20">
+                  <HeartHandshake className="w-3.5 h-3.5" />
+                  <span>Leadership Desk</span>
+                </div>
 
-              <blockquote className="text-sm sm:text-base lg:text-lg italic text-purple-200 border-l-4 border-purple-500 pl-3 sm:pl-4 py-1 text-left">
-                "{principal.quote}"
-              </blockquote>
+                <h2 className="text-xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
+                  Principal’s Welcome Message
+                </h2>
 
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed text-left">
-                {principal.fullMessage}
-              </p>
+                <blockquote className="text-sm sm:text-base lg:text-lg italic text-purple-200 border-l-4 border-purple-500 pl-3 sm:pl-4 py-1 text-left">
+                  "{principal.quote}"
+                </blockquote>
 
-              <div className="pt-2 flex items-center justify-center lg:justify-start">
-                <button
-                  onClick={onOpenAdmissions}
-                  className="w-full sm:w-auto px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-purple-600/25 cursor-pointer"
-                >
-                  <span>Admission Enquiry &amp; Registration</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed text-left">
+                  {principal.fullMessage}
+                </p>
+
+                <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3">
+                  <button
+                    onClick={onOpenAdmissions}
+                    className="w-full sm:w-auto px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-purple-600/25 cursor-pointer"
+                  >
+                    <span>Admission Enquiry &amp; Registration</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+
+                  <button
+                    onClick={() => setIsRulesModalOpen(true)}
+                    className="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-200 hover:text-white font-semibold text-xs transition flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-amber-400" />
+                    <span>View Student Code of Conduct &amp; Rules</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -501,6 +612,96 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 6B. INSTITUTIONAL RULES & CODE OF CONDUCT */}
+      <section id="rules" className="py-12 sm:py-20 border-b border-slate-800/80 bg-slate-900/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-12">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 text-xs font-semibold border border-amber-500/20">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Student Code of Conduct</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight mt-1 sm:mt-2">
+                Rules &amp; Institutional Regulations
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-xl">
+                Official disciplinary regulations, mandatory attendance standards, and statutory campus conduct for {schoolDisplayName}.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {(currentUser?.role === 'superadmin' || isPrincipal || currentUser?.role === 'admin') && (
+                <button
+                  onClick={() => setIsRulesModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                  title="Edit Institutional Rules"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit Rules</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => setIsRulesModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 text-xs font-bold flex items-center gap-1.5 transition shadow-lg shadow-amber-600/20 cursor-pointer"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Full Handbook &amp; Print (PDF)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Preview Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {schoolRules.slice(0, 6).map((rule, idx) => (
+              <div 
+                key={rule.id || idx}
+                onClick={() => setIsRulesModalOpen(true)}
+                className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-amber-500/40 transition flex flex-col justify-between space-y-3 cursor-pointer group"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-900 text-amber-400 border border-amber-500/20 font-semibold text-[10px] uppercase">
+                      {rule.categoryLabel || rule.category}
+                    </span>
+                    <span className="text-slate-500 font-mono text-[10px]">#{idx + 1}</span>
+                  </div>
+                  <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-amber-200 transition">
+                    {rule.title}
+                  </h4>
+                  <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed">
+                    {rule.description}
+                  </p>
+                </div>
+
+                {rule.penalty && (
+                  <div className="pt-2 border-t border-slate-900 text-[11px] text-amber-300/90 flex items-center gap-1.5 font-medium">
+                    <span className="font-bold uppercase text-[9px] text-amber-400">Penalty:</span>
+                    <span className="truncate">{rule.penalty}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-950/20 via-slate-900/60 to-slate-950 border border-amber-900/30 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-300">
+            <div className="flex items-center gap-2 text-center sm:text-left">
+              <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0" />
+              <span>
+                All students and parents must sign and adhere to the Institutional Code of Conduct upon admission.
+              </span>
+            </div>
+            <button
+              onClick={() => setIsRulesModalOpen(true)}
+              className="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 shrink-0 cursor-pointer"
+            >
+              <span>Explore all {schoolRules.length} rules</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </section>
@@ -652,6 +853,12 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
           </div>
         </div>
       </footer>
+
+      {/* School Rules & Regulations Handbook Modal */}
+      <SchoolRulesModal 
+        isOpen={isRulesModalOpen} 
+        onClose={() => setIsRulesModalOpen(false)} 
+      />
     </div>
   );
 }

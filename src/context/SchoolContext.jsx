@@ -55,6 +55,7 @@ import {
   INITIAL_SEAL_CONFIG,
   INITIAL_WEBSITE_CONFIG,
   INITIAL_DISCIPLINARY_RECORDS,
+  INITIAL_SCHOOL_RULES,
   MIZORAM_GAZETTED_HOLIDAYS_2026,
   INITIAL_SUBJECTS,
   INITIAL_GRADING_SCALES,
@@ -401,6 +402,7 @@ export function SchoolProvider({ children }) {
   const [hostelRollCalls, setHostelRollCalls] = useState(() => loadInitial('hostel_roll_calls', INITIAL_HOSTEL_ROLL_CALLS));
   const [hostelMessMenu, setHostelMessMenu] = useState(() => loadInitial('hostel_mess_menu', INITIAL_HOSTEL_MESS_MENU));
   const [hostelRules, setHostelRules] = useState(() => loadInitial('hostel_rules', INITIAL_HOSTEL_RULES));
+  const [schoolRules, setSchoolRules] = useState(() => loadInitial('school_rules', INITIAL_SCHOOL_RULES));
 
   // Mizoram Academic Calendar & School Events State
   const [academicEvents, setAcademicEvents] = useState(() => loadInitial('academic_events', INITIAL_ACADEMIC_EVENTS));
@@ -958,6 +960,8 @@ export function SchoolProvider({ children }) {
     saveTenantItem('document_templates', documentTemplates);
     saveTenantItem('system_nomenclature', systemNomenclature);
     saveTenantItem('custom_student_fields', customStudentFields);
+    saveTenantItem('school_rules', schoolRules);
+    saveTenantItem('website_config', websiteConfig);
     setLastSyncTime(new Date().toLocaleTimeString());
 
     // Automatic Live Cloud Sync to Firestore (Debounced 2.5s)
@@ -973,7 +977,7 @@ export function SchoolProvider({ children }) {
     return () => {
       if (autoSyncTimer) clearTimeout(autoSyncTimer);
     };
-  }, [activeSchoolId, classes, students, grades, fees, attendance, staff, payroll, libraryBooks, notices, admissions, admissionRequirements, onlineAdmissionConfig, issuedCertificates, reportCardWithholds, transportRoutes, hostelRooms, timetables, hostelGatePasses, hostelRollCalls, hostelMessMenu, hostelRules, academicEvents, customScripts, plugins, systemConfig, paymentConfig, leaveApplications, payScales, tasks, vacations, clinicRecords, clinicConfig, visitors, visitorConfig, inventoryAssets, maintenanceTickets, inventoryConfig, ptmEvents, ptmConfig, alumni, transcriptRequests, alumniConfig, canteenMenu, canteenWallets, canteenTransactions, canteenConfig, studyMaterials, studyConfig, sealConfig, subjects, gradingScales, feeHeads, documentTemplates, systemNomenclature, customStudentFields]);
+  }, [activeSchoolId, classes, students, grades, fees, attendance, staff, payroll, libraryBooks, notices, admissions, admissionRequirements, onlineAdmissionConfig, issuedCertificates, reportCardWithholds, transportRoutes, hostelRooms, timetables, hostelGatePasses, hostelRollCalls, hostelMessMenu, hostelRules, schoolRules, websiteConfig, academicEvents, customScripts, plugins, systemConfig, paymentConfig, leaveApplications, payScales, tasks, vacations, clinicRecords, clinicConfig, visitors, visitorConfig, inventoryAssets, maintenanceTickets, inventoryConfig, ptmEvents, ptmConfig, alumni, transcriptRequests, alumniConfig, canteenMenu, canteenWallets, canteenTransactions, canteenConfig, studyMaterials, studyConfig, sealConfig, subjects, gradingScales, feeHeads, documentTemplates, systemNomenclature, customStudentFields]);
 
   // Automatic Startup Cloud Sync & Hydration (On first visit or school switch)
   useEffect(() => {
@@ -3028,10 +3032,27 @@ export function SchoolProvider({ children }) {
         ...(websiteConfig.principalMessage || {}),
         principalDesignation: `Principal, ${schoolName}`,
         fullMessage: websiteConfig.principalMessage?.fullMessage || `Welcome to ${schoolName}'s official digital portal. We are committed to academic excellence and holistic student development.`
+      },
+      about: {
+        ...(websiteConfig.about || {}),
+        history: `${schoolName} hi ${address ? address + '-a' : 'Mizoram-a'} zirlai naupangte tana zirna tha leh nungchang mawi chher chhuak tura din a ni a, board exam hrang hrangah hlawhtlinna duhawm tak nei thin a ni.`,
+        vision: `Mizoram leh ram pum tana mi rintlak, thluak vawrh fing leh nungchang mawi chher chhuah hi ${schoolName} thlirna a ni.`,
+        mission: `Zirlaite zirtirna sang leh felfai pek, modern science & digital technology hmanga thuam chak hi kan hna ber a ni.`,
+        campusArea: 'Spacious Campus',
+        studentStrength: 'Active Enrollment',
+        facultyCount: 'Dedicated Faculty',
+        coreValues: websiteConfig.about?.coreValues || [
+          { id: 'cv-1', title: 'Faith & Integrity', desc: 'Rinawmna leh nundan mawi nunpui.' },
+          { id: 'cv-2', title: 'Academic Excellence', desc: 'Zirna-ah duhtui leh taihmak chhuah zel.' },
+          { id: 'cv-3', title: 'Discipline & Respect', desc: 'Inthununna leh mi dangte zah thiamna.' }
+        ]
       }
     };
     setWebsiteConfig(cleanWebsiteConfig);
     localStorage.setItem(`${activePrefix}website_config`, JSON.stringify(cleanWebsiteConfig));
+
+    setSchoolRules(INITIAL_SCHOOL_RULES);
+    localStorage.setItem(`${activePrefix}school_rules`, JSON.stringify(INITIAL_SCHOOL_RULES));
 
     // Post a system welcome notice
     const cleanNotice = [
@@ -4274,18 +4295,55 @@ export function SchoolProvider({ children }) {
     return { success: true };
   };
 
-  // 9. Public School Website & CMS Config
+  // 9. Public School Website & CMS Config (Multi-Tenant)
   const updateWebsiteConfig = (newConfig) => {
     setWebsiteConfig(prev => {
       const updated = typeof newConfig === 'function' ? newConfig(prev) : { ...prev, ...newConfig };
-      try {
-        localStorage.setItem('zoxs_website_config', JSON.stringify(updated));
-      } catch (e) {
-        console.warn('Failed to persist website config', e);
-      }
+      saveTenantItem('website_config', updated);
       return updated;
     });
     return { success: true };
+  };
+
+  // 9b. Multi-Tenant School Rules & Regulations (Student Code of Conduct)
+  const addSchoolRule = (ruleData) => {
+    const newRule = {
+      id: `srule-${Date.now()}`,
+      category: 'campus',
+      categoryLabel: 'Campus Discipline & Timings',
+      title: 'New Rule',
+      description: '',
+      penalty: 'Warning slip & Counseling',
+      applicableTo: 'all',
+      ...ruleData
+    };
+    setSchoolRules(prev => {
+      const updated = [newRule, ...prev];
+      saveTenantItem('school_rules', updated);
+      return updated;
+    });
+    return newRule;
+  };
+
+  const updateSchoolRule = (ruleId, updates) => {
+    setSchoolRules(prev => {
+      const updated = prev.map(r => r.id === ruleId ? { ...r, ...updates } : r);
+      saveTenantItem('school_rules', updated);
+      return updated;
+    });
+  };
+
+  const deleteSchoolRule = (ruleId) => {
+    setSchoolRules(prev => {
+      const updated = prev.filter(r => r.id !== ruleId);
+      saveTenantItem('school_rules', updated);
+      return updated;
+    });
+  };
+
+  const resetSchoolRules = () => {
+    setSchoolRules(INITIAL_SCHOOL_RULES);
+    saveTenantItem('school_rules', INITIAL_SCHOOL_RULES);
   };
 
   // 10. Student Disciplinary & Suspension Operations
@@ -5025,6 +5083,12 @@ export function SchoolProvider({ children }) {
       // 9. Public School Website & CMS Config
       websiteConfig,
       updateWebsiteConfig,
+      // 9b. Multi-Tenant School Rules & Regulations (Student Code of Conduct)
+      schoolRules,
+      addSchoolRule,
+      updateSchoolRule,
+      deleteSchoolRule,
+      resetSchoolRules,
       // 10. SMS & WhatsApp Gateway
       gatewayConfig,
       updateGatewayConfig,
