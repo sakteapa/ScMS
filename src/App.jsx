@@ -29,6 +29,7 @@ const ReportCardView = lazy(() => import('./views/ReportCardView'));
 const CertificatesView = lazy(() => import('./views/CertificatesView'));
 const RoutineView = lazy(() => import('./views/RoutineView'));
 const AttendanceView = lazy(() => import('./views/AttendanceView'));
+const IdCardStudioView = lazy(() => import('./views/IdCardStudioView'));
 const FinancialsView = lazy(() => import('./views/FinancialsView'));
 const StudentsView = lazy(() => import('./views/StudentsView'));
 const PortalView = lazy(() => import('./views/PortalView'));
@@ -108,6 +109,7 @@ function SchoolAppContent() {
       case 'class_admin_live':
       case 'report_cards':
       case 'attendance':
+      case 'id_card_studio':
       case 'sms_notifications':
       case 'inventory':
       case 'group_conference':
@@ -259,6 +261,8 @@ function SchoolAppContent() {
         return <CalendarView />;
       case 'attendance':
         return <AttendanceView setCurrentTab={setCurrentTab} />;
+      case 'id_card_studio':
+        return <IdCardStudioView />;
       case 'sms_notifications':
         return (
           <SmsWhatsAppNotificationHubModal

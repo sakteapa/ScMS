@@ -197,13 +197,17 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
 
           <button
             onClick={() => {
-              setIdCardTargetStudent(null);
-              setIsIdCardModalOpen(true);
+              if (setCurrentTab) {
+                setCurrentTab('id_card_studio');
+              } else {
+                setIdCardTargetStudent(null);
+                setIsIdCardModalOpen(true);
+              }
             }}
-            className="px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/25 flex items-center gap-1.5 transition shrink-0"
+            className="px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/25 flex items-center gap-1.5 transition shrink-0 cursor-pointer"
           >
             <CreditCard className="w-3.5 h-3.5" />
-            <span>ID &amp; Admit Cards</span>
+            <span>Smart ID &amp; RFID Studio</span>
           </button>
 
           <button

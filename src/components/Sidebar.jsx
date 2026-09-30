@@ -121,6 +121,14 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       badge: 'Live Cam'
     },
     {
+      id: 'id_card_studio',
+      label: 'Smart ID & RFID Studio',
+      icon: CreditCard,
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
+      badge: 'Dual-PVC',
+      badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+    },
+    {
       id: 'leave_management',
       label: 'Leave Applications',
       icon: Clock,
