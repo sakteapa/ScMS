@@ -889,15 +889,48 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
           </h2>
 
           <p className="text-xs sm:text-base text-slate-300 max-w-2xl mx-auto">
-            Online admission forms are now actively accepted for Nursery through Class 12 (Science, Arts, Commerce). Limited seats available.
+            Online admission forms are now actively accepted for Nursery through Class 12 (Science, Arts, Commerce). Sanctioned seat matrix &amp; institutional old-student quota policy now active.
           </p>
+
+          {/* Seat Matrix & Old Student Quota Feature Highlights */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-3xl mx-auto pt-2 text-left">
+            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-amber-500/30 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 font-bold text-xs">
+                60%
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-white block">Old Student Reservation</span>
+                <p className="text-[11px] text-slate-400 leading-snug">60% seats guaranteed for continuing students with 20% fee discount.</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-cyan-500/30 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 font-bold text-xs">
+                40%
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-white block">Fresh Open Seats</span>
+                <p className="text-[11px] text-slate-400 leading-snug">Open merit applications invited across all streams &amp; classes.</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-indigo-500/30 flex items-start gap-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 font-bold text-xs">
+                MBSE
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-xs font-bold text-white block">Official Seat Matrix</span>
+                <p className="text-[11px] text-slate-400 leading-snug">View real-time vacancies &amp; class quotas on public portal.</p>
+              </div>
+            </div>
+          </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 pt-2 sm:pt-4 w-full max-w-md mx-auto sm:max-w-none">
             <button
               onClick={onOpenAdmissions}
               className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-2xl shadow-purple-600/40 flex items-center justify-center gap-2 transition transform hover:-translate-y-0.5 cursor-pointer"
             >
-              <span>Submit Admission Form Online</span>
+              <span>Submit Admission Form / View Quotas</span>
               <ArrowRight className="w-4 h-4 shrink-0" />
             </button>
 

@@ -1381,6 +1381,23 @@ export const INITIAL_NOTICES = [
     channels: { inApp: true, whatsapp: true, push: true, sms: false },
     readBy: ['stu-101']
   },
+  {
+    id: 'not-005',
+    scope: 'broadcast',
+    title: 'Official Notification: 2026-2027 Admission Seat Matrix & Old Student Quota Policy',
+    content: 'School Admission Council hereby publishes the sanctioned intake capacity for the Academic Session 2026-2027. Under institutional guidelines, 60% of total seats across all classes (Nursery to Class 12) are reserved for continuing and old students with 20% admission fee concession and accelerated direct enrolment. The priority window for old students remains open until 31st May 2026. Unclaimed seats after this deadline will be released to the fresh/open applicant merit list.',
+    category: 'academic',
+    priority: 'urgent',
+    targetAudience: 'all',
+    targetUserId: null,
+    targetUserName: null,
+    senderId: 'stf-001',
+    publishedBy: 'Rev. Dr. L. H. Rohmingliana (Principal) & Admission Council',
+    publishedAt: '2026-09-20T08:30:00Z',
+    isPinned: true,
+    channels: { inApp: true, whatsapp: true, push: true, sms: true },
+    readBy: ['stu-101', 'stu-102']
+  },
   // PRIVATE NOTIFICATIONS (Pvt 1-to-1 Notifications)
   {
     id: 'pvt-001',
@@ -3297,6 +3314,28 @@ export const INITIAL_SYSTEM_CONFIG = {
   }
 };
 
+export const INITIAL_SEAT_QUOTAS = [
+  { classId: 'cls-nursery', className: 'Nursery', totalSeats: 35, oldStudentReserved: 0, freshOpenSeats: 35, minPercentage: 0, oldStudentFeeDiscount: 0, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-lkg', className: 'LKG', totalSeats: 40, oldStudentReserved: 25, freshOpenSeats: 15, minPercentage: 0, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-ukg', className: 'UKG', totalSeats: 40, oldStudentReserved: 28, freshOpenSeats: 12, minPercentage: 0, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-1', className: 'Class 1', totalSeats: 45, oldStudentReserved: 30, freshOpenSeats: 15, minPercentage: 40, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-2', className: 'Class 2', totalSeats: 45, oldStudentReserved: 32, freshOpenSeats: 13, minPercentage: 40, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-3', className: 'Class 3', totalSeats: 45, oldStudentReserved: 32, freshOpenSeats: 13, minPercentage: 40, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-4', className: 'Class 4', totalSeats: 45, oldStudentReserved: 34, freshOpenSeats: 11, minPercentage: 40, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-5', className: 'Class 5', totalSeats: 45, oldStudentReserved: 35, freshOpenSeats: 10, minPercentage: 40, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-6', className: 'Class 6', totalSeats: 50, oldStudentReserved: 35, freshOpenSeats: 15, minPercentage: 45, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-7', className: 'Class 7', totalSeats: 50, oldStudentReserved: 36, freshOpenSeats: 14, minPercentage: 45, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-8', className: 'Class 8', totalSeats: 50, oldStudentReserved: 38, freshOpenSeats: 12, minPercentage: 45, oldStudentFeeDiscount: 15, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-9', className: 'Class 9', totalSeats: 55, oldStudentReserved: 40, freshOpenSeats: 15, minPercentage: 50, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-10', className: 'Class 10 (Board)', totalSeats: 55, oldStudentReserved: 45, freshOpenSeats: 10, minPercentage: 50, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-31', status: 'open' },
+  { classId: 'cls-11-sci', className: 'Class 11 - Science', totalSeats: 60, oldStudentReserved: 36, freshOpenSeats: 24, minPercentage: 65, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-15', status: 'filling_fast' },
+  { classId: 'cls-11-arts', className: 'Class 11 - Arts', totalSeats: 60, oldStudentReserved: 36, freshOpenSeats: 24, minPercentage: 50, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-15', status: 'open' },
+  { classId: 'cls-11-comm', className: 'Class 11 - Commerce', totalSeats: 50, oldStudentReserved: 30, freshOpenSeats: 20, minPercentage: 55, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-15', status: 'open' },
+  { classId: 'cls-12-sci', className: 'Class 12 - Science', totalSeats: 60, oldStudentReserved: 50, freshOpenSeats: 10, minPercentage: 60, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-15', status: 'filling_fast' },
+  { classId: 'cls-12-arts', className: 'Class 12 - Arts', totalSeats: 60, oldStudentReserved: 50, freshOpenSeats: 10, minPercentage: 50, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-15', status: 'open' },
+  { classId: 'cls-12-comm', className: 'Class 12 - Commerce', totalSeats: 50, oldStudentReserved: 42, freshOpenSeats: 8, minPercentage: 50, oldStudentFeeDiscount: 20, priorityDeadline: '2026-05-15', status: 'open' }
+];
+
 export const INITIAL_ONLINE_ADMISSION_CONFIG = {
   isOpen: true,
   academicSession: '2026 - 2027',
@@ -3317,7 +3356,14 @@ export const INITIAL_ONLINE_ADMISSION_CONFIG = {
   requireAadhaar: true,
   minimumPercentage: 40,
   contactPhone: '+91 372 2322104 / +91 94361 40552',
-  contactEmail: 'admissions@mizoramschool.edu.in'
+  contactEmail: 'admissions@mizoramschool.edu.in',
+  // Old Student Quotas & Capacity Settings
+  enableOldStudentReservation: true,
+  defaultOldStudentQuotaPercent: 60,
+  oldStudentPriorityEndDate: '2026-05-31',
+  oldStudentFeeDiscountPercent: 20,
+  oldStudentPolicyNote: '60% seat reservation and accelerated direct re-admission for existing/passed out students of this school. Unclaimed seats released to fresh applicants after priority deadline.',
+  seatQuotas: INITIAL_SEAT_QUOTAS
 };
 
 export const INITIAL_OFFLINE_ADMISSION_CONFIG = {

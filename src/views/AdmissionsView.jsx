@@ -35,22 +35,31 @@ import {
   RotateCw,
   X,
   Download,
-  Calendar
+  Calendar,
+  Users,
+  Bell,
+  Percent,
+  Sliders,
+  Layers,
+  Award
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
 import AdmissionDocumentUploader from '../components/AdmissionDocumentUploader';
+import { INITIAL_SEAT_QUOTAS } from '../data/mockData';
 
 export default function AdmissionsView({ setCurrentTab }) {
   const { 
     admissions, 
     classes, 
+    students = [],
     admissionRequirements = [], 
     onlineAdmissionConfig,
     updateOnlineAdmissionConfig,
     offlineAdmissionConfig,
     updateOfflineAdmissionConfig,
+    publishNotice,
     submitAdmission, 
     reviewAdmission, 
     updateAdmissionRecord,
@@ -104,6 +113,118 @@ export default function AdmissionsView({ setCurrentTab }) {
     allowedFormats: 'PDF, JPG, PNG (Max 5MB)'
   });
 
+  // Seat Matrix & Quota Management State
+  const [seatFilterLevel, setSeatFilterLevel] = useState('all');
+  const [bulkQuotaPercent, setBulkQuotaPercent] = useState(onlineAdmissionConfig?.defaultOldStudentQuotaPercent || 60);
+  const [bulkDefaultCapacity, setBulkDefaultCapacity] = useState(50);
+  const [editingClassQuotaId, setEditingClassQuotaId] = useState(null);
+
+  const activeSeatQuotas = (onlineAdmissionConfig?.seatQuotas && onlineAdmissionConfig.seatQuotas.length > 0)
+    ? onlineAdmissionConfig.seatQuotas
+    : INITIAL_SEAT_QUOTAS;
+
+  const totalSchoolCapacity = activeSeatQuotas.reduce((acc, q) => acc + (Number(q.totalSeats) || 0), 0);
+  const totalOldReserved = activeSeatQuotas.reduce((acc, q) => acc + (Number(q.oldStudentReserved) || 0), 0);
+  const totalFreshOpen = activeSeatQuotas.reduce((acc, q) => acc + (Number(q.freshOpenSeats) || 0), 0);
+
+  // Helper to compute live enrollment, approved new admissions, and vacant seats
+  const getClassStats = (clsIdentifier, quota) => {
+    const qClassName = quota?.className || '';
+    const enrolledStudents = (students || []).filter(s => 
+      s.classId === clsIdentifier || 
+      (s.className && qClassName && s.className.toLowerCase() === qClassName.toLowerCase()) ||
+      (s.class && qClassName && s.class.toLowerCase() === qClassName.toLowerCase())
+    );
+    const approvedAdm = admissions.filter(a => 
+      (a.appliedClass === clsIdentifier || a.appliedClass === qClassName) && 
+      a.status === 'approved'
+    );
+    const pendingAdm = admissions.filter(a => 
+      (a.appliedClass === clsIdentifier || a.appliedClass === qClassName) && 
+      a.status === 'pending'
+    );
+
+    const enrolledCount = enrolledStudents.length;
+    const approvedCount = approvedAdm.length;
+    const totalFilled = enrolledCount + approvedCount;
+    const totalCap = Number(quota?.totalSeats) || 0;
+    const remaining = Math.max(0, totalCap - totalFilled);
+    const fillPercent = totalCap > 0 ? Math.min(100, Math.round((totalFilled / totalCap) * 100)) : 0;
+
+    return {
+      enrolledCount,
+      approvedCount,
+      pendingCount: pendingAdm.length,
+      totalFilled,
+      remaining,
+      fillPercent
+    };
+  };
+
+  const handleUpdateClassQuota = (classId, fields) => {
+    const updatedQuotas = activeSeatQuotas.map(q => {
+      if (q.classId === classId) {
+        const totalSeats = fields.totalSeats !== undefined ? Math.max(0, Number(fields.totalSeats)) : q.totalSeats;
+        const oldStudentReserved = fields.oldStudentReserved !== undefined ? Math.max(0, Number(fields.oldStudentReserved)) : q.oldStudentReserved;
+        const freshOpenSeats = fields.freshOpenSeats !== undefined ? Math.max(0, Number(fields.freshOpenSeats)) : Math.max(0, totalSeats - oldStudentReserved);
+        return {
+          ...q,
+          ...fields,
+          totalSeats,
+          oldStudentReserved,
+          freshOpenSeats
+        };
+      }
+      return q;
+    });
+    updateOnlineAdmissionConfig({ seatQuotas: updatedQuotas });
+    setEditingClassQuotaId(null);
+  };
+
+  const handleBulkApplyQuota = () => {
+    const pct = Number(bulkQuotaPercent) || 60;
+    const updatedQuotas = activeSeatQuotas.map(q => {
+      const totalSeats = q.totalSeats || 50;
+      const oldStudentReserved = Math.round((totalSeats * pct) / 100);
+      const freshOpenSeats = Math.max(0, totalSeats - oldStudentReserved);
+      return {
+        ...q,
+        totalSeats,
+        oldStudentReserved,
+        freshOpenSeats
+      };
+    });
+    updateOnlineAdmissionConfig({
+      defaultOldStudentQuotaPercent: pct,
+      seatQuotas: updatedQuotas
+    });
+    confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
+  };
+
+  const handlePublishSeatNoticeToNoticeBoard = () => {
+    const session = systemConfig?.academicSession || onlineAdmissionConfig?.academicSession || '2026 - 2027';
+    const percent = onlineAdmissionConfig?.defaultOldStudentQuotaPercent || bulkQuotaPercent || 60;
+    const deadline = onlineAdmissionConfig?.oldStudentPriorityEndDate || '2026-05-31';
+    const discount = onlineAdmissionConfig?.oldStudentFeeDiscountPercent || 20;
+
+    const noticeData = {
+      title: `Official Circular: Academic Session ${session} Admission Seat Matrix & Old Student Quota Policy`,
+      content: `The Admission Council and Academic Board hereby publish the sanctioned intake and reservation guidelines for Session ${session}. Under institutional guidelines, ${percent}% of total seats across all classes (Nursery to Class 12) are reserved for continuing and old students of this school. Continuing students enjoy priority re-enrolment and a ${discount}% admission fee concession until ${deadline}. After the priority deadline, any unclaimed seats will automatically convert to the open fresh applicant merit quota.`,
+      category: 'academic',
+      priority: 'urgent',
+      targetAudience: 'all',
+      isPinned: true,
+      publishedBy: isPrincipal ? 'Rev. Dr. L. H. Rohmingliana (Principal)' : isVicePrincipal ? 'Dr. C. Lalremruata (Vice Principal)' : 'Admission Council & Office',
+      channels: { inApp: true, whatsapp: true, push: true, sms: true }
+    };
+
+    if (typeof publishNotice === 'function') {
+      publishNotice(noticeData);
+    }
+    confetti({ particleCount: 75, spread: 70, origin: { y: 0.6 } });
+    alert('Official Seat Matrix & Old Student Quota Notice has been published to the School Notice Board and broadcasted to students and parents!');
+  };
+
   // Public Online Form State
   const [publicFormData, setPublicFormData] = useState({
     applicantName: '',
@@ -119,7 +240,9 @@ export default function AdmissionsView({ setCurrentTab }) {
     appliedStream: 'science',
     previousSchool: '',
     marksPercentage: '',
-    remarks: ''
+    remarks: '',
+    isOldStudent: false,
+    previousAdmissionNo: ''
   });
   const [publicUploadedDocs, setPublicUploadedDocs] = useState([]);
   const [submittedApplicationId, setSubmittedApplicationId] = useState(null);
@@ -143,7 +266,9 @@ export default function AdmissionsView({ setCurrentTab }) {
     cashierOfficer: 'Pu R. Laltluanga (Chief Cashier & Desk Clerk)',
     initialAdmissionFee: '12000',
     feeSettledAtCounter: true,
-    instantEnroll: false
+    instantEnroll: false,
+    isOldStudent: false,
+    previousAdmissionNo: ''
   });
   const [offlineUploadedDocs, setOfflineUploadedDocs] = useState([]);
   const [offlineSuccessId, setOfflineSuccessId] = useState(null);
@@ -382,6 +507,17 @@ export default function AdmissionsView({ setCurrentTab }) {
           </button>
           {canManagePolicy && (
             <button
+              onClick={() => setActiveTab('seat_quotas')}
+              className={`px-3 py-2 rounded-lg font-bold transition flex items-center gap-1.5 ${
+                activeTab === 'seat_quotas' ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Seat Quota &amp; Old Students</span>
+            </button>
+          )}
+          {canManagePolicy && (
+            <button
               onClick={() => setActiveTab('requirements_setup')}
               className={`px-3 py-2 rounded-lg font-bold transition flex items-center gap-1.5 ${
                 activeTab === 'requirements_setup' ? 'bg-cyan-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'
@@ -566,6 +702,11 @@ export default function AdmissionsView({ setCurrentTab }) {
                             {adm.applicantName}
                           </h3>
                           <span className="text-[10px] text-slate-400 font-mono">({adm.gender})</span>
+                          {adm.isOldStudent && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                              Old Student Quota
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-cyan-400 font-semibold mt-0.5">
                           {targetClass?.name} {adm.appliedStream ? `• ${adm.appliedStream.toUpperCase()}` : ''}
@@ -855,7 +996,57 @@ export default function AdmissionsView({ setCurrentTab }) {
                         <option key={c.id} value={c.id}>{c.name} ({c.gradeLevel})</option>
                       ))}
                     </select>
+                    {(() => {
+                      const q = activeSeatQuotas.find(sq => sq.classId === offlineFormData.appliedClass || sq.className === offlineFormData.appliedClass);
+                      if (!q) return null;
+                      const stats = getClassStats(offlineFormData.appliedClass, q);
+                      return (
+                        <div className="mt-1.5 text-[10px] px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 flex items-center justify-between">
+                          <span>Total: <strong>{q.totalSeats} Seats</strong> ({q.oldStudentReserved} Old Student Reserved, {q.freshOpenSeats} Open)</span>
+                          <span className={`px-1.5 py-0.5 rounded font-bold ${stats.remaining > 5 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}>
+                            {stats.remaining} Vacant
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
+                </div>
+
+                {/* Old Student Quota Claim Option */}
+                <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-white">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(offlineFormData.isOldStudent)}
+                        onChange={(e) => setOfflineFormData({ ...offlineFormData, isOldStudent: e.target.checked })}
+                        className="rounded border-slate-700 text-amber-500 focus:ring-amber-500"
+                      />
+                      <span>Applicant is an Old / Continuing Student of this School (Claim Quota)</span>
+                    </label>
+                    {offlineFormData.isOldStudent && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                        60% Reserved Seat + 20% Fee Concession
+                      </span>
+                    )}
+                  </div>
+                  {offlineFormData.isOldStudent && (
+                    <div className="pt-2 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-slate-400 font-medium mb-1">Previous Admission / Roll No *</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. ADM-2024-042 or Roll 12"
+                          value={offlineFormData.previousAdmissionNo || ''}
+                          onChange={(e) => setOfflineFormData({ ...offlineFormData, previousAdmissionNo: e.target.value })}
+                          className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-mono focus:border-amber-400 focus:outline-none"
+                        />
+                      </div>
+                      <div className="text-[11px] text-slate-400 flex items-center">
+                        <p>Seat reserved from continuing intake; 20% concession applied at counter.</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1063,6 +1254,19 @@ export default function AdmissionsView({ setCurrentTab }) {
                       <option key={c.id} value={c.id}>{c.name} ({c.gradeLevel})</option>
                     ))}
                   </select>
+                  {(() => {
+                    const q = activeSeatQuotas.find(sq => sq.classId === publicFormData.appliedClass || sq.className === publicFormData.appliedClass);
+                    if (!q) return null;
+                    const stats = getClassStats(publicFormData.appliedClass, q);
+                    return (
+                      <div className="mt-1.5 text-[10px] px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 flex items-center justify-between">
+                        <span>Total: <strong>{q.totalSeats} Seats</strong> ({q.oldStudentReserved} Old Student Reserved, {q.freshOpenSeats} Open)</span>
+                        <span className={`px-1.5 py-0.5 rounded font-bold ${stats.remaining > 5 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}>
+                          {stats.remaining} Vacant
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div>
                   <label className="block text-slate-400 font-semibold mb-1">Date of Birth *</label>
@@ -1074,6 +1278,43 @@ export default function AdmissionsView({ setCurrentTab }) {
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
+              </div>
+
+              {/* Old Student Quota Claim Option */}
+              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-white">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(publicFormData.isOldStudent)}
+                      onChange={(e) => setPublicFormData({ ...publicFormData, isOldStudent: e.target.checked })}
+                      className="rounded border-slate-700 text-amber-500 focus:ring-amber-500"
+                    />
+                    <span>Applicant is an Old / Continuing Student of this School (Claim Quota)</span>
+                  </label>
+                  {publicFormData.isOldStudent && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                      60% Reserved Seat + 20% Fee Concession
+                    </span>
+                  )}
+                </div>
+                {publicFormData.isOldStudent && (
+                  <div className="pt-2 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] text-slate-400 font-medium mb-1">Previous Admission / Roll No *</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. ADM-2024-042 or Roll 12"
+                        value={publicFormData.previousAdmissionNo || ''}
+                        onChange={(e) => setPublicFormData({ ...publicFormData, previousAdmissionNo: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-mono focus:border-amber-400 focus:outline-none"
+                      />
+                    </div>
+                    <div className="text-[11px] text-slate-400 flex items-center">
+                      <p>Priority admission review guaranteed until 31st May 2026 under institutional quota.</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1577,6 +1818,426 @@ export default function AdmissionsView({ setCurrentTab }) {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* VIEW 5: SEAT INTAKE CAPACITY & OLD STUDENT QUOTAS (SEAT AWMZAT & RESERVATION) */}
+      {activeTab === 'seat_quotas' && (
+        <div className="space-y-6">
+          {/* Header & Notice Board Quick Action */}
+          <div className="p-5 rounded-3xl bg-gradient-to-r from-slate-900 via-amber-950/20 to-slate-900 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+            <div className="flex items-center gap-3.5">
+              <div className="p-3 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0 shadow-inner">
+                <Users className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-white font-['Outfit']">
+                    Seat Intake Capacity &amp; Old Student Quotas (Seat Awmzat &amp; Reservation)
+                  </h3>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+                    {onlineAdmissionConfig?.defaultOldStudentQuotaPercent || 60}% Quota Active
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-1">
+                  Manage sanctioned class intake, reserve priority seats for continuing students, set fee concessions, and publish circulars directly to the School Notice Board.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={handlePublishSeatNoticeToNoticeBoard}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs transition shadow-lg shadow-amber-500/20 flex items-center gap-2 cursor-pointer"
+              >
+                <Bell className="w-4 h-4 text-slate-950" />
+                <span>Publish to Notice Board</span>
+              </button>
+            </div>
+          </div>
+
+          {/* KPI Stat Cards (Capacity, Reserved, Open, Enrolled, Vacant) */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+            <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+              <span className="text-[11px] text-slate-400 font-semibold uppercase flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-slate-400" />
+                Total School Capacity
+              </span>
+              <span className="text-2xl font-bold text-white font-['Outfit'] block">{totalSchoolCapacity}</span>
+              <span className="text-[10px] text-slate-500">Across {activeSeatQuotas.length} Classes</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+              <span className="text-[11px] text-amber-400 font-semibold uppercase flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-amber-400" />
+                Old Student Quota
+              </span>
+              <span className="text-2xl font-bold text-amber-300 font-['Outfit'] block">{totalOldReserved}</span>
+              <span className="text-[10px] text-amber-500/80">
+                {onlineAdmissionConfig?.defaultOldStudentQuotaPercent || 60}% Reserved Priority
+              </span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+              <span className="text-[11px] text-cyan-400 font-semibold uppercase flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                Fresh Open Intake
+              </span>
+              <span className="text-2xl font-bold text-cyan-300 font-['Outfit'] block">{totalFreshOpen}</span>
+              <span className="text-[10px] text-cyan-500/80">Open Merit Competition</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1">
+              <span className="text-[11px] text-emerald-400 font-semibold uppercase flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                Confirmed Enrolled
+              </span>
+              <span className="text-2xl font-bold text-emerald-300 font-['Outfit'] block">
+                {activeSeatQuotas.reduce((acc, q) => acc + getClassStats(q.classId, q).totalFilled, 0)}
+              </span>
+              <span className="text-[10px] text-emerald-500/80">Enrolled + Approved</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-1 col-span-2 lg:col-span-1">
+              <span className="text-[11px] text-indigo-400 font-semibold uppercase flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                Remaining Vacancies
+              </span>
+              <span className="text-2xl font-bold text-indigo-300 font-['Outfit'] block">
+                {activeSeatQuotas.reduce((acc, q) => acc + getClassStats(q.classId, q).remaining, 0)}
+              </span>
+              <span className="text-[10px] text-indigo-500/80">Available Across All Sections</span>
+            </div>
+          </div>
+
+          {/* Global Institutional Quota & Reservation Policy Configuration Card */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+              <div>
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                  <Sliders className="w-4 h-4" />
+                  <span>Institutional Reservation &amp; Priority Enrolment Policy</span>
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Configure default reservation rules, deadline for old student entitlement, and admission fee concessions.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={onlineAdmissionConfig?.enableOldStudentReservation !== false}
+                    onChange={(e) => updateOnlineAdmissionConfig({ enableOldStudentReservation: e.target.checked })}
+                    className="rounded border-slate-700 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span>Enable Old Student Priority Quota</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-slate-400 text-xs font-semibold mb-1 flex items-center gap-1">
+                  <Percent className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Default Old Student Quota %</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="10"
+                    max="90"
+                    value={bulkQuotaPercent}
+                    onChange={(e) => setBulkQuotaPercent(Number(e.target.value))}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono text-xs focus:outline-none focus:border-amber-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleBulkApplyQuota}
+                    className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] font-bold whitespace-nowrap transition cursor-pointer"
+                    title="Calculate and apply this percentage quota across all classes"
+                  >
+                    Apply All
+                  </button>
+                </div>
+                <span className="text-[10px] text-slate-500 mt-1 block">Standard policy: 60% reserved for continuing students</span>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 text-xs font-semibold mb-1 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Old Student Priority Deadline</span>
+                </label>
+                <input
+                  type="date"
+                  value={onlineAdmissionConfig?.oldStudentPriorityEndDate || '2026-05-31'}
+                  onChange={(e) => updateOnlineAdmissionConfig({ oldStudentPriorityEndDate: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono text-xs focus:outline-none focus:border-indigo-400"
+                />
+                <span className="text-[10px] text-slate-500 mt-1 block">Unclaimed quota seats convert to open merit after this date</span>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 text-xs font-semibold mb-1 flex items-center gap-1">
+                  <Award className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Fee Concession / Discount %</span>
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={onlineAdmissionConfig?.oldStudentFeeDiscountPercent !== undefined ? onlineAdmissionConfig.oldStudentFeeDiscountPercent : 20}
+                    onChange={(e) => updateOnlineAdmissionConfig({ oldStudentFeeDiscountPercent: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white font-mono text-xs focus:outline-none focus:border-emerald-400"
+                  />
+                  <span className="text-xs text-slate-400 font-bold">%</span>
+                </div>
+                <span className="text-[10px] text-slate-500 mt-1 block">Concession on initial admission/enrolment fee</span>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 text-xs font-semibold mb-1 flex items-center gap-1">
+                  <Bell className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Notice Board Broadcast</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handlePublishSeatNoticeToNoticeBoard}
+                  className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow"
+                >
+                  <Bell className="w-3.5 h-3.5" />
+                  <span>Broadcast Circular Now</span>
+                </button>
+                <span className="text-[10px] text-slate-500 mt-1 block">Pushes to In-App, WhatsApp, Web &amp; SMS</span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-slate-400 text-xs font-semibold mb-1">
+                Institutional Policy Explanatory Note (Displayed to parents on Portal &amp; Notice Board)
+              </label>
+              <textarea
+                rows={2}
+                value={onlineAdmissionConfig?.oldStudentPolicyNote || '60% seat reservation and accelerated direct re-admission for existing/passed out students of this school. Unclaimed seats released to fresh applicants after priority deadline.'}
+                onChange={(e) => updateOnlineAdmissionConfig({ oldStudentPolicyNote: e.target.value })}
+                className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-400"
+              />
+            </div>
+          </div>
+
+          {/* Class-by-Class Seat Matrix & Quota Allocation Table/Cards */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/80 border border-slate-800 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h4 className="text-sm font-bold text-white uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+                  <Layers className="w-4 h-4" />
+                  <span>Class-Wise Intake Capacity &amp; Live Enrolment Matrix</span>
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Real-time seat occupancy comparing existing enrolled students, approved new admissions, and open vacancies.
+                </p>
+              </div>
+
+              {/* Level Filter Switcher */}
+              <div className="inline-flex p-1 rounded-xl bg-slate-950 border border-slate-800 text-xs self-start sm:self-auto overflow-x-auto no-scrollbar">
+                {[
+                  { id: 'all', label: 'All Classes' },
+                  { id: 'primary', label: 'Primary (Nursery - 5)' },
+                  { id: 'middle', label: 'Middle (6 - 8)' },
+                  { id: 'secondary', label: 'High School (9 - 10)' },
+                  { id: 'higher_secondary', label: 'Higher Sec (11 - 12)' }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setSeatFilterLevel(tab.id)}
+                    className={`px-3 py-1.5 rounded-lg font-semibold transition whitespace-nowrap cursor-pointer ${
+                      seatFilterLevel === tab.id ? 'bg-amber-500 text-slate-950 shadow' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Matrix Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pt-2">
+              {activeSeatQuotas
+                .filter(q => {
+                  const name = q.className.toLowerCase();
+                  if (seatFilterLevel === 'primary') return name.includes('nursery') || name.includes('kg') || name.includes('class 1') || name.includes('class 2') || name.includes('class 3') || name.includes('class 4') || name.includes('class 5');
+                  if (seatFilterLevel === 'middle') return name.includes('class 6') || name.includes('class 7') || name.includes('class 8');
+                  if (seatFilterLevel === 'secondary') return name.includes('class 9') || name.includes('class 10');
+                  if (seatFilterLevel === 'higher_secondary') return name.includes('class 11') || name.includes('class 12');
+                  return true;
+                })
+                .map((quota) => {
+                  const stats = getClassStats(quota.classId, quota);
+                  const isEditing = editingClassQuotaId === quota.classId;
+
+                  return (
+                    <div
+                      key={quota.classId}
+                      className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 transition space-y-3 flex flex-col justify-between shadow-md"
+                    >
+                      <div className="space-y-3">
+                        {/* Card Header */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <h5 className="text-sm font-bold text-white font-['Outfit']">{quota.className}</h5>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              Min: {quota.minPercentage}% marks required
+                            </span>
+                          </div>
+
+                          <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase font-mono ${
+                            stats.remaining === 0
+                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                              : stats.remaining <= 10
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                          }`}>
+                            {stats.remaining === 0 ? 'Full' : stats.remaining <= 10 ? 'Filling Fast' : 'Seats Open'}
+                          </span>
+                        </div>
+
+                        {/* Interactive Quota Breakdown or Edit Inputs */}
+                        {isEditing ? (
+                          <div className="p-3 rounded-xl bg-slate-900 border border-amber-500/30 space-y-2 text-xs">
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <label className="block text-[10px] text-slate-400 font-medium mb-0.5">Total Intake</label>
+                                <input
+                                  type="number"
+                                  defaultValue={quota.totalSeats}
+                                  id={`edit-tot-${quota.classId}`}
+                                  className="w-full px-2 py-1 rounded bg-slate-950 border border-slate-700 text-white font-mono text-xs"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-amber-400 font-medium mb-0.5">Old Reserved</label>
+                                <input
+                                  type="number"
+                                  defaultValue={quota.oldStudentReserved}
+                                  id={`edit-old-${quota.classId}`}
+                                  className="w-full px-2 py-1 rounded bg-slate-950 border border-slate-700 text-amber-300 font-mono text-xs"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-cyan-400 font-medium mb-0.5">Fresh Open</label>
+                                <input
+                                  type="number"
+                                  defaultValue={quota.freshOpenSeats}
+                                  id={`edit-fresh-${quota.classId}`}
+                                  className="w-full px-2 py-1 rounded bg-slate-950 border border-slate-700 text-cyan-300 font-mono text-xs"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-end gap-2 pt-1">
+                              <button
+                                type="button"
+                                onClick={() => setEditingClassQuotaId(null)}
+                                className="px-2.5 py-1 rounded bg-slate-800 text-slate-300 text-[11px] font-semibold"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const tot = document.getElementById(`edit-tot-${quota.classId}`)?.value;
+                                  const oldR = document.getElementById(`edit-old-${quota.classId}`)?.value;
+                                  const freshO = document.getElementById(`edit-fresh-${quota.classId}`)?.value;
+                                  handleUpdateClassQuota(quota.classId, {
+                                    totalSeats: Number(tot),
+                                    oldStudentReserved: Number(oldR),
+                                    freshOpenSeats: Number(freshO)
+                                  });
+                                }}
+                                className="px-3 py-1 rounded bg-amber-500 text-slate-950 text-[11px] font-bold"
+                              >
+                                Save Quota
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-center">
+                            <div>
+                              <span className="text-[10px] text-slate-400 block">Sanctioned</span>
+                              <span className="text-sm font-bold text-white font-mono">{quota.totalSeats}</span>
+                            </div>
+                            <div className="border-x border-slate-800">
+                              <span className="text-[10px] text-amber-400 block">Old Reserved</span>
+                              <span className="text-sm font-bold text-amber-300 font-mono">{quota.oldStudentReserved}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-cyan-400 block">Fresh Open</span>
+                              <span className="text-sm font-bold text-cyan-300 font-mono">{quota.freshOpenSeats}</span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Live Enrollment Progress Bar */}
+                        <div className="space-y-1.5 pt-1">
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-slate-400">
+                              Occupancy: <strong className="text-white">{stats.totalFilled}</strong> / {quota.totalSeats}
+                            </span>
+                            <span className="font-mono font-bold text-emerald-400">{stats.remaining} Vacant</span>
+                          </div>
+
+                          <div className="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden flex">
+                            <div
+                              style={{ width: `${Math.min(100, Math.round((stats.enrolledCount / (quota.totalSeats || 1)) * 100))}%` }}
+                              className="h-full bg-blue-500"
+                              title={`Enrolled Students: ${stats.enrolledCount}`}
+                            />
+                            <div
+                              style={{ width: `${Math.min(100, Math.round((stats.approvedCount / (quota.totalSeats || 1)) * 100))}%` }}
+                              className="h-full bg-emerald-500"
+                              title={`Approved Admissions: ${stats.approvedCount}`}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between text-[10px] text-slate-500">
+                            <span className="flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                              <span>Enrolled: {stats.enrolledCount}</span>
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                              <span>New Approved: {stats.approvedCount}</span>
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
+                              <span>Pending: {stats.pendingCount}</span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card Footer Actions */}
+                      <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+                        <span className="text-[10px] text-slate-400">
+                          Priority till: <strong className="text-slate-200">{quota.priorityDeadline || '31-May-2026'}</strong>
+                        </span>
+                        {!isEditing && (
+                          <button
+                            type="button"
+                            onClick={() => setEditingClassQuotaId(quota.classId)}
+                            className="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Edit Capacity</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
           </div>
         </div>
       )}
