@@ -30,7 +30,8 @@ export default function StudentSuspensionModal({ isOpen, student, onClose }) {
     suspendStudent, 
     revokeSuspension, 
     systemConfig,
-    sealConfig 
+    sealConfig,
+    activeSchoolInfo 
   } = useSchool();
   const { currentUser, isPrincipal, isVicePrincipal, isSuperAdmin, isTeacher } = useAuth();
 
@@ -637,13 +638,13 @@ export default function StudentSuspensionModal({ isOpen, student, onClose }) {
                 {/* Header */}
                 <div className="text-center border-b-2 border-slate-900 pb-4 space-y-1">
                   <h1 className="text-xl font-bold uppercase tracking-wider text-slate-950 font-['Outfit']">
-                    {systemConfig?.schoolName || 'OHA (One Heart Academy)'}
+                    {activeSchoolInfo?.name || systemConfig?.schoolName || 'School Name'}
                   </h1>
                   <p className="text-xs text-slate-600 font-sans">
-                    Affiliation: {systemConfig?.affiliationNo || 'MBSE'} • Est. {systemConfig?.establishedYear || '1998'}
+                    Affiliation: {activeSchoolInfo?.affiliationBadge || systemConfig?.affiliationNo || 'MBSE'} • Est. {systemConfig?.establishedYear || '1998'}
                   </p>
                   <p className="text-[11px] text-slate-500 font-sans">
-                    {systemConfig?.address || 'Lunglawn, Lunglei, Mizoram - 796701'} • Helpline: {systemConfig?.contactPhone || '+91 372 2322104'}
+                    {activeSchoolInfo?.address || systemConfig?.address || ''} • Helpline: {activeSchoolInfo?.contactPhone || systemConfig?.contactPhone || ''}
                   </p>
                 </div>
 
@@ -696,7 +697,7 @@ export default function StudentSuspensionModal({ isOpen, student, onClose }) {
                       {sealConfig?.principalSignatoryName || 'Dr. F. Lalhmachhuana'}
                     </p>
                     <p className="font-bold text-slate-900">{sealConfig?.principalDesignation || 'Principal & Head of Institution'}</p>
-                    <p className="text-[10px] text-slate-500">{sealConfig?.schoolCrestText || 'OHA • ONE HEART ACADEMY • LUNGLAWN, LUNGLEI'}</p>
+                    <p className="text-[10px] text-slate-500">{sealConfig?.schoolCrestText || (activeSchoolInfo?.name ? `${activeSchoolInfo.name.toUpperCase()} • ${activeSchoolInfo.address?.toUpperCase() || ''}` : 'ACADEMIC BOARD SEAL')}</p>
                   </div>
                 </div>
               </div>

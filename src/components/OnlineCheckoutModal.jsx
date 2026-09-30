@@ -33,7 +33,7 @@ export default function OnlineCheckoutModal({
   feeType = 'Tuition Fee (Term 2)', 
   onPaymentSuccess 
 }) {
-  const { paymentConfig, recordPayment, systemConfig, classes } = useSchool();
+  const { paymentConfig, recordPayment, systemConfig, classes, activeSchoolInfo, activeSchoolId } = useSchool();
 
   const defaultGateway = paymentConfig?.activeGateway || 'direct_upi';
   const [selectedGateway, setSelectedGateway] = useState(defaultGateway);
@@ -48,9 +48,9 @@ export default function OnlineCheckoutModal({
 
   if (!isOpen) return null;
 
-  const schoolName = systemConfig?.schoolName || 'OHA (One Heart Academy)';
+  const schoolName = activeSchoolInfo?.name || systemConfig?.schoolName || 'School Fee Portal';
   const activeGw = paymentConfig?.gateways?.[selectedGateway] || paymentConfig?.gateways?.direct_upi || {};
-  const upiId = activeGw.upiId || paymentConfig?.gateways?.direct_upi?.upiId || 'ohalunglawn@oksbi';
+  const upiId = activeGw.upiId || paymentConfig?.gateways?.direct_upi?.upiId || paymentConfig?.upiId || `${activeSchoolId || 'school'}@oksbi`;
   const directUpiGw = paymentConfig?.gateways?.direct_upi || {};
   const razorpayGw = paymentConfig?.gateways?.razorpay || {};
   const paytmGw = paymentConfig?.gateways?.paytm || {};

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   Printer, 
@@ -26,7 +26,7 @@ export default function StudentIdCardModal({
   initialStudent = null,
   selectedClassId = null
 }) {
-  const { students, classes, systemConfig } = useSchool();
+  const { students, classes, systemConfig, activeSchoolInfo, activeSchoolId } = useSchool();
 
   const [activeMode, setActiveMode] = useState('id_card'); // 'id_card', 'admit_card', 'config'
   const [selectedStudentId, setSelectedStudentId] = useState(initialStudent?.id || students[0]?.id);
@@ -36,21 +36,35 @@ export default function StudentIdCardModal({
 
   // Admit Card Exam Details
   const [examName, setExamName] = useState('Annual Board Examination 2026');
-  const [examCenter, setExamCenter] = useState('OHA Campus, Lunglawn, Lunglei');
+  const [examCenter, setExamCenter] = useState(() => `${activeSchoolInfo?.name || 'School'} Campus, ${activeSchoolInfo?.address || 'Main Campus'}`);
 
   // ID Card & Admit Card Custom Configuration State
-  const [cardConfig, setCardConfig] = useState({
-    schoolName: systemConfig?.schoolName || 'OHA (One Heart Academy)',
-    schoolMotto: systemConfig?.motto || 'Knowledge is Light',
-    affiliationNo: systemConfig?.affiliationNo || 'MBSE-HSS-LGL-0421',
+  const [cardConfig, setCardConfig] = useState(() => ({
+    schoolName: activeSchoolInfo?.name || systemConfig?.schoolName || 'Our School',
+    schoolMotto: activeSchoolInfo?.motto || systemConfig?.motto || 'Knowledge is Light',
+    affiliationNo: activeSchoolInfo?.affiliationBadge || systemConfig?.affiliationNo || 'MBSE Affiliated',
     validThru: 'March 2027',
     showQrCode: true,
     showBarcode: true,
     showPrincipalSignature: true,
     showWatermark: true,
-    emergencyPhone: systemConfig?.contactPhone || '+91 389 2322451',
-    instructions: '1. This card is non-transferable and must be worn inside campus.\n2. In case of loss, report immediately to the Administrative Office.\n3. Found cards must be returned to Khatla South, Aizawl.'
-  });
+    emergencyPhone: activeSchoolInfo?.contactPhone || systemConfig?.contactPhone || '',
+    instructions: `1. This card is non-transferable and must be worn inside campus.\n2. In case of loss, report immediately to the Administrative Office.\n3. Found cards must be returned to ${activeSchoolInfo?.address || 'School Office'}.`
+  }));
+
+  useEffect(() => {
+    if (activeSchoolInfo || systemConfig) {
+      setCardConfig(prev => ({
+        ...prev,
+        schoolName: activeSchoolInfo?.name || systemConfig?.schoolName || prev.schoolName,
+        schoolMotto: activeSchoolInfo?.motto || systemConfig?.motto || prev.schoolMotto,
+        affiliationNo: activeSchoolInfo?.affiliationBadge || systemConfig?.affiliationNo || prev.affiliationNo,
+        emergencyPhone: activeSchoolInfo?.contactPhone || systemConfig?.contactPhone || prev.emergencyPhone,
+        instructions: `1. This card is non-transferable and must be worn inside campus.\n2. In case of loss, report immediately to the Administrative Office.\n3. Found cards must be returned to ${activeSchoolInfo?.address || 'School Office'}.`
+      }));
+      setExamCenter(`${activeSchoolInfo?.name || 'School'} Campus, ${activeSchoolInfo?.address || 'Main Campus'}`);
+    }
+  }, [activeSchoolInfo, activeSchoolId, systemConfig, isOpen]);
 
   const printAreaRef = useRef(null);
 

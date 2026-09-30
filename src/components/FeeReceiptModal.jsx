@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   Printer, 
@@ -22,24 +22,38 @@ export default function FeeReceiptModal({
   feeRecord = null, 
   student = null 
 }) {
-  const { students, classes, systemConfig } = useSchool();
+  const { students, classes, systemConfig, activeSchoolInfo, activeSchoolId } = useSchool();
 
   const [receiptMode, setReceiptMode] = useState('voucher'); // 'voucher' (A4/Half-A4) | 'thermal' (80mm) | 'config'
-  const [cashierName, setCashierName] = useState('Lalhmangaiha (Accounts Officer)');
+  const [cashierName, setCashierName] = useState('Accounts Officer');
   
   // Custom Receipt Configuration
-  const [receiptConfig, setReceiptConfig] = useState({
-    prefix: 'OHA-REC-2026-',
-    schoolName: systemConfig?.schoolName || 'OHA (One Heart Academy)',
-    schoolAddress: systemConfig?.address || 'Lunglawn, Lunglei, Mizoram - 796701',
-    affiliationNo: systemConfig?.affiliationNo || 'MBSE-HSS-LGL-0421',
-    contactPhone: systemConfig?.contactPhone || '+91 372 2322104',
-    contactEmail: systemConfig?.contactEmail || 'oha.lunglawn@gmail.com',
+  const [receiptConfig, setReceiptConfig] = useState(() => ({
+    prefix: `${(activeSchoolInfo?.shortName || activeSchoolId || 'REC').toUpperCase().replace(/[^A-Z0-9]/g, '')}-REC-2026-`,
+    schoolName: activeSchoolInfo?.name || systemConfig?.schoolName || 'Our School',
+    schoolAddress: activeSchoolInfo?.address || systemConfig?.address || '',
+    affiliationNo: activeSchoolInfo?.affiliationBadge || systemConfig?.affiliationNo || 'MBSE Affiliated',
+    contactPhone: activeSchoolInfo?.contactPhone || systemConfig?.contactPhone || '',
+    contactEmail: activeSchoolInfo?.contactEmail || systemConfig?.contactEmail || '',
     terms: '1. Fees once paid are non-refundable.\n2. Keep this receipt voucher for MBSE board examination registration clearance.\n3. Digital verification is valid with the embedded QR code.',
     showCashierSignature: true,
     showPrincipalStamp: true,
     showVerificationQr: true
-  });
+  }));
+
+  useEffect(() => {
+    if (activeSchoolInfo || systemConfig) {
+      setReceiptConfig(prev => ({
+        ...prev,
+        prefix: `${(activeSchoolInfo?.shortName || activeSchoolId || 'REC').toUpperCase().replace(/[^A-Z0-9]/g, '')}-REC-2026-`,
+        schoolName: activeSchoolInfo?.name || systemConfig?.schoolName || prev.schoolName,
+        schoolAddress: activeSchoolInfo?.address || systemConfig?.address || prev.schoolAddress,
+        affiliationNo: activeSchoolInfo?.affiliationBadge || systemConfig?.affiliationNo || prev.affiliationNo,
+        contactPhone: activeSchoolInfo?.contactPhone || systemConfig?.contactPhone || prev.contactPhone,
+        contactEmail: activeSchoolInfo?.contactEmail || systemConfig?.contactEmail || prev.contactEmail,
+      }));
+    }
+  }, [activeSchoolInfo, activeSchoolId, systemConfig, isOpen]);
 
   if (!isOpen) return null;
 

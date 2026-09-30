@@ -25,7 +25,7 @@ import OnlineCheckoutModal from '../components/OnlineCheckoutModal';
 import FeeReceiptModal from '../components/FeeReceiptModal';
 
 export default function FinancialsView({ openExportModal }) {
-  const { students, fees, recordPayment, exportDataToCSV, hostelRooms, transportRoutes, paymentConfig } = useSchool();
+  const { students, fees, recordPayment, exportDataToCSV, hostelRooms, transportRoutes, paymentConfig, activeSchoolInfo, activeSchoolId } = useSchool();
   const { isPrincipal, isSuperAdmin } = useAuth();
   const canManageGateways = isPrincipal || isSuperAdmin;
 
@@ -38,15 +38,15 @@ export default function FinancialsView({ openExportModal }) {
 
   // Dual Payment Form State
   const [paymentMode, setPaymentMode] = useState('upi'); // 'upi' | 'cash'
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => ({
     studentId: students[0]?.id || '',
     amount: '18000',
     feeType: 'Tuition Fee (Term 2)',
-    upiId: 'mizoramschool@oksbi',
+    upiId: paymentConfig?.gateways?.direct_upi?.upiId || paymentConfig?.upiId || `${activeSchoolId || 'school'}@oksbi`,
     transactionUtr: '',
-    cashierName: 'R. Laltluanga (Chief Cashier)',
+    cashierName: 'Accounts Officer',
     remarks: ''
-  });
+  }));
 
   const totalCollected = fees.reduce((sum, f) => sum + (Number(f.amount) || 0), 0);
   const upiCollected = fees.filter(f => f.paymentMode === 'upi').reduce((sum, f) => sum + (Number(f.amount) || 0), 0);
@@ -57,7 +57,7 @@ export default function FinancialsView({ openExportModal }) {
   const studentTransportRoute = transportRoutes?.find(r => r.id === selectedStudent?.transportRouteId || r.enrolledStudents?.includes(selectedStudent?.id));
 
   // Dynamic UPI Payment Intent String
-  const upiIntentString = `upi://pay?pa=${formData.upiId}&pn=Mizoram%20School%20System&am=${formData.amount}&cu=INR&tn=FEE_${selectedStudent?.admissionNo || 'MZ'}`;
+  const upiIntentString = `upi://pay?pa=${formData.upiId}&pn=${encodeURIComponent(activeSchoolInfo?.name || 'School Fee')}&am=${formData.amount}&cu=INR&tn=FEE_${selectedStudent?.admissionNo || 'MZ'}`;
 
   const filteredFees = fees.filter(f => {
     const matchesMode = filterMode === 'all' || f.paymentMode === filterMode;
