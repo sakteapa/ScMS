@@ -299,6 +299,11 @@ export function SchoolProvider({ children }) {
             return [...parsed, ...missing];
           }
         }
+        if (key === 'website_config' && parsed && typeof parsed === 'object') {
+          if (!parsed.developerCredits) {
+            parsed.developerCredits = INITIAL_WEBSITE_CONFIG?.developerCredits;
+          }
+        }
         return parsed;
       } else if (localStorage.getItem(`zoxs_${activeSchoolId}_clean_slate`) === 'true' && Array.isArray(fallback)) {
         // When clean slate is active for this school and no saved array exists, return empty array (zero mock data)
@@ -586,7 +591,13 @@ export function SchoolProvider({ children }) {
       try {
         localStorage.setItem(`zoxs_${activeSchoolId}_website_config`, JSON.stringify(schoolSpecific));
       } catch(e) {}
-      return schoolSpecific;
+      return {
+        ...schoolSpecific,
+        developerCredits: schoolSpecific.developerCredits || INITIAL_WEBSITE_CONFIG.developerCredits
+      };
+    }
+    if (base && !base.developerCredits) {
+      base.developerCredits = INITIAL_WEBSITE_CONFIG.developerCredits;
     }
     return base;
   });
@@ -4790,7 +4801,16 @@ export function SchoolProvider({ children }) {
   // 9. Public School Website & CMS Config (Multi-Tenant)
   const updateWebsiteConfig = (newConfig) => {
     setWebsiteConfig(prev => {
-      const updated = typeof newConfig === 'function' ? newConfig(prev) : { ...prev, ...newConfig };
+      const computed = typeof newConfig === 'function' ? newConfig(prev) : newConfig;
+      const updated = { 
+        ...prev, 
+        ...computed,
+        developerCredits: {
+          ...(INITIAL_WEBSITE_CONFIG?.developerCredits || {}),
+          ...(prev?.developerCredits || {}),
+          ...(computed?.developerCredits || {})
+        }
+      };
       saveTenantItem('website_config', updated);
       return updated;
     });

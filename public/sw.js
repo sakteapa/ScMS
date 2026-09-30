@@ -1,5 +1,5 @@
 // Service Worker for Mizoram School System PWA offline caching
-const CACHE_NAME = 'zoxs-sms-cache-v1';
+const CACHE_NAME = 'zoxs-sms-cache-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -7,11 +7,6 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
-  );
   self.skipWaiting();
 });
 
@@ -27,10 +22,10 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Network first with cache fallback for navigation requests
+  // Always fetch fresh network content for HTML navigation requests
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => {
+      fetch(event.request, { cache: 'no-cache' }).catch(() => {
         return caches.match('/index.html');
       })
     );

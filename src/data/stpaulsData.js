@@ -486,5 +486,27 @@ export const STPAULS_WEBSITE_CONFIG = {
     enabled: true,
     badgeText: 'ADMISSIONS 2026',
     text: "🎉 Online Admissions for Academic Session 2026 - 2027 at St. Paul's HSS, Tlangnuam are officially open! Apply online for High School & HSSLC (Science, Arts, Commerce) before June 30."
+  },
+  developerCredits: {
+    enabled: true,
+    showOnFrontPage: true,
+    showInPortalHelp: true,
+    name: 'Samuel (Lead Software Architect)',
+    title: 'Lead Software Architect & Full-Stack Systems Engineer',
+    company: 'Zoxs Technologies Mizoram',
+    phone: '+91 94361 22000',
+    whatsapp: '+91 94361 22000',
+    email: 'samuel.developer@mizoramschool.edu',
+    location: 'Aizawl & Lunglei, Mizoram',
+    website: 'https://zoxs.dev',
+    tagline: 'Engineering robust, next-gen digital infrastructure & academic management systems for educational institutions across Mizoram.',
+    services: [
+      '24/7 Priority Emergency Technical Support & Bug Resolving',
+      'Custom Academic Modules, Class Tests & Examination Tools',
+      'Cloud Firestore Sync & Daily Automated Database Backups',
+      'Campus Hardware, Biometrics & Audio Bell Infrastructure'
+    ],
+    supportHours: 'Mon - Sat: 8:00 AM - 8:00 PM (24/7 Critical System Alerts)',
+    badgeText: 'Verified Institutional Developer'
   }
 };

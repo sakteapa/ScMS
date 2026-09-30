@@ -403,5 +403,27 @@ export const DEMO_WEBSITE_CONFIG = {
     enabled: true,
     badgeText: 'LIVE DEMO HUB',
     text: '🎉 Welcome to the Live Demonstration School! You are free to test drive admissions, fee payments, attendance scanning, marks entry, and hostel allocations in realtime.'
+  },
+  developerCredits: {
+    enabled: true,
+    showOnFrontPage: true,
+    showInPortalHelp: true,
+    name: 'Samuel (Lead Software Architect)',
+    title: 'Lead Software Architect & Full-Stack Systems Engineer',
+    company: 'Zoxs Technologies Mizoram',
+    phone: '+91 94361 22000',
+    whatsapp: '+91 94361 22000',
+    email: 'samuel.developer@mizoramschool.edu',
+    location: 'Aizawl & Lunglei, Mizoram',
+    website: 'https://zoxs.dev',
+    tagline: 'Engineering robust, next-gen digital infrastructure & academic management systems for educational institutions across Mizoram.',
+    services: [
+      '24/7 Priority Emergency Technical Support & Bug Resolving',
+      'Custom Academic Modules, Class Tests & Examination Tools',
+      'Cloud Firestore Sync & Daily Automated Database Backups',
+      'Campus Hardware, Biometrics & Audio Bell Infrastructure'
+    ],
+    supportHours: 'Mon - Sat: 8:00 AM - 8:00 PM (24/7 Critical System Alerts)',
+    badgeText: 'Verified Institutional Developer'
   }
 };

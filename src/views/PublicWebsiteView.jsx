@@ -33,10 +33,12 @@ import {
   Printer,
   CreditCard,
   Store,
-  Code2
+  Code2,
+  MessageCircle
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
+import { INITIAL_WEBSITE_CONFIG } from '../data/mockData';
 import PublicAnnouncementBanner from '../components/PublicAnnouncementBanner';
 import SchoolRulesModal from '../components/SchoolRulesModal';
 import PublicFineFeeClearanceModal from '../components/PublicFineFeeClearanceModal';
@@ -80,7 +82,10 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
   const facilities = cfg.facilities || [];
   const contact = cfg.contact || {};
   const social = cfg.socialLinks || {};
-  const devCredits = cfg.developerCredits || {};
+  const devCredits = {
+    ...(INITIAL_WEBSITE_CONFIG?.developerCredits || {}),
+    ...(cfg?.developerCredits || {})
+  };
 
   const schoolDisplayName = cfg.schoolName || activeSchoolInfo?.name || 'Our School';
   const affiliationDisplayName = cfg.affiliationBadge || cfg.tagline || activeSchoolInfo?.affiliationBadge || 'MBSE Affiliated';
@@ -151,30 +156,26 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
             <a href="#uniform" className="hover:text-purple-400 transition">Uniform &amp; Dress Code</a>
             <a href="#notices" className="hover:text-purple-400 transition">Public Notices</a>
             <a href="#contact" className="hover:text-purple-400 transition">Contact</a>
-            {devCredits.enabled !== false && devCredits.showOnFrontPage !== false && (
-              <button 
-                onClick={() => setIsDevSupportModalOpen(true)}
-                className="hover:text-purple-300 text-purple-400 transition flex items-center gap-1 font-semibold cursor-pointer"
-              >
-                <Code2 className="w-3.5 h-3.5" />
-                <span>Developer Info</span>
-              </button>
-            )}
+            <a 
+              href="#developer-support" 
+              className="text-purple-300 hover:text-white transition flex items-center gap-1.5 font-bold px-2.5 py-1 rounded-lg bg-purple-950/70 border border-purple-500/40 hover:bg-purple-900/60"
+            >
+              <Code2 className="w-3.5 h-3.5 text-purple-400" />
+              <span>Developer Support</span>
+            </a>
           </nav>
 
           {/* Actions: Fine Clearance, Mobile App, Portal Login, Developer Info & CMS Button */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {/* Developer Contact Quick Pill */}
-            {devCredits.enabled !== false && devCredits.showOnFrontPage !== false && (
-              <button
-                onClick={() => setIsDevSupportModalOpen(true)}
-                className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-purple-950/60 border border-purple-500/40 hover:border-purple-400 text-purple-200 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-sm"
-                title="Official Software Architect & Developer Hotline"
-              >
-                <Code2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                <span className="hidden xl:inline">Developer Info</span>
-              </button>
-            )}
+            <button
+              onClick={() => setIsDevSupportModalOpen(true)}
+              className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-md shadow-purple-600/30"
+              title="Official Software Architect & Developer Hotline"
+            >
+              <Code2 className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Developer Info</span>
+            </button>
 
             {/* Online Campus Fine & Fee Clearance Portal Trigger */}
             <button
@@ -355,18 +356,17 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
             <a href="#uniform" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Uniform &amp; Dress Code</a>
             <a href="#notices" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Public Notices</a>
             <a href="#contact" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-semibold text-slate-200 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Contact &amp; Location</a>
-            {devCredits.enabled !== false && devCredits.showOnFrontPage !== false && (
-              <button
-                onClick={() => { setIsMobileNavOpen(false); setIsDevSupportModalOpen(true); }}
-                className="w-full text-left text-xs font-semibold text-purple-300 py-2.5 px-3 rounded-xl bg-purple-950/60 border border-purple-500/40 flex items-center justify-between transition cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  <Code2 className="w-4 h-4 text-purple-400" />
-                  <span>Developer &amp; Tech Support Hotline</span>
-                </span>
-                <span className="text-[10px] bg-purple-500/20 text-purple-200 px-2 py-0.5 rounded-full font-mono font-bold">24/7 Live</span>
-              </button>
-            )}
+            <a href="#developer-support" onClick={() => setIsMobileNavOpen(false)} className="block text-xs font-bold text-purple-400 py-2 px-2.5 rounded-lg hover:bg-slate-800 transition">Developer Support Section ↓</a>
+            <button
+              onClick={() => { setIsMobileNavOpen(false); setIsDevSupportModalOpen(true); }}
+              className="w-full text-left text-xs font-semibold text-purple-300 py-2.5 px-3 rounded-xl bg-purple-950/80 border border-purple-500/40 flex items-center justify-between transition cursor-pointer"
+            >
+              <span className="flex items-center gap-2">
+                <Code2 className="w-4 h-4 text-purple-400" />
+                <span>Developer &amp; Tech Support Hotline</span>
+              </span>
+              <span className="text-[10px] bg-purple-500/30 text-purple-200 px-2 py-0.5 rounded-full font-mono font-bold">24/7 Live</span>
+            </button>
           </div>
         )}
       </header>
@@ -426,6 +426,43 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
                     <p className="text-[11px] sm:text-xs text-slate-400 font-medium mt-0.5">{stat.label}</p>
                   </div>
                 ))}
+              </div>
+
+              {/* Developer Credentials Spotlight Ribbon (Hero Direct View) */}
+              <div className="pt-2">
+                <div className="p-3 sm:p-3.5 rounded-2xl bg-purple-950/40 border border-purple-500/40 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg text-left backdrop-blur-sm">
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center shrink-0 border border-purple-500/30">
+                      <Code2 className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-purple-400 font-bold uppercase tracking-wider">System Architect &amp; Developer</span>
+                        <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded font-bold border border-emerald-500/30">24/7 Hotline</span>
+                      </div>
+                      <p className="text-xs font-bold text-white truncate mt-0.5">
+                        {devCredits.name || 'Samuel (Lead Architect)'} • <span className="text-slate-300 font-normal">{devCredits.company || 'Zoxs Technologies'}</span>
+                      </p>
+                      <p className="text-[11px] text-slate-400 truncate">
+                        Hotline: <a href={`tel:${devCredits.phone || '+919436122000'}`} className="text-emerald-400 font-bold hover:underline">{devCredits.phone || '+91 94361 22000'}</a>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
+                    <a
+                      href="#developer-support"
+                      className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition text-center whitespace-nowrap"
+                    >
+                      Developer Credentials ↓
+                    </a>
+                    <button
+                      onClick={() => setIsDevSupportModalOpen(true)}
+                      className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-200 border border-purple-500/30 text-xs font-semibold transition whitespace-nowrap cursor-pointer"
+                    >
+                      Support Hotline
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1057,120 +1094,122 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
       </section>
 
       {/* 8B. DEDICATED SOFTWARE ARCHITECT & TECH SUPPORT SECTION */}
-      {devCredits.enabled !== false && devCredits.showOnFrontPage !== false && (
-        <section id="developer-support" className="py-12 sm:py-16 bg-slate-950 border-b border-purple-500/20 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-purple-950/40 via-transparent to-transparent pointer-events-none" />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-8">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-800 pb-6">
-              <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 text-xs font-semibold mb-2">
-                  <Code2 className="w-3.5 h-3.5 text-purple-400" />
-                  <span>Institutional Technology Partner &amp; Software Architect</span>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                  Software Developer &amp; Technical Support Hotline
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl">
-                  {schoolDisplayName} management portal, mobile Android/iOS apps, real-time database sync, and cyber infrastructure te hi lead architect kuta awm a ni a, technical support, rawtna, emaw feature thar duh tan biakpawh theih reng a ni.
-                </p>
+      <section id="developer-support" className="py-14 sm:py-20 bg-slate-950 border-t-2 border-b-2 border-purple-500/40 relative overflow-hidden scroll-mt-24 shadow-2xl">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-purple-950/40 via-transparent to-transparent pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-800 pb-6">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-500/15 text-purple-200 border border-purple-500/40 text-xs font-bold mb-2 shadow-sm">
+                <Code2 className="w-4 h-4 text-purple-400" />
+                <span>Verified Institutional Technology Partner &amp; Software Architect</span>
               </div>
-
-              <button
-                onClick={() => setIsDevSupportModalOpen(true)}
-                className="self-start md:self-auto px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-purple-600/30 transition cursor-pointer"
-              >
-                <span>View Full Developer Profile &amp; SLA</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
+                Software Developer &amp; Technical Support Hotline
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                {schoolDisplayName} management portal, mobile Android/iOS apps, real-time database sync, and cyber infrastructure te hi lead architect kuta awm a ni a, technical support, rawtna, emaw feature thar duh tan biakpawh theih reng a ni.
+              </p>
             </div>
 
-            {/* Detailed Developer Card */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div className="md:col-span-2 p-6 rounded-2xl bg-slate-900/80 border border-purple-500/30 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-purple-400 font-mono">
-                      {devCredits.company || 'Zoxs Technologies Mizoram'}
-                    </span>
-                    <h3 className="text-xl font-bold text-white mt-0.5">
-                      {devCredits.name || 'Samuel (Lead Software Architect)'}
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      {devCredits.title || 'Lead Software Architect & Full-Stack Systems Engineer'}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      24/7 Priority Support
-                    </span>
-                  </div>
+            <button
+              onClick={() => setIsDevSupportModalOpen(true)}
+              className="self-start md:self-auto px-5 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-purple-600/30 transition cursor-pointer"
+            >
+              <span>View Full Developer Profile &amp; SLA</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Detailed Developer Card */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="md:col-span-2 p-6 sm:p-8 rounded-2xl bg-slate-900/90 border border-purple-500/40 space-y-5 shadow-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <span className="text-xs uppercase font-extrabold tracking-wider text-purple-400 font-mono">
+                    {devCredits.company || 'Zoxs Technologies Mizoram'}
+                  </span>
+                  <h3 className="text-2xl font-black text-white mt-0.5">
+                    {devCredits.name || 'Samuel (Lead Software Architect)'}
+                  </h3>
+                  <p className="text-xs text-slate-300 font-medium">
+                    {devCredits.title || 'Lead Software Architect & Full-Stack Systems Engineer'}
+                  </p>
                 </div>
-
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  {devCredits.tagline || 'Engineering robust, next-gen digital infrastructure & academic management systems for educational institutions across Mizoram.'}
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs">
-                  <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-                    <Phone className="w-4 h-4 text-purple-400 shrink-0" />
-                    <div className="min-w-0">
-                      <span className="text-[10px] text-slate-400 block font-medium">Direct Hotline / Call</span>
-                      <a href={`tel:${devCredits.phone || '+919436122000'}`} className="font-semibold text-white hover:text-purple-300 transition">
-                        {devCredits.phone || '+91 94361 22000'}
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-950/70 border border-slate-800">
-                    <Mail className="w-4 h-4 text-purple-400 shrink-0" />
-                    <div className="min-w-0">
-                      <span className="text-[10px] text-slate-400 block font-medium">Official Developer Email</span>
-                      <a href={`mailto:${devCredits.email || 'samuel.developer@mizoramschool.edu'}`} className="font-semibold text-white hover:text-purple-300 transition truncate block">
-                        {devCredits.email || 'samuel.developer@mizoramschool.edu'}
-                      </a>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-3.5 py-1.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                    24/7 Priority Support
+                  </span>
                 </div>
               </div>
 
-              {/* Instant WhatsApp & Support Actions */}
-              <div className="p-6 rounded-2xl bg-gradient-to-b from-purple-950/50 to-slate-900 border border-purple-500/30 flex flex-col justify-between space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
-                    <MessageCircle className="w-4 h-4" />
-                    <span>Instant WhatsApp Desk</span>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {devCredits.tagline || 'Engineering robust, next-gen digital infrastructure & academic management systems for educational institutions across Mizoram.'}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2 text-xs">
+                <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-950/80 border border-purple-500/20">
+                  <div className="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
+                    <Phone className="w-4 h-4 text-purple-300" />
                   </div>
-                  <h4 className="text-sm font-bold text-white">Direct Chat with Developer</h4>
-                  <p className="text-xs text-slate-400">
-                    Emergency bug reports, password reset assistance, school data recovery, leh system customization request te direct-in WhatsApp hmangin thawn rawh le.
-                  </p>
+                  <div className="min-w-0">
+                    <span className="text-[10px] text-slate-400 block font-medium">Direct Hotline / Call</span>
+                    <a href={`tel:${devCredits.phone || '+919436122000'}`} className="font-bold text-white hover:text-purple-300 text-sm transition">
+                      {devCredits.phone || '+91 94361 22000'}
+                    </a>
+                  </div>
                 </div>
 
-                <div className="space-y-2 pt-2">
-                  <a
-                    href={`https://wa.me/${(devCredits.whatsapp || devCredits.phone || '+919436122000').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Chibai Developer, ${schoolDisplayName} atangin biakpawh ka duh che a, technical support / rawtna ka nei a ni.`)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition cursor-pointer"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    <span>Chat on WhatsApp</span>
-                  </a>
-
-                  <button
-                    onClick={() => setIsDevSupportModalOpen(true)}
-                    className="w-full py-2.5 px-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-purple-300 hover:text-white font-semibold text-xs border border-purple-500/20 flex items-center justify-center gap-2 transition cursor-pointer"
-                  >
-                    <Code2 className="w-3.5 h-3.5" />
-                    <span>Open Detailed Dossier</span>
-                  </button>
+                <div className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-950/80 border border-purple-500/20">
+                  <div className="w-9 h-9 rounded-lg bg-purple-500/20 flex items-center justify-center shrink-0">
+                    <Mail className="w-4 h-4 text-purple-300" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] text-slate-400 block font-medium">Official Developer Email</span>
+                    <a href={`mailto:${devCredits.email || 'samuel.developer@mizoramschool.edu'}`} className="font-bold text-white hover:text-purple-300 text-sm transition truncate block">
+                      {devCredits.email || 'samuel.developer@mizoramschool.edu'}
+                    </a>
+                  </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Instant WhatsApp & Support Actions */}
+            <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-b from-purple-950/60 to-slate-900 border border-purple-500/40 flex flex-col justify-between space-y-4 shadow-xl">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Instant WhatsApp Desk</span>
+                </div>
+                <h4 className="text-sm font-bold text-white">Direct Chat with Developer</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Emergency bug reports, password reset assistance, school data recovery, leh system customization request te direct-in WhatsApp hmangin thawn rawh le.
+                </p>
+              </div>
+
+              <div className="space-y-2.5 pt-2">
+                <a
+                  href={`https://wa.me/${(devCredits.whatsapp || devCredits.phone || '+919436122000').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Chibai Developer, ${schoolDisplayName} atangin biakpawh ka duh che a, technical support / rawtna ka nei a ni.`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>Chat on WhatsApp</span>
+                </a>
+
+                <button
+                  onClick={() => setIsDevSupportModalOpen(true)}
+                  className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-200 hover:text-white font-bold text-xs border border-purple-500/30 flex items-center justify-center gap-2 transition cursor-pointer"
+                >
+                  <Code2 className="w-3.5 h-3.5" />
+                  <span>Open Detailed Dossier &amp; Credentials</span>
+                </button>
               </div>
             </div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* 9. CONTACT & FOOTER */}
       <footer id="contact" className="pt-12 sm:pt-16 pb-8 sm:pb-12 bg-slate-950 text-slate-400 text-xs">
@@ -1242,8 +1281,7 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
                   <span>{contact.officeHours || 'Mon - Fri: 8:30 AM - 3:30 PM'}</span>
                 </div>
 
-                {devCredits.enabled !== false && devCredits.showOnFrontPage !== false && (
-                  <div className="pt-2 border-t border-slate-800">
+                <div className="pt-2 border-t border-slate-800">
                     <button
                       onClick={() => setIsDevSupportModalOpen(true)}
                       className="w-full text-left p-2.5 rounded-xl bg-purple-950/40 hover:bg-purple-950/70 border border-purple-500/20 hover:border-purple-500/40 transition group cursor-pointer"
@@ -1263,7 +1301,6 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
                       </div>
                     </button>
                   </div>
-                )}
               </div>
             </div>
           </div>
@@ -1273,19 +1310,15 @@ export default function PublicWebsiteView({ onEnterPortal, onOpenAdmissions, onO
             <div className="flex flex-wrap items-center justify-center gap-2">
               <span>Powered by ZOXS School Management Platform</span>
               <span>•</span>
-              {devCredits.enabled !== false && devCredits.showOnFrontPage !== false && (
-                <>
-                  <button 
-                    onClick={() => setIsDevSupportModalOpen(true)} 
-                    className="text-purple-400 hover:text-purple-300 font-medium hover:underline flex items-center gap-1 cursor-pointer"
-                    title="Click to view full developer credentials, hotline and WhatsApp technical support"
-                  >
-                    <Code2 className="w-3.5 h-3.5 text-purple-400" />
-                    <span>Architected by {devCredits.name || 'Samuel'} (Tech Support)</span>
-                  </button>
-                  <span>•</span>
-                </>
-              )}
+              <button 
+                onClick={() => setIsDevSupportModalOpen(true)} 
+                className="text-purple-400 hover:text-purple-300 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
+                title="Click to view full developer credentials, hotline and WhatsApp technical support"
+              >
+                <Code2 className="w-3.5 h-3.5 text-purple-400" />
+                <span>Architected by {devCredits.name || 'Samuel'} (Developer Hotline &amp; Support)</span>
+              </button>
+              <span>•</span>
               <button onClick={onEnterPortal} className="text-purple-400 hover:underline cursor-pointer">Portal Access</button>
             </div>
           </div>
