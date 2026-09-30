@@ -16,7 +16,8 @@ import {
   QrCode, 
   User, 
   RefreshCw,
-  Wallet
+  Wallet,
+  Radio
 } from 'lucide-react';
 import { useSchool } from '../context/SchoolContext';
 import { useAuth } from '../context/AuthContext';
@@ -43,6 +44,50 @@ export default function CanteenView() {
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [cart, setCart] = useState([]); // [{ item, qty }]
   const [searchMenuQuery, setSearchMenuQuery] = useState('');
+  const [rfidTapInput, setRfidTapInput] = useState('');
+
+  // Audio Beep Chime for Cashless Card Tap
+  const playCashlessChime = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.25);
+    } catch (e) {}
+  };
+
+  const handleRfidCardTap = (e) => {
+    if (e) e.preventDefault();
+    if (!rfidTapInput.trim()) return;
+    const clean = rfidTapInput.trim().toLowerCase();
+    const matched = students.find(s => 
+      (s.rfidCardUid && s.rfidCardUid.toLowerCase() === clean) ||
+      (s.admissionNo && s.admissionNo.toLowerCase() === clean) ||
+      (s.rollNumber && s.rollNumber.toString() === clean) ||
+      (s.rollNo && s.rollNo.toString() === clean) ||
+      (s.id && s.id.toLowerCase() === clean)
+    );
+
+    if (matched) {
+      setSelectedStudentId(matched.id);
+      playCashlessChime();
+      const bal = canteenWallets[matched.id]?.balance || 0;
+      setToast(`⚡ RFID Card Verified: ${matched.firstName} ${matched.lastName} (Wallet: ₹${bal})`);
+      setTimeout(() => setToast(null), 3500);
+      setRfidTapInput('');
+    } else {
+      setToast(`❌ Unknown RFID card (${rfidTapInput}). Please link it in Attendance view.`);
+      setTimeout(() => setToast(null), 3500);
+    }
+  };
 
   // Top-Up Modal State
   const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
@@ -279,6 +324,33 @@ export default function CanteenView() {
                 <span className="text-xs text-cyan-400 font-mono">{cart.length} items</span>
               </h3>
 
+              {/* RFID Smart Card Tap Zone */}
+              <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-transparent border border-amber-500/30 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-amber-300 flex items-center gap-1.5">
+                    <Radio className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                    <span>Tap RFID Smart Card (Cashless)</span>
+                  </span>
+                  <span className="text-[10px] text-amber-400/80 font-mono">Instant Tap</span>
+                </div>
+
+                <form onSubmit={handleRfidCardTap} className="relative">
+                  <input
+                    type="text"
+                    value={rfidTapInput}
+                    onChange={(e) => setRfidTapInput(e.target.value)}
+                    placeholder="Tap card on counter reader..."
+                    className="w-full px-3 py-1.5 pr-14 rounded-xl bg-slate-950 border border-amber-500/40 text-amber-200 text-xs font-mono placeholder:text-slate-600 focus:outline-none focus:border-amber-400"
+                  />
+                  <button
+                    type="submit"
+                    className="absolute right-1 top-1 px-2.5 py-0.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] cursor-pointer"
+                  >
+                    Tap
+                  </button>
+                </form>
+              </div>
+
               {/* Student Picker */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-300">Customer (Student)</label>
@@ -287,12 +359,12 @@ export default function CanteenView() {
                   onChange={(e) => setSelectedStudentId(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white"
                 >
-                  <option value="">-- Select Student / Scan QR --</option>
+                  <option value="">-- Or Select Student Manually --</option>
                   {students.map(s => {
                     const bal = canteenWallets[s.id]?.balance || 0;
                     return (
                       <option key={s.id} value={s.id}>
-                        {s.firstName} {s.lastName} (Roll #{s.rollNo} • Bal: ₹{bal})
+                        {s.firstName} {s.lastName} (Roll #{s.rollNo || s.rollNumber || '1'} &bull; Bal: ₹{bal}{s.rfidCardUid ? ' &bull; 🪪 RFID' : ''})
                       </option>
                     );
                   })}
