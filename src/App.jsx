@@ -131,6 +131,7 @@ function SchoolAppContent() {
         return ['principal', 'vice_principal', 'warden', 'teacher'].includes(role);
       case 'hostel':
         return ['principal', 'vice_principal', 'warden'].includes(role);
+      case 'fees':
       case 'financials':
         return ['principal'].includes(role);
       case 'students':
@@ -274,6 +275,7 @@ function SchoolAppContent() {
       case 'leave_management':
       case 'leave':
         return <LeaveManagementView />;
+      case 'fees':
       case 'financials':
         return (
           <FinancialsView 
