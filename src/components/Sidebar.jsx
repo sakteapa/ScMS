@@ -30,6 +30,7 @@ import {
   MessageSquare,
   BarChart3,
   Globe,
+  Shirt,
   LogOut,
   X
 } from 'lucide-react';
@@ -222,6 +223,14 @@ export default function Sidebar({ currentTab, setCurrentTab, isMobileOpen, setIs
       icon: Package,
       roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
       badge: 'Labs & Stocks'
+    },
+    {
+      id: 'school_store',
+      label: 'School Store & Books',
+      icon: Shirt,
+      roles: ['superadmin', 'principal', 'vice_principal', 'teacher'],
+      badge: 'Uniform & Depot',
+      badgeColor: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
     },
     {
       id: 'canteen',

@@ -5133,3 +5133,554 @@ export const INITIAL_SCHOOL_RULES = [
   }
 ];
 
+// ==========================================
+// 12. SCHOOL STORE, UNIFORM & BOOK DEPOT DATA
+// ==========================================
+
+export const INITIAL_STORE_CONFIG = {
+  storeName: 'Central Campus Bookstore & Uniform Depot',
+  inChargeName: 'Pi Lalmuanpuii & Pu Zothansanga',
+  contactPhone: '+91 94361 23456',
+  location: 'Administrative Block, Ground Floor (Room 102)',
+  openingHours: '08:30 AM - 03:30 PM (Mon - Fri)',
+  acceptUpi: true,
+  upiId: 'schoolstore@sbi',
+  allowFeeLedgerBilling: true,
+  taxPercent: 0,
+  currency: '₹',
+  termsAndConditions: 'Items can be exchanged for size differences within 7 days with intact tags and original receipt.'
+};
+
+export const INITIAL_STORE_UNIFORMS = [
+  {
+    id: 'uni-001',
+    name: 'Boys Regular Sky Blue Oxford Shirt',
+    code: 'UNI-REG-BSHIRT',
+    category: 'regular',
+    gender: 'boys',
+    applicableClasses: 'Class 1 to 12',
+    price: 450,
+    photoUrl: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=80',
+    description: 'Cotton-poly blend sky blue shirt with embroidered school crest on chest pocket. Mon, Tue, Thu, Fri wear.',
+    sizes: [
+      { size: '28', stock: 18 },
+      { size: '30', stock: 24 },
+      { size: '32', stock: 30 },
+      { size: '34', stock: 15 },
+      { size: '36', stock: 10 },
+      { size: '38', stock: 6 }
+    ]
+  },
+  {
+    id: 'uni-002',
+    name: 'Girls Regular Sky Blue Blouse / Shirt',
+    code: 'UNI-REG-GSHIRT',
+    category: 'regular',
+    gender: 'girls',
+    applicableClasses: 'Class 1 to 12',
+    price: 450,
+    photoUrl: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=500&auto=format&fit=crop&q=80',
+    description: 'Tailored fit sky blue shirt with school crest monogram. Soft breathable fabric for all day comfort.',
+    sizes: [
+      { size: '26', stock: 14 },
+      { size: '28', stock: 22 },
+      { size: '30', stock: 28 },
+      { size: '32', stock: 20 },
+      { size: '34', stock: 12 },
+      { size: '36', stock: 5 }
+    ]
+  },
+  {
+    id: 'uni-003',
+    name: 'Boys Formal Deep Navy Trousers',
+    code: 'UNI-REG-BTRSR',
+    category: 'regular',
+    gender: 'boys',
+    applicableClasses: 'Class 5 to 12',
+    price: 650,
+    photoUrl: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=500&auto=format&fit=crop&q=80',
+    description: 'Durable wrinkle-resistant navy trousers with dual side pockets and adjustable waist clips.',
+    sizes: [
+      { size: '26', stock: 12 },
+      { size: '28', stock: 20 },
+      { size: '30', stock: 25 },
+      { size: '32', stock: 18 },
+      { size: '34', stock: 10 }
+    ]
+  },
+  {
+    id: 'uni-004',
+    name: 'Girls Box-Pleated Deep Navy Skirt',
+    code: 'UNI-REG-GSKRT',
+    category: 'regular',
+    gender: 'girls',
+    applicableClasses: 'Class 1 to 12',
+    price: 600,
+    photoUrl: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=500&auto=format&fit=crop&q=80',
+    description: 'Classic knee-length box-pleated navy skirt with concealed side zipper and inner elastic.',
+    sizes: [
+      { size: '24', stock: 10 },
+      { size: '26', stock: 18 },
+      { size: '28', stock: 25 },
+      { size: '30', stock: 20 },
+      { size: '32', stock: 14 }
+    ]
+  },
+  {
+    id: 'uni-005',
+    name: 'Official School Crest Blazer (Navy Blue)',
+    code: 'UNI-WIN-BLAZER',
+    category: 'winter',
+    gender: 'unisex',
+    applicableClasses: 'Class 6 to 12',
+    price: 1450,
+    photoUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=500&auto=format&fit=crop&q=80',
+    description: 'Heavy winter blazer with premium gold bullion embroidered school crest, brass buttons, and inner lining.',
+    sizes: [
+      { size: '30', stock: 8 },
+      { size: '32', stock: 15 },
+      { size: '34', stock: 18 },
+      { size: '36', stock: 12 },
+      { size: '38', stock: 5 }
+    ]
+  },
+  {
+    id: 'uni-006',
+    name: 'Winter V-Neck Woolen Cardigan / Sweater',
+    code: 'UNI-WIN-SWTR',
+    category: 'winter',
+    gender: 'unisex',
+    applicableClasses: 'All Classes',
+    price: 750,
+    photoUrl: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=500&auto=format&fit=crop&q=80',
+    description: 'Navy blue warm knit sweater with gold and white striped collar and cuffs.',
+    sizes: [
+      { size: '28', stock: 16 },
+      { size: '30', stock: 22 },
+      { size: '32', stock: 25 },
+      { size: '34', stock: 14 }
+    ]
+  },
+  {
+    id: 'uni-007',
+    name: 'House Sports T-Shirt - Red (Chhawnthial House)',
+    code: 'UNI-HSE-RED',
+    category: 'house',
+    gender: 'unisex',
+    applicableClasses: 'All Classes',
+    price: 380,
+    photoUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80',
+    description: 'Dry-fit breathable sports tee in Crimson Red. Mandatory for Wednesday & Saturday sports days.',
+    sizes: [
+      { size: 'S', stock: 15 },
+      { size: 'M', stock: 20 },
+      { size: 'L', stock: 18 },
+      { size: 'XL', stock: 8 }
+    ]
+  },
+  {
+    id: 'uni-008',
+    name: 'House Sports T-Shirt - Blue (Zokhawsang House)',
+    code: 'UNI-HSE-BLUE',
+    category: 'house',
+    gender: 'unisex',
+    applicableClasses: 'All Classes',
+    price: 380,
+    photoUrl: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=500&auto=format&fit=crop&q=80',
+    description: 'Dry-fit breathable sports tee in Royal Blue. Wednesday & Saturday wear for Zokhawsang House members.',
+    sizes: [
+      { size: 'S', stock: 12 },
+      { size: 'M', stock: 24 },
+      { size: 'L', stock: 15 },
+      { size: 'XL', stock: 6 }
+    ]
+  },
+  {
+    id: 'uni-009',
+    name: 'House Sports T-Shirt - Green (Phawngpui House)',
+    code: 'UNI-HSE-GREEN',
+    category: 'house',
+    gender: 'unisex',
+    applicableClasses: 'All Classes',
+    price: 380,
+    photoUrl: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=500&auto=format&fit=crop&q=80',
+    description: 'Dry-fit sports tee in Forest Green with school emblem. Wednesday & Saturday athletic wear.',
+    sizes: [
+      { size: 'S', stock: 14 },
+      { size: 'M', stock: 18 },
+      { size: 'L', stock: 16 },
+      { size: 'XL', stock: 7 }
+    ]
+  },
+  {
+    id: 'uni-010',
+    name: 'House Sports T-Shirt - Yellow (Reiek House)',
+    code: 'UNI-HSE-YELLOW',
+    category: 'house',
+    gender: 'unisex',
+    applicableClasses: 'All Classes',
+    price: 380,
+    photoUrl: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=500&auto=format&fit=crop&q=80',
+    description: 'Dry-fit sports tee in Canary Yellow. Wednesday & Saturday athletic wear.',
+    sizes: [
+      { size: 'S', stock: 16 },
+      { size: 'M', stock: 22 },
+      { size: 'L', stock: 14 },
+      { size: 'XL', stock: 5 }
+    ]
+  },
+  {
+    id: 'uni-011',
+    name: 'School Striped Necktie & Woven Belt Set',
+    code: 'UNI-ACC-TIEBELT',
+    category: 'accessories',
+    gender: 'unisex',
+    applicableClasses: 'All Classes',
+    price: 220,
+    photoUrl: 'https://images.unsplash.com/photo-1608256246200-53e635b5b65f?w=500&auto=format&fit=crop&q=80',
+    description: 'Gold & Navy blue diagonal striped satin necktie and heavy-duty brass buckle woven belt.',
+    sizes: [
+      { size: 'Junior (Class 1-5)', stock: 35 },
+      { size: 'Senior (Class 6-12)', stock: 45 }
+    ]
+  },
+  {
+    id: 'uni-012',
+    name: 'Cotton Athletic Socks with Twin Navy Stripes (Pack of 2)',
+    code: 'UNI-ACC-SOCKS',
+    category: 'accessories',
+    gender: 'unisex',
+    applicableClasses: 'All Classes',
+    price: 150,
+    photoUrl: 'https://images.unsplash.com/photo-1582966772680-860e372bb558?w=500&auto=format&fit=crop&q=80',
+    description: 'Cushioned high-performance white cotton calf socks with navy stripe bands.',
+    sizes: [
+      { size: 'Regular (Free Size)', stock: 60 }
+    ]
+  }
+];
+
+export const INITIAL_STORE_BOOKS = [
+  {
+    id: 'bk-001',
+    title: 'MBSE Class 10 Mizo Reader: Rin Lanu & Thangchhuah',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    subject: 'Mizo (MIL)',
+    author: 'MBSE Editorial Board',
+    publisher: 'Mizoram Board of School Education',
+    edition: 'Revised 2026 Edition',
+    price: 180,
+    stockQuantity: 42,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-002',
+    title: 'NCERT Class 10 English: First Flight & Footprints Without Feet',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    subject: 'English',
+    author: 'NCERT National Team',
+    publisher: 'NCERT / National Council',
+    edition: '2025 - 2026 Edition',
+    price: 240,
+    stockQuantity: 38,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-003',
+    title: 'NCERT Class 10 Mathematics Standard Textbook',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    subject: 'Mathematics',
+    author: 'NCERT Mathematics Group',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 290,
+    stockQuantity: 45,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-004',
+    title: 'NCERT Class 10 Science (Theory & Practical Lab Manual)',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    subject: 'Science',
+    author: 'NCERT Science Wing',
+    publisher: 'NCERT',
+    edition: 'Latest Edition',
+    price: 360,
+    stockQuantity: 40,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-005',
+    title: 'NCERT Class 10 Social Science 4-in-1 Comprehensive Set',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    subject: 'Social Science',
+    author: 'NCERT Faculty',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 450,
+    stockQuantity: 35,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-006',
+    title: 'NCERT Class 12 Physics Parts 1 & 2 (Core Science Edition)',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    subject: 'Physics',
+    author: 'NCERT Physics Committee',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 520,
+    stockQuantity: 30,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-007',
+    title: 'NCERT Class 12 Chemistry Parts 1 & 2',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    subject: 'Chemistry',
+    author: 'NCERT Chemistry Group',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 510,
+    stockQuantity: 28,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-008',
+    title: 'NCERT Class 12 Biology Comprehensive Textbook',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    subject: 'Biology',
+    author: 'NCERT Biology Wing',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 340,
+    stockQuantity: 26,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1530210124550-912dc1381cb8?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-009',
+    title: 'NCERT Class 12 Mathematics Parts 1 & 2',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    subject: 'Mathematics',
+    author: 'NCERT Math Panel',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 460,
+    stockQuantity: 32,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-010',
+    title: 'MBSE Class 12 Mizo Core Reader: Kan Hla leh Kan Thu',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science / Arts',
+    subject: 'Mizo (MIL)',
+    author: 'MBSE Expert Committee',
+    publisher: 'Mizoram Board of School Education',
+    edition: '2025 Edition',
+    price: 210,
+    stockQuantity: 40,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-011',
+    title: 'NCERT Class 12 Accountancy: Partnership & Company Accounts',
+    classId: 'cls-12-comm',
+    className: 'Class 12 Commerce',
+    subject: 'Accountancy',
+    author: 'NCERT Commerce Team',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 380,
+    stockQuantity: 25,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-012',
+    title: 'NCERT Class 12 Political Science: Contemporary World Politics',
+    classId: 'cls-12-arts',
+    className: 'Class 12 Arts',
+    subject: 'Political Science',
+    author: 'NCERT Social Sciences',
+    publisher: 'NCERT',
+    edition: '2026 Edition',
+    price: 320,
+    stockQuantity: 30,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-013',
+    title: 'Foundational Early Years 4-Book Set (Class 1 Starter Pack)',
+    classId: 'cls-1',
+    className: 'Class 1',
+    subject: 'All Subjects (English, Mizo, Numbers, EVS)',
+    author: 'Early Learning Educators',
+    publisher: 'SCERT Mizoram',
+    edition: 'NEP 2020 Aligned Edition',
+    price: 490,
+    stockQuantity: 50,
+    isMandatory: true,
+    photoUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'bk-014',
+    title: 'Customized School Homework Notebooks (Pack of 6 with School Crest)',
+    classId: 'all',
+    className: 'All Classes',
+    subject: 'Stationery',
+    author: 'School Publications',
+    publisher: 'Campus Press',
+    edition: '2026 Academic Edition',
+    price: 260,
+    stockQuantity: 85,
+    isMandatory: false,
+    photoUrl: 'https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=500&auto=format&fit=crop&q=80'
+  }
+];
+
+export const INITIAL_STORE_DISTRIBUTIONS = [
+  {
+    id: 'dist-001',
+    studentId: 'stu-101',
+    studentName: 'Lalmuanpuia Sailo',
+    admissionNo: 'MZ-2026-0101',
+    classId: 'cls-12-sci',
+    className: 'Class 12 Science',
+    rollNo: '01',
+    status: 'completed',
+    issuedDate: '2026-08-10',
+    issuedBy: 'Pi Lalmuanpuii (Store In-charge)',
+    paymentMethod: 'included_in_fees',
+    receiptNumber: 'RCP-STORE-2026-001',
+    uniformItems: [
+      { name: 'Boys Regular Sky Blue Oxford Shirt', size: '32', quantity: 2, price: 450 },
+      { name: 'Boys Formal Deep Navy Trousers', size: '30', quantity: 2, price: 650 },
+      { name: 'Official School Crest Blazer', size: '34', quantity: 1, price: 1450 },
+      { name: 'House Sports T-Shirt - Blue (Zokhawsang House)', size: 'M', quantity: 1, price: 380 },
+      { name: 'School Striped Necktie & Woven Belt Set', size: 'Senior', quantity: 1, price: 220 }
+    ],
+    bookItems: [
+      { title: 'NCERT Class 12 Physics Parts 1 & 2', price: 520 },
+      { title: 'NCERT Class 12 Chemistry Parts 1 & 2', price: 510 },
+      { title: 'NCERT Class 12 Biology Comprehensive Textbook', price: 340 },
+      { title: 'MBSE Class 12 Mizo Core Reader: Kan Hla leh Kan Thu', price: 210 }
+    ],
+    pendingItems: [],
+    totalAmount: 5830,
+    remarks: 'Full kit collected by guardian during admissions clearance.'
+  },
+  {
+    id: 'dist-002',
+    studentId: 'stu-102',
+    studentName: 'Vanlalhruaii Ralte',
+    admissionNo: 'MZ-2026-0102',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    rollNo: '02',
+    status: 'partial',
+    issuedDate: '2026-08-12',
+    issuedBy: 'Pi Lalmuanpuii',
+    paymentMethod: 'included_in_fees',
+    receiptNumber: 'RCP-STORE-2026-002',
+    uniformItems: [
+      { name: 'Girls Regular Sky Blue Blouse / Shirt', size: '30', quantity: 2, price: 450 },
+      { name: 'Girls Box-Pleated Deep Navy Skirt', size: '28', quantity: 2, price: 600 },
+      { name: 'House Sports T-Shirt - Red (Chhawnthial House)', size: 'S', quantity: 1, price: 380 }
+    ],
+    bookItems: [
+      { title: 'MBSE Class 10 Mizo Reader: Rin Lanu & Thangchhuah', price: 180 },
+      { title: 'NCERT Class 10 English: First Flight', price: 240 },
+      { title: 'NCERT Class 10 Mathematics Standard Textbook', price: 290 },
+      { title: 'NCERT Class 10 Science (Theory & Practical)', price: 360 },
+      { title: 'NCERT Class 10 Social Science 4-in-1 Set', price: 450 }
+    ],
+    pendingItems: ['School Crest Blazer (Size 30 awaiting replenishment shipment)'],
+    totalAmount: 4600,
+    remarks: 'Blazer pending stock arrival; expected next Monday.'
+  },
+  {
+    id: 'dist-003',
+    studentId: 'stu-103',
+    studentName: 'Lalduhawma Colney',
+    admissionNo: 'MZ-2026-0103',
+    classId: 'cls-10-a',
+    className: 'Class 10 A',
+    rollNo: '03',
+    status: 'completed',
+    issuedDate: '2026-08-14',
+    issuedBy: 'Pu Zothansanga',
+    paymentMethod: 'included_in_fees',
+    receiptNumber: 'RCP-STORE-2026-003',
+    uniformItems: [
+      { name: 'Boys Regular Sky Blue Oxford Shirt', size: '30', quantity: 2, price: 450 },
+      { name: 'Boys Formal Deep Navy Trousers', size: '28', quantity: 2, price: 650 },
+      { name: 'House Sports T-Shirt - Green (Phawngpui House)', size: 'M', quantity: 1, price: 380 },
+      { name: 'School Striped Necktie & Woven Belt Set', size: 'Senior', quantity: 1, price: 220 }
+    ],
+    bookItems: [
+      { title: 'MBSE Class 10 Complete Textbooks 5-Book Bundle', price: 1520 }
+    ],
+    pendingItems: [],
+    totalAmount: 4320,
+    remarks: 'All items handed over in good order.'
+  }
+];
+
+export const INITIAL_STORE_SALES = [
+  {
+    id: 'sale-001',
+    receiptNo: 'RCP-POS-1042',
+    date: '2026-09-18',
+    time: '11:20 AM',
+    studentId: 'stu-101',
+    studentName: 'Lalmuanpuia Sailo',
+    classId: 'cls-12-sci',
+    items: [
+      { name: 'School Striped Necktie & Woven Belt Set', quantity: 1, price: 220 },
+      { name: 'Customized School Homework Notebooks (Pack of 6)', quantity: 1, price: 260 }
+    ],
+    totalAmount: 480,
+    paymentType: 'upi_qr',
+    servedBy: 'Pi Lalmuanpuii',
+    notes: 'Replacement belt purchased.'
+  },
+  {
+    id: 'sale-002',
+    receiptNo: 'RCP-POS-1043',
+    date: '2026-09-22',
+    time: '02:15 PM',
+    studentId: 'stu-104',
+    studentName: 'Zodinpuii Khiangte',
+    classId: 'cls-12-comm',
+    items: [
+      { name: 'Cotton Athletic Socks with Twin Navy Stripes (Pack of 2)', quantity: 2, price: 150 }
+    ],
+    totalAmount: 300,
+    paymentType: 'cash',
+    servedBy: 'Pu Zothansanga',
+    notes: 'Extra socks set.'
+  }
+];
+
+

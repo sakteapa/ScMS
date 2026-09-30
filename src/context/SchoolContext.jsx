@@ -63,7 +63,12 @@ import {
   INITIAL_DOCUMENT_TEMPLATES,
   INITIAL_NOMENCLATURE,
   INITIAL_ACADEMIC_SESSIONS,
-  INITIAL_OFFLINE_ADMISSION_CONFIG
+  INITIAL_OFFLINE_ADMISSION_CONFIG,
+  INITIAL_STORE_CONFIG,
+  INITIAL_STORE_UNIFORMS,
+  INITIAL_STORE_BOOKS,
+  INITIAL_STORE_DISTRIBUTIONS,
+  INITIAL_STORE_SALES
 } from '../data/mockData';
 import {
   GHHSS_SCHOOL_INFO,
@@ -504,6 +509,13 @@ export function SchoolProvider({ children }) {
 
   // 8. Official School Seal & Principal Signature
   const [sealConfig, setSealConfig] = useState(() => loadInitial('seal_config', INITIAL_SEAL_CONFIG));
+
+  // 12. School Store, Uniform & Book Depot States
+  const [storeConfig, setStoreConfig] = useState(() => loadInitial('store_config', INITIAL_STORE_CONFIG));
+  const [storeUniforms, setStoreUniforms] = useState(() => loadInitial('store_uniforms', INITIAL_STORE_UNIFORMS));
+  const [storeBooks, setStoreBooks] = useState(() => loadInitial('store_books', INITIAL_STORE_BOOKS));
+  const [storeDistributions, setStoreDistributions] = useState(() => loadInitial('store_distributions', INITIAL_STORE_DISTRIBUTIONS));
+  const [storeSales, setStoreSales] = useState(() => loadInitial('store_sales', INITIAL_STORE_SALES));
 
   // 9. Public School Website & CMS Config
   // For non-OHA schools with no saved config, build a school-specific default
@@ -963,6 +975,11 @@ export function SchoolProvider({ children }) {
     saveTenantItem('custom_student_fields', customStudentFields);
     saveTenantItem('school_rules', schoolRules);
     saveTenantItem('website_config', websiteConfig);
+    saveTenantItem('store_config', storeConfig);
+    saveTenantItem('store_uniforms', storeUniforms);
+    saveTenantItem('store_books', storeBooks);
+    saveTenantItem('store_distributions', storeDistributions);
+    saveTenantItem('store_sales', storeSales);
     setLastSyncTime(new Date().toLocaleTimeString());
 
     // Automatic Live Cloud Sync to Firestore (Debounced 2.5s)
@@ -978,7 +995,7 @@ export function SchoolProvider({ children }) {
     return () => {
       if (autoSyncTimer) clearTimeout(autoSyncTimer);
     };
-  }, [activeSchoolId, classes, students, grades, fees, attendance, staff, payroll, libraryBooks, notices, admissions, admissionRequirements, onlineAdmissionConfig, issuedCertificates, reportCardWithholds, transportRoutes, hostelRooms, timetables, hostelGatePasses, hostelRollCalls, hostelMessMenu, hostelRules, schoolRules, websiteConfig, academicEvents, customScripts, plugins, systemConfig, paymentConfig, leaveApplications, payScales, tasks, vacations, clinicRecords, clinicConfig, visitors, visitorConfig, inventoryAssets, maintenanceTickets, inventoryConfig, ptmEvents, ptmConfig, alumni, transcriptRequests, alumniConfig, canteenMenu, canteenWallets, canteenTransactions, canteenConfig, studyMaterials, studyConfig, sealConfig, subjects, gradingScales, feeHeads, documentTemplates, systemNomenclature, customStudentFields]);
+  }, [activeSchoolId, classes, students, grades, fees, attendance, staff, payroll, libraryBooks, notices, admissions, admissionRequirements, onlineAdmissionConfig, issuedCertificates, reportCardWithholds, transportRoutes, hostelRooms, timetables, hostelGatePasses, hostelRollCalls, hostelMessMenu, hostelRules, schoolRules, websiteConfig, academicEvents, customScripts, plugins, systemConfig, paymentConfig, leaveApplications, payScales, tasks, vacations, clinicRecords, clinicConfig, visitors, visitorConfig, inventoryAssets, maintenanceTickets, inventoryConfig, ptmEvents, ptmConfig, alumni, transcriptRequests, alumniConfig, canteenMenu, canteenWallets, canteenTransactions, canteenConfig, studyMaterials, studyConfig, sealConfig, subjects, gradingScales, feeHeads, documentTemplates, systemNomenclature, customStudentFields, storeConfig, storeUniforms, storeBooks, storeDistributions, storeSales]);
 
   // Automatic Startup Cloud Sync & Hydration (On first visit or school switch)
   useEffect(() => {
@@ -4596,6 +4613,195 @@ export function SchoolProvider({ children }) {
   };
 
   // ==========================================
+  // SCHOOL STORE, UNIFORM & TEXTBOOK METHODS
+  // ==========================================
+  const updateStoreConfig = (updatedFields) => {
+    setStoreConfig(prev => {
+      const next = { ...prev, ...updatedFields };
+      try { localStorage.setItem('zoxs_store_config', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
+  const addStoreUniform = (itemData) => {
+    const newItem = {
+      id: itemData.id || `uni-${Date.now()}`,
+      code: itemData.code || `UNI-${(itemData.category || 'REG').slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}`,
+      name: itemData.name || 'New Uniform Item',
+      category: itemData.category || 'regular',
+      gender: itemData.gender || 'unisex',
+      applicableClasses: itemData.applicableClasses || 'All Classes',
+      price: Number(itemData.price) || 0,
+      photoUrl: itemData.photoUrl || 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=500&auto=format&fit=crop&q=80',
+      description: itemData.description || '',
+      sizes: itemData.sizes && itemData.sizes.length > 0 ? itemData.sizes : [
+        { size: '28', stock: 10 },
+        { size: '30', stock: 10 },
+        { size: '32', stock: 10 }
+      ],
+      ...itemData
+    };
+    setStoreUniforms(prev => {
+      const next = [newItem, ...prev];
+      try { localStorage.setItem('zoxs_store_uniforms', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    return newItem;
+  };
+
+  const updateStoreUniform = (itemId, updatedFields) => {
+    setStoreUniforms(prev => {
+      const next = prev.map(item => item.id === itemId ? { ...item, ...updatedFields } : item);
+      try { localStorage.setItem('zoxs_store_uniforms', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
+  const deleteStoreUniform = (itemId) => {
+    setStoreUniforms(prev => {
+      const next = prev.filter(item => item.id !== itemId);
+      try { localStorage.setItem('zoxs_store_uniforms', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
+  const addStoreBook = (bookData) => {
+    const newBook = {
+      id: bookData.id || `bk-${Date.now()}`,
+      title: bookData.title || 'New Textbook',
+      classId: bookData.classId || 'all',
+      className: bookData.className || 'All Classes',
+      subject: bookData.subject || 'General',
+      author: bookData.author || 'Editorial Board',
+      publisher: bookData.publisher || 'NCERT / MBSE',
+      edition: bookData.edition || '2026 Edition',
+      price: Number(bookData.price) || 0,
+      stockQuantity: Number(bookData.stockQuantity) || 20,
+      isMandatory: bookData.isMandatory !== undefined ? bookData.isMandatory : true,
+      photoUrl: bookData.photoUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80',
+      ...bookData
+    };
+    setStoreBooks(prev => {
+      const next = [newBook, ...prev];
+      try { localStorage.setItem('zoxs_store_books', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    return newBook;
+  };
+
+  const updateStoreBook = (bookId, updatedFields) => {
+    setStoreBooks(prev => {
+      const next = prev.map(b => b.id === bookId ? { ...b, ...updatedFields } : b);
+      try { localStorage.setItem('zoxs_store_books', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
+  const deleteStoreBook = (bookId) => {
+    setStoreBooks(prev => {
+      const next = prev.filter(b => b.id !== bookId);
+      try { localStorage.setItem('zoxs_store_books', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+  };
+
+  const updateStoreItemPhoto = (itemType, itemId, newPhotoUrl) => {
+    if (itemType === 'uniform') {
+      updateStoreUniform(itemId, { photoUrl: newPhotoUrl });
+    } else if (itemType === 'book') {
+      updateStoreBook(itemId, { photoUrl: newPhotoUrl });
+    }
+  };
+
+  const distributeStoreItems = (distData) => {
+    const newDist = {
+      id: distData.id || `dist-${Date.now()}`,
+      receiptNumber: distData.receiptNumber || `RCP-STORE-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
+      issuedDate: distData.issuedDate || new Date().toISOString().split('T')[0],
+      status: distData.status || 'completed',
+      ...distData
+    };
+
+    // Deduct stock for issued uniforms
+    if (distData.uniformItems && distData.uniformItems.length > 0) {
+      setStoreUniforms(prev => prev.map(uni => {
+        const matchingIssued = distData.uniformItems.find(u => u.name === uni.name || u.uniformId === uni.id);
+        if (!matchingIssued) return uni;
+        const updatedSizes = (uni.sizes || []).map(sz => {
+          if (sz.size === matchingIssued.size) {
+            return { ...sz, stock: Math.max(0, sz.stock - (matchingIssued.quantity || 1)) };
+          }
+          return sz;
+        });
+        return { ...uni, sizes: updatedSizes };
+      }));
+    }
+
+    // Deduct stock for issued books
+    if (distData.bookItems && distData.bookItems.length > 0) {
+      setStoreBooks(prev => prev.map(bk => {
+        const matchingIssued = distData.bookItems.find(b => b.title === bk.title || b.bookId === bk.id);
+        if (!matchingIssued) return bk;
+        return { ...bk, stockQuantity: Math.max(0, (bk.stockQuantity || 0) - (matchingIssued.quantity || 1)) };
+      }));
+    }
+
+    setStoreDistributions(prev => {
+      const next = [newDist, ...prev.filter(d => d.studentId !== distData.studentId)];
+      try { localStorage.setItem('zoxs_store_distributions', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+
+    return newDist;
+  };
+
+  const recordStoreSale = (saleData) => {
+    const newSale = {
+      id: saleData.id || `sale-${Date.now()}`,
+      receiptNo: saleData.receiptNo || `RCP-POS-${Math.floor(1000 + Math.random() * 9000)}`,
+      date: saleData.date || new Date().toISOString().split('T')[0],
+      time: saleData.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      ...saleData
+    };
+
+    // Deduct stock from uniforms or books if items provided
+    if (saleData.items && saleData.items.length > 0) {
+      saleData.items.forEach(item => {
+        if (item.uniformId) {
+          setStoreUniforms(prev => prev.map(u => {
+            if (u.id === item.uniformId) {
+              const updatedSizes = (u.sizes || []).map(sz => {
+                if (sz.size === item.size) {
+                  return { ...sz, stock: Math.max(0, sz.stock - (item.quantity || 1)) };
+                }
+                return sz;
+              });
+              return { ...u, sizes: updatedSizes };
+            }
+            return u;
+          }));
+        }
+        if (item.bookId) {
+          setStoreBooks(prev => prev.map(b => {
+            if (b.id === item.bookId) {
+              return { ...b, stockQuantity: Math.max(0, (b.stockQuantity || 0) - (item.quantity || 1)) };
+            }
+            return b;
+          }));
+        }
+      });
+    }
+
+    setStoreSales(prev => {
+      const next = [newSale, ...prev];
+      try { localStorage.setItem('zoxs_store_sales', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+
+    return newSale;
+  };
+
+  // ==========================================
   // IN-APP MASTER ARCHITECTURE CRUD METHODS (Zero External Software Needed)
   // ==========================================
 
@@ -5245,7 +5451,23 @@ export function SchoolProvider({ children }) {
       addCustomStudentField,
       updateCustomStudentField,
       deleteCustomStudentField,
-      // 12. Multi-Tenant Architecture & Registry
+      // 12. School Store, Uniforms & Textbooks
+      storeConfig,
+      updateStoreConfig,
+      storeUniforms,
+      addStoreUniform,
+      updateStoreUniform,
+      deleteStoreUniform,
+      storeBooks,
+      addStoreBook,
+      updateStoreBook,
+      deleteStoreBook,
+      updateStoreItemPhoto,
+      storeDistributions,
+      distributeStoreItems,
+      storeSales,
+      recordStoreSale,
+      // 13. Multi-Tenant Architecture & Registry
       activeSchoolId,
       activeSchoolInfo,
       registeredSchools,

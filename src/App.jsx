@@ -44,6 +44,7 @@ const VisitorsView = lazy(() => import('./views/VisitorsView'));
 const InventoryView = lazy(() => import('./views/InventoryView'));
 const AlumniView = lazy(() => import('./views/AlumniView'));
 const CanteenView = lazy(() => import('./views/CanteenView'));
+const SchoolStoreView = lazy(() => import('./views/SchoolStoreView'));
 const GroupConferenceView = lazy(() => import('./views/GroupConferenceView'));
 const LiveBroadcastView = lazy(() => import('./views/LiveBroadcastView'));
 const StaffChatView = lazy(() => import('./views/StaffChatView'));
@@ -135,6 +136,7 @@ function SchoolAppContent() {
       case 'staff_chat':
         return ['principal', 'vice_principal', 'warden', 'teacher'].includes(role);
       case 'library':
+      case 'school_store':
       case 'transport':
       case 'transport_hostel':
         return ['principal', 'vice_principal', 'teacher'].includes(role);
@@ -313,6 +315,8 @@ function SchoolAppContent() {
         return <AlumniView />;
       case 'canteen':
         return <CanteenView />;
+      case 'school_store':
+        return <SchoolStoreView setCurrentTab={setCurrentTab} />;
       case 'group_conference':
         return <GroupConferenceView />;
       case 'live_broadcast':
