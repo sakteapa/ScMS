@@ -30,6 +30,14 @@ import {
   RecaptchaVerifier,
   signInWithPhoneNumber
 } from 'firebase/auth';
+import { 
+  getStorage, 
+  ref as storageRef, 
+  uploadBytes, 
+  uploadBytesResumable, 
+  getDownloadURL, 
+  deleteObject 
+} from 'firebase/storage';
 
 // Standard Firebase configuration with fallback to environment variables or project configuration
 const DEFAULT_FIREBASE_CONFIG = {
@@ -88,6 +96,7 @@ export const isLiveFirebaseConfigured = checkIsLiveConfig(currentConfig);
 let app;
 let db;
 let auth;
+let storage;
 let isOfflinePersistenceActive = false;
 
 try {
@@ -114,6 +123,12 @@ try {
   }
 
   auth = getAuth(app);
+
+  try {
+    storage = getStorage(app);
+  } catch (storageError) {
+    console.warn('Firebase Storage initialization notice:', storageError);
+  }
 } catch (err) {
   console.error('Firebase initialization notice:', err);
 }
@@ -122,6 +137,12 @@ export {
   app, 
   db, 
   auth, 
+  storage,
+  storageRef,
+  uploadBytes,
+  uploadBytesResumable,
+  getDownloadURL,
+  deleteObject,
   isOfflinePersistenceActive,
   disableNetwork,
   enableNetwork,

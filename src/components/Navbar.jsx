@@ -18,7 +18,8 @@ import {
   School,
   LogOut,
   MessageSquare,
-  Laptop
+  Laptop,
+  UploadCloud
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSchool } from '../context/SchoolContext';
@@ -36,6 +37,7 @@ export default function Navbar({
   openWebsiteEditor,
   openSmsHubModal,
   openSchoolRulesModal,
+  openCloudStorageModal,
   onViewWebsite
 }) {
   const { currentUser, logout, isPrincipal, isVicePrincipal, isSuperAdmin } = useAuth();
@@ -359,6 +361,19 @@ export default function Navbar({
           >
             <MessageSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <span className="hidden xl:inline">SMS &amp; WhatsApp</span>
+          </button>
+        )}
+
+        {/* Cloud Photo & Media Studio Trigger */}
+        {(isPrincipal || isVicePrincipal || isSuperAdmin || currentUser?.role === 'teacher') && (
+          <button
+            type="button"
+            onClick={openCloudStorageModal}
+            className="p-1.5 sm:px-2.5 sm:py-2 rounded-xl bg-gradient-to-r from-cyan-950/70 to-blue-950/70 border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white transition flex items-center gap-1.5 text-xs font-semibold shadow-md shadow-cyan-950/30 shrink-0 cursor-pointer"
+            title="Cloud Photo & Media Studio (Cloudinary & Firebase Storage)"
+          >
+            <UploadCloud className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span className="hidden xl:inline">Cloud Photos</span>
           </button>
         )}
 

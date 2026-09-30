@@ -4496,6 +4496,26 @@ export function SchoolProvider({ children }) {
     return suspendStudent({ ...warningData, actionType: 'warning' });
   };
 
+  const updateStudentPhoto = (studentId, photoUrl) => {
+    setStudents(prev => {
+      const next = prev.map(s => s.id === studentId ? { ...s, photoUrl } : s);
+      try {
+        localStorage.setItem('zoxs_students', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  const updateStaffPhoto = (staffId, photoUrl) => {
+    setStaff(prev => {
+      const next = prev.map(st => st.id === staffId ? { ...st, photoUrl } : st);
+      try {
+        localStorage.setItem('zoxs_staff', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
   // ==========================================
   // IN-APP MASTER ARCHITECTURE CRUD METHODS (Zero External Software Needed)
   // ==========================================
@@ -5112,6 +5132,8 @@ export function SchoolProvider({ children }) {
       suspendStudent,
       revokeSuspension,
       addDisciplinaryWarning,
+      updateStudentPhoto,
+      updateStaffPhoto,
       // 11. In-App Master Architecture Suite (Zero External Software Needed)
       addClass,
       updateClass,

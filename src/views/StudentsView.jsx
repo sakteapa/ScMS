@@ -26,7 +26,9 @@ import {
   UserX,
   UserCheck,
   GraduationCap,
-  Layers
+  Layers,
+  UploadCloud,
+  Camera
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useSchool } from '../context/SchoolContext';
@@ -36,6 +38,7 @@ import StudentConcessionSpecialModal from '../components/StudentConcessionSpecia
 import StudentIdCardModal from '../components/StudentIdCardModal';
 import StudentSuspensionModal from '../components/StudentSuspensionModal';
 import AcademicSessionPromotionModal from '../components/AcademicSessionPromotionModal';
+import CloudPhotoStorageModal from '../components/CloudPhotoStorageModal';
 
 export default function StudentsView({ setCurrentTab, setSelectedStudentForReport }) {
   const { students, classes, staff, transportRoutes, hostelRooms, startPrivateCall, systemConfig } = useSchool();
@@ -55,6 +58,7 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
   const [selectedConductStatus, setSelectedConductStatus] = useState('all');
   const [isPromotionModalOpen, setIsPromotionModalOpen] = useState(false);
   const [promotionTargetStudent, setPromotionTargetStudent] = useState(null);
+  const [cloudPhotoTarget, setCloudPhotoTarget] = useState(null);
 
   // Identify if logged-in teacher has a class they are Class Master of
   const teacherClass = isTeacher 
@@ -131,6 +135,15 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
           >
             <CreditCard className="w-3.5 h-3.5" />
             <span>ID &amp; Admit Cards</span>
+          </button>
+
+          <button
+            onClick={() => setCloudPhotoTarget({ type: 'student', id: null })}
+            className="px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold shadow-lg shadow-cyan-600/10 flex items-center gap-1.5 transition shrink-0 cursor-pointer"
+            title="Upload or change student photos via Cloudinary / Firebase Storage"
+          >
+            <UploadCloud className="w-3.5 h-3.5" />
+            <span>Cloud Photos</span>
           </button>
         </div>
       </div>
@@ -625,11 +638,21 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
             </div>
 
             <div className="flex items-center gap-4">
-              <img
-                src={activeModalStudent.photoUrl}
-                alt=""
-                className="w-20 h-24 rounded-xl object-cover ring-2 ring-cyan-400/50"
-              />
+              <div className="relative group shrink-0">
+                <img
+                  src={activeModalStudent.photoUrl}
+                  alt=""
+                  className="w-20 h-24 rounded-xl object-cover ring-2 ring-cyan-400/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setCloudPhotoTarget({ type: 'student', id: activeModalStudent.id })}
+                  className="absolute -bottom-1.5 -right-1.5 p-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-md transition cursor-pointer"
+                  title="Change photo using Cloudinary or Firebase Storage"
+                >
+                  <Camera className="w-3.5 h-3.5 stroke-[2.5]" />
+                </button>
+              </div>
               <div className="space-y-1">
                 <h4 className="text-base font-bold text-white font-['Outfit']">
                   {activeModalStudent.firstName} {activeModalStudent.lastName}
@@ -796,6 +819,21 @@ export default function StudentsView({ setCurrentTab, setSelectedStudentForRepor
         }}
         initialStudent={promotionTargetStudent}
       />
+
+      {/* Cloud Photo & Media Storage Studio Modal */}
+      {cloudPhotoTarget && (
+        <CloudPhotoStorageModal
+          isOpen={Boolean(cloudPhotoTarget)}
+          onClose={() => setCloudPhotoTarget(null)}
+          initialTargetType={cloudPhotoTarget.type}
+          initialTargetId={cloudPhotoTarget.id}
+          onSuccess={(newUrl) => {
+            if (activeModalStudent && activeModalStudent.id === cloudPhotoTarget.id) {
+              setActiveModalStudent(prev => prev ? { ...prev, photoUrl: newUrl } : null);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

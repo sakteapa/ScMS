@@ -17,6 +17,7 @@ import WebsiteEditorModal from './components/WebsiteEditorModal';
 import { PublicAdmissionPortalModal } from './components/admissions/PublicAdmissionPortalModal';
 import SmsWhatsAppNotificationHubModal from './components/SmsWhatsAppNotificationHubModal';
 import SchoolRulesModal from './components/SchoolRulesModal';
+import CloudPhotoStorageModal from './components/CloudPhotoStorageModal';
 
 // Code-split / Lazy-loaded Views for on-demand performance and optimal bundle size
 const DashboardView = lazy(() => import('./views/DashboardView'));
@@ -156,6 +157,7 @@ function SchoolAppContent() {
   const [isPublicAdmissionModalOpen, setIsPublicAdmissionModalOpen] = useState(false);
   const [isSmsHubOpen, setIsSmsHubOpen] = useState(false);
   const [isSchoolRulesModalOpen, setIsSchoolRulesModalOpen] = useState(false);
+  const [isCloudStorageModalOpen, setIsCloudStorageModalOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [selectedStudentForReport, setSelectedStudentForReport] = useState(null);
   
@@ -494,6 +496,7 @@ function SchoolAppContent() {
           openWebsiteEditor={() => setIsWebsiteEditorOpen(true)}
           openSmsHubModal={() => setIsSmsHubOpen(true)}
           openSchoolRulesModal={() => setIsSchoolRulesModalOpen(true)}
+          openCloudStorageModal={() => setIsCloudStorageModalOpen(true)}
           onViewWebsite={() => setCurrentTab('public_website')}
         />
 
@@ -538,6 +541,12 @@ function SchoolAppContent() {
         onClose={() => setIsMobileAppModalOpen(false)}
         deferredPrompt={deferredPrompt}
         onDirectInstall={handleDirectInstall}
+      />
+
+      {/* Global Cloud Photo & Media Storage Studio Modal */}
+      <CloudPhotoStorageModal
+        isOpen={isCloudStorageModalOpen}
+        onClose={() => setIsCloudStorageModalOpen(false)}
       />
 
       {/* Global SMS & WhatsApp Notification Hub Modal */}
