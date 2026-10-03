@@ -106,7 +106,7 @@ import {
   DEMO_SYSTEM_CONFIG,
   DEMO_WEBSITE_CONFIG
 } from '../data/demoSchoolData';
-import { TRANSLATIONS } from '../data/translations';
+import { TRANSLATIONS, SUPPORTED_LANGUAGES } from '../data/translations';
 import {
   auth as firebaseAuth,
   db,
