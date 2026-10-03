@@ -67,8 +67,6 @@ export default function SmsWhatsAppNotificationHubModal({ isOpen, onClose, initi
     whatsAppProvider: gatewayConfig?.whatsAppProvider || 'wa_link'
   });
 
-  if (!isOpen) return null;
-
   // 1. ATTENDANCE ABSENTEES COMPUTATION
   const absenteeList = useMemo(() => {
     return attendance
@@ -208,6 +206,8 @@ export default function SmsWhatsAppNotificationHubModal({ isOpen, onClose, initi
   };
 
   const smsSegments = calculateSmsSegments(customMessage);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">

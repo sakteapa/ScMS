@@ -43,9 +43,6 @@ export default function DeveloperSupportModal({ isOpen, onClose }) {
   const [pinError, setPinError] = useState(null);
   const [isPinUnlocked, setIsPinUnlocked] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-
-  if (!isOpen) return null;
-
   const schoolName = activeSchoolInfo?.name || websiteConfig?.schoolName || 'School Management System';
 
   const dev = websiteConfig?.developerCredits || {
@@ -87,6 +84,8 @@ export default function DeveloperSupportModal({ isOpen, onClose }) {
     showInPortalHelp: dev.showInPortalHelp !== false,
     enabled: dev.enabled !== false
   });
+
+  if (!isOpen) return null;
 
   const rawWhatsapp = (dev.whatsapp || dev.phone || '').replace(/[^0-9]/g, '');
   const whatsappUrl = `https://wa.me/${rawWhatsapp}?text=${encodeURIComponent(`Chibai Developer, ${schoolName} atangin biakpawh ka duh che a, technical support / rawtna ka nei a ni.`)}`;
