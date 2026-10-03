@@ -51,6 +51,16 @@ const StaffChatView = lazy(() => import('./views/StaffChatView'));
 const AnalyticsDashboardView = lazy(() => import('./views/AnalyticsDashboardView'));
 const WebsiteEditorModal = lazy(() => import('./components/WebsiteEditorModal'));
 
+const RESERVED_ROUTES = ['login', 'assets', 'api', 'public_website', 'favicon.ico', 'index.html', 'default', 'platform', 'home'];
+
+function ViewFallback() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[360px] w-full p-8 text-slate-400 space-y-3">
+      <div className="w-8 h-8 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+      <span className="text-xs font-medium text-slate-400">Loading module...</span>
+    </div>
+  );
+}
 
 function SchoolAppContent() {
   const { center_id } = useParams();
